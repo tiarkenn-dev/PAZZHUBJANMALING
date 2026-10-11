@@ -1,5 +1,5 @@
 --========================================================--
--- FAZZHUB v0.3.8 - FULL SCRIPT (PATCHED)
+-- FAZZHUB v0.3.8 - FULL SCRIPT (FIXED - ALL TABS)
 -- Image: rbxassetid://72845574620852
 -- PART 1/19 : HEADER + INIT + NOTIFY + HELPER
 --========================================================--
@@ -258,7 +258,6 @@ local function __FazzHub_Init_Main__()
 
     -- SONG LIBRARY (32 lagu)
     local Songs = {
-        -- Bombax Original
         {id="101985596918228", judul="One"},
         {id="78520199502339",  judul="Two"},
         {id="78253224480952",  judul="Three"},
@@ -327,11 +326,10 @@ local function __FazzHub_Init_Main__()
         Bombax.TrackLength = snd.TimeLength or 0
         Bombax.TrackPosition = 0
         table.insert(Bombax.History, { name = trackName, id = soundId, time = tick() })
-        -- [PATCH] Notif "Playing: ..." DIHAPUS biar gak spam saat ganti lagu
+        -- [PATCH] Notif ganti lagu DIHAPUS biar gak spam
         if W.Bombax_MiniUpdate then pcall(W.Bombax_MiniUpdate) end
     end
 
-    -- AUTO NEXT saat lagu habis
     local function Bombax_SetupAutoNext()
         if Bombax._AutoNextConn then return end
         Bombax._AutoNextConn = RunService.Heartbeat:Connect(function()
@@ -405,7 +403,6 @@ local function __FazzHub_Init_Main__()
         W.Bombax_Play("rbxassetid://" .. cleanId, "Custom: " .. cleanId)
     end
 
-    -- Play Next (manual)
     function W.Bombax_Next()
         local list = {}
         for name, id in pairs(MUSIC_LIBRARY) do
@@ -468,9 +465,7 @@ local function __FazzHub_Init_Main__()
             frame.Parent = gui
             Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
 
-            --====================================================--
             -- BACKGROUND IMAGE (FAZZHUB)
-            --====================================================--
             local bgImage = Instance.new("ImageLabel")
             bgImage.Name = "BgImage"
             bgImage.Size = UDim2.fromScale(1, 1)
@@ -572,7 +567,6 @@ local function __FazzHub_Init_Main__()
             progressBg.ZIndex = 4
             Instance.new("UICorner", progressBg).CornerRadius = UDim.new(1, 0)
 
-            -- PROGRESS FILL
             local progressFill = Instance.new("Frame", progressBg)
             progressFill.Name = "ProgressFill"
             progressFill.Size = UDim2.new(0, 0, 1, 0)
@@ -582,7 +576,6 @@ local function __FazzHub_Init_Main__()
             Instance.new("UICorner", progressFill).CornerRadius = UDim.new(1, 0)
             MiniState.ProgressFill = progressFill
 
-            -- TIME LABEL
             local progressLbl = Instance.new("TextLabel", body)
             progressLbl.Name = "ProgressLbl"
             progressLbl.Size = UDim2.new(1, 0, 0, 12)
@@ -637,7 +630,6 @@ local function __FazzHub_Init_Main__()
             makeBtn("PauseBtn", "⏸", 60, function() W.Bombax_Pause() end)
             makeBtn("StopBtn", "⏹", 120, function() W.Bombax_Stop() end)
 
-            -- NEXT BUTTON (kanan)
             local nextBtn = Instance.new("TextButton", btnRow)
             nextBtn.Name = "NextBtn"
             nextBtn.Size = UDim2.fromOffset(26, 26)
@@ -692,7 +684,7 @@ local function __FazzHub_Init_Main__()
             Instance.new("UICorner", volFill).CornerRadius = UDim.new(1, 0)
             MiniState.VolFill = volFill
 
-            -- DRAG (dari header)
+            -- DRAG
             local dragging, dragStart, startPos = false, nil, nil
             header.InputBegan:Connect(function(inp)
                 if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
@@ -728,7 +720,6 @@ local function __FazzHub_Init_Main__()
                 end
             end)
 
-            -- UPDATE VISUAL
             W.Bombax_MiniUpdate = function()
                 if not MiniState.Gui then return end
                 local trackTxt = Bombax.CurrentTrack or "No track"
@@ -740,7 +731,6 @@ local function __FazzHub_Init_Main__()
                 end
             end
 
-            -- PROGRESS LOOP
             task.spawn(function()
                 while MiniState.Gui and MiniState.Gui.Parent do
                     if Bombax.CurrentSound then
@@ -783,7 +773,6 @@ local function __FazzHub_Init_Main__()
             end
         end
 
-        -- Auto build
         task.spawn(function()
             task.wait(1)
             BuildMini()
@@ -6377,7 +6366,6 @@ local function __FazzHub_Init_Main__()
             container.BackgroundTransparency = 1
             container.Parent = gui
 
-            -- MAIN BUTTON
             local btn = Instance.new("TextButton")
             btn.Name = "Btn"
             btn.Size = UDim2.fromOffset(W_BTN, H_BTN)
@@ -6397,7 +6385,6 @@ local function __FazzHub_Init_Main__()
             stroke.Transparency = 0.4
             stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
-            -- LABEL (nama) - full width
             local label = Instance.new("TextLabel")
             label.Name = "Label"
             label.Size = UDim2.new(1, -36, 1, 0)
@@ -6412,7 +6399,6 @@ local function __FazzHub_Init_Main__()
             label.ZIndex = 4
             label.Parent = btn
 
-            -- DOT (kanan dalam button)
             local dot = Instance.new("Frame")
             dot.Name = "Dot"
             dot.Size = UDim2.fromOffset(8, 8)
@@ -6424,7 +6410,6 @@ local function __FazzHub_Init_Main__()
             dot.Parent = btn
             Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
 
-            -- LOCK BUTTON (kanan, bulat kecil)
             local lock = Instance.new("TextButton")
             lock.Name = "LockBtn"
             lock.Size = UDim2.fromOffset(18, 18)
@@ -6451,7 +6436,6 @@ local function __FazzHub_Init_Main__()
             lockIcon.ZIndex = 7
             lockIcon.Parent = lock
 
-            -- DRAG + CLICK
             local drag = false
             local dStart, sPos
             local dDist = 0
@@ -6654,7 +6638,6 @@ local function __FazzHub_Init_Main__()
     -- 9 FLOATING BAR INSTANCES (PATCHED - TANPA SYMBOL)
     --====================================================--
 
-    -- 1. Heal
     local SelfHealBtnState = { Enabled=false, DragLocked=false, Gui=nil, SavedPos=UDim2.new(0.03,0,0.28,0), Connections={} }
     local SelfHealState = CreateFloatingButton({
         id="SelfHeal", title="Heal", state=SelfHealBtnState,
@@ -6664,7 +6647,6 @@ local function __FazzHub_Init_Main__()
     getgenv().FazzHub_SHB_SetEnabled = function(en) SelfHealState.SetEnabled(en) end
     getgenv().FazzHub_SHB_UpdateVisual = function() SelfHealState.UpdateVisual() end
 
-    -- 2. Hook
     local SelfUnhookBtnState = { Enabled=false, DragLocked=false, Gui=nil, SavedPos=UDim2.new(0.03,0,0.35,0), Connections={} }
     local SelfUnhookState = CreateFloatingButton({
         id="SelfUnhook", title="Hook", state=SelfUnhookBtnState,
@@ -6674,7 +6656,6 @@ local function __FazzHub_Init_Main__()
     getgenv().FazzHub_SUB_SetEnabled = function(en) SelfUnhookState.SetEnabled(en) end
     getgenv().FazzHub_SUB_UpdateVisual = function() SelfUnhookState.UpdateVisual() end
 
-    -- 3. Troll TP
     local TrollBtnState = { Enabled=false, DragLocked=false, Gui=nil, SavedPos=UDim2.new(0.03,0,0.42,0), Connections={} }
     local TrollState = CreateFloatingButton({
         id="TrollTP", title="Troll TP", state=TrollBtnState,
@@ -6684,7 +6665,6 @@ local function __FazzHub_Init_Main__()
     getgenv().FazzHub_TTB_SetEnabled = function(en) TrollState.SetEnabled(en) end
     getgenv().FazzHub_TTB_UpdateVisual = function() TrollState.UpdateVisual() end
 
-    -- 4. Escape
     local EscapeBtnState = { Enabled=false, DragLocked=false, Gui=nil, SavedPos=UDim2.new(0.03,0,0.49,0), Connections={} }
     local EscapeState = CreateFloatingButton({
         id="Escape", title="Escape", state=EscapeBtnState,
@@ -6694,7 +6674,6 @@ local function __FazzHub_Init_Main__()
     getgenv().FazzHub_Escape_SetEnabled = function(en) EscapeState.SetEnabled(en) end
     getgenv().FazzHub_Escape_UpdateVisual = function() EscapeState.UpdateVisual() end
 
-    -- 5. Parry
     local ParryBtnState = { Enabled=false, DragLocked=false, Gui=nil, SavedPos=UDim2.new(0.03,0,0.56,0), Connections={} }
     local ParryStateBtn = CreateFloatingButton({
         id="Parry", title="Parry", state=ParryBtnState,
@@ -6707,7 +6686,6 @@ local function __FazzHub_Init_Main__()
     getgenv().FazzHub_ParryBtn_SetEnabled = function(en) ParryStateBtn.SetEnabled(en) end
     getgenv().FazzHub_ParryBtn_UpdateVisual = function() ParryStateBtn.UpdateVisual() end
 
-    -- 6. Invis
     local InvisBtnState = { Enabled=false, DragLocked=false, Gui=nil, SavedPos=UDim2.new(0.03,0,0.63,0), Connections={} }
     local InvisStateBtn = CreateFloatingButton({
         id="Invisible", title="Invis", state=InvisBtnState,
@@ -6720,7 +6698,6 @@ local function __FazzHub_Init_Main__()
     getgenv().FazzHub_InvisBtn_SetEnabled   = function(en) InvisStateBtn.SetEnabled(en) end
     getgenv().FazzHub_InvisBtn_UpdateVisual = function() InvisStateBtn.UpdateVisual() end
 
-    -- 7. Grab
     local MyersGrabBtnState = { Enabled=false, DragLocked=false, Gui=nil, SavedPos=UDim2.new(0.03,0,0.70,0), Connections={} }
     local MyersGrabBtn = CreateFloatingButton({
         id="MyersGrab", title="Grab", state=MyersGrabBtnState,
@@ -6730,7 +6707,6 @@ local function __FazzHub_Init_Main__()
     getgenv().FazzHub_MGrabBtn_SetEnabled   = function(en) MyersGrabBtn.SetEnabled(en) end
     getgenv().FazzHub_MGrabBtn_UpdateVisual = function() MyersGrabBtn.UpdateVisual() end
 
-    -- 8. Veil
     local VeilBtnState = { Enabled=false, DragLocked=false, Gui=nil, SavedPos=UDim2.new(0.03,0,0.77,0), Connections={} }
     local VeilBtn = CreateFloatingButton({
         id="SilentVeil", title="Veil", state=VeilBtnState,
@@ -6745,7 +6721,6 @@ local function __FazzHub_Init_Main__()
     getgenv().FazzHub_VeilBtn_SetEnabled   = function(en) VeilBtn.SetEnabled(en) end
     getgenv().FazzHub_VeilBtn_UpdateVisual = function() VeilBtn.UpdateVisual() end
 
-    -- 9. Moonwalk
     local MoonwalkBtnState = { Enabled=false, DragLocked=false, Gui=nil, SavedPos=UDim2.new(0.03,0,0.84,0), Connections={} }
     local MoonwalkFloatingState = CreateFloatingButton({
         id="Moonwalk", title="Moonwalk", state=MoonwalkBtnState,
@@ -9361,7 +9336,7 @@ local function __FazzHub_Init_Main__()
 
     function W.setGenBypass(v) GenBypass.Enabled = v; W.GB_UpdateButton() end--========================================================--
 -- FAZZHUB v0.3.8
--- PART 19A/19 : UI BUILD — SURVIVOR TAB
+-- PART 19A/19 : UI BUILD — SURVIVOR TAB + SKILL CHECK V2
 -- PATCH: Auto Skill Check lama DIGANTI dengan versi baru (Opsi B)
 --========================================================--
 
@@ -9762,7 +9737,6 @@ local function __FazzHub_Init_Main__()
         firePlus.TextSize = 12
         firePlus.Parent = fireBtnBg
 
-        -- LOGIC ENABLE
         local function UpdateEnableVisual()
             if SC.Enabled then
                 enableBtn.BackgroundColor3 = Color3.fromRGB(15, 25, 20)
@@ -9781,7 +9755,6 @@ local function __FazzHub_Init_Main__()
             UpdateEnableVisual()
         end)
 
-        -- LOGIC MODE
         local modeOptions = { "Legit", "Instant" }
         local modeIndex = 1
         for i, opt in ipairs(modeOptions) do
@@ -9796,7 +9769,6 @@ local function __FazzHub_Init_Main__()
             modeBtn.Text = newMode
         end)
 
-        -- LOGIC CHECK DELAY
         local function UpdateCheckDelay(v)
             SC.CheckDelay = math.clamp(tonumber(v) or 0.2, 0.05, 2)
             checkVal.Text = string.format("%.2fs", SC.CheckDelay)
@@ -9805,7 +9777,6 @@ local function __FazzHub_Init_Main__()
         checkMinus.MouseButton1Click:Connect(function() UpdateCheckDelay(SC.CheckDelay - 0.05) end)
         checkPlus.MouseButton1Click:Connect(function() UpdateCheckDelay(SC.CheckDelay + 0.05) end)
 
-        -- LOGIC FIRE DELAY
         local function UpdateFireDelay(v)
             SC.FireDelay = math.clamp(tonumber(v) or 0.05, 0.01, 1)
             fireVal.Text = string.format("%.2fs", SC.FireDelay)
@@ -9814,7 +9785,6 @@ local function __FazzHub_Init_Main__()
         fireMinus.MouseButton1Click:Connect(function() UpdateFireDelay(SC.FireDelay - 0.01) end)
         firePlus.MouseButton1Click:Connect(function() UpdateFireDelay(SC.FireDelay + 0.01) end)
 
-        -- DRAG
         header.InputBegan:Connect(function(inp)
             if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
                 SCMenuState.Dragging = true
@@ -9840,7 +9810,6 @@ local function __FazzHub_Init_Main__()
             end
         end)
 
-        -- MINIMIZE
         local minimized = false
         local fullSize = UDim2.fromOffset(220, 168)
         minBtn.MouseButton1Click:Connect(function()
@@ -9859,7 +9828,6 @@ local function __FazzHub_Init_Main__()
         UpdateEnableVisual()
     end
 
-    -- API: Buka/tutup menu Skill Check
     W.SkillCheckMenu_Show = function()
         if not SCMenuState.Gui or not SCMenuState.Gui.Parent then
             SC_CreateMenu()
@@ -10559,7 +10527,6 @@ local function __FazzHub_Init_Main__()
         ESPBox:AddColorPicker({ Title = "SCP Color", Default = FESPC.SCP, Save = false, Callback = function(c) FESPC.SCP = c end })
         ESPBox:AddSlider({ Title = "ESP Radius", Min = 10, Max = 1000, Default = 500, Increment = 10, Callback = function(v) FESP.Distance = v end })
 
-        -- ESP STATUS (VERSI BARU - CUMA NAMA + JARAK)
         local ESPStatusBox = MakeSection(VisualsTab, "ESP Status")
         ESPStatusBox:AddToggle({ Title = "Enable Status ESP", Default = false, Callback = function(v) FESPS.Enabled = v end })
         ESPStatusBox:AddToggle({ Title = "Show Name", Default = true, Callback = function(v) FESPS.ShowName = v end })
@@ -11077,6 +11044,610 @@ local function __FazzHub_Init_Main__()
                 local char = LocalPlayer.Character
                 local hum = char and char:FindFirstChildOfClass("Humanoid")
                 if hum and hum.WalkSpeed == 0 then hum.WalkSpeed = 16 end
+            end
+        end })--========================================================--
+-- FAZZHUB v0.3.8
+-- PART 19E-1/19 : MISC TAB (BAGIAN 1)
+--========================================================--
+
+        --====================================================--
+        -- SETTINGS
+        --====================================================--
+        local settingsSection = MakeSection(MiscTab, "Settings")
+        settingsSection:AddToggle({ Title = "Enable Notifications", Default = true, Callback = function(v)
+            W.NotifyEnabled = v
+            if v then ForceNotify("Settings", "Notifications Enabled") end
+        end })
+
+        --====================================================--
+        -- STUN INDICATOR
+        --====================================================--
+        local stunSection = MakeSection(MiscTab, "Stun Indicator")
+        stunSection:AddToggle({ Title = "Enable Stun Indicator", Default = false, Callback = function(v)
+            W.SInd_SetEnabled(v); if v then VD_Notify("Stun Indicator", "Enabled", 2) end end })
+        stunSection:AddDropdown({ Title = "Stun Sound",
+            Options = { "Default", "Clash Royale", "Blash", "Coin", "Kururin Kuru", "Spongebob", "Fahhhh", "Cave", "Aughhh", "Samsung", "iPhone", "Siren" },
+            Default = "Default", Callback = function(v)
+                local val = type(v) == "table" and v[1] or v
+                SInd.SelectedSound = val
+                ForceNotify("Stun Indicator", "Sound: " .. val, 2)
+            end })
+        stunSection:AddToggle({ Title = "Stun Sound Alert", Default = true, Callback = function(v) SInd.SoundEnabled = v end })
+        stunSection:AddButton({ Title = "Preview Sound", Callback = function()
+            pcall(function()
+                local snd = Instance.new("Sound")
+                snd.SoundId = "rbxassetid://" .. tostring(SInd_GetActiveSoundId())
+                snd.Volume = SInd.SoundVolume or 1.5
+                snd.Parent = LocalPlayer:FindFirstChildOfClass("PlayerGui") or Workspace
+                snd:Play()
+                snd.Ended:Connect(function() pcall(function() snd:Destroy() end) end)
+                task.delay(5, function() pcall(function() if snd and snd.Parent then snd:Destroy() end end) end)
+            end)
+        end })
+        stunSection:AddSlider({ Title = "Detect Range", Min = 50, Max = 2000, Default = 500, Increment = 25, Suffix = " studs", Callback = function(v) SInd.Range = v end })
+        stunSection:AddSlider({ Title = "Sound Volume", Min = 0, Max = 5, Default = 1.5, Increment = 0.1, Callback = function(v) SInd.SoundVolume = v end })
+
+        --====================================================--
+        -- INVISIBILITY
+        --====================================================--
+        local invisSection = MakeSection(MiscTab, "Invisibilty")
+        invisSection:AddParagraph({ Title = "Fitur ini bisa Membuat anda tidak terlihat oleh pemain lain", Content = "Real invisibility" })
+        invisSection:AddToggle({ Title = "Enable invisibilty", Default = false, Callback = function(v)
+            W.Invisible_SetState(v, false)
+            if getgenv().FazzHub_InvisBtn_UpdateVisual then getgenv().FazzHub_InvisBtn_UpdateVisual() end
+        end })
+        invisSection:AddToggle({ Title = "Show invisibilty Floating Button", Default = false, Callback = function(v)
+            if getgenv().FazzHub_InvisBtn_SetEnabled then getgenv().FazzHub_InvisBtn_SetEnabled(v) end
+        end })
+        invisSection:AddKeybind({ Title = "Toggle Hotkey", Default = Enum.KeyCode.G, Callback = function(kc)
+            W.Invisible_SetHotkey(kc)
+            ForceNotify("Invisible", "Hotkey: " .. (kc and kc.Name or "None"), 2)
+        end })
+
+        --====================================================--
+        -- CAMERA DBD
+        --====================================================--
+        local camDBDSection = MakeSection(MiscTab, "Camera DBD")
+        camDBDSection:AddToggle({ Title = "DBD Camera (Smooth Follow)", Default = false, Callback = function(v)
+            W.CamDBD_SetSmooth(v); VD_Notify("Camera DBD", v and "Smooth ON" or "Smooth OFF", 2) end })
+        camDBDSection:AddSlider({ Title = "Camera Smoothness", Min = 1, Max = 30, Default = 4, Increment = 1, Callback = function(v) W.CamDBD_SetSmoothSpeed(v) end })
+        camDBDSection:AddToggle({ Title = "POV Lock", Default = false, Callback = function(v)
+            W.CamDBD_SetPOVLock(v); VD_Notify("Camera DBD", v and "POV Lock ON" or "POV Lock OFF", 2) end })
+        camDBDSection:AddSlider({ Title = "POV Value", Min = 60, Max = 120, Default = 85, Increment = 1, Suffix = "°", Callback = function(v) W.CamDBD_SetTargetPOV(v) end })
+        camDBDSection:AddSlider({ Title = "POV Smoothness", Min = 3, Max = 20, Default = 9, Increment = 1, Callback = function(v) W.CamDBD_SetPOVSmooth(v) end })
+
+        --====================================================--
+        -- PLAYER UTILITY
+        --====================================================--
+        local puSection = MakeSection(MiscTab, "Player Utility")
+        puSection:AddToggle({ Title = "Speed Hack", Default = false, Callback = function(v)
+            PU.SpeedEnabled = v and true or false
+            if not v then
+                local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+                if hum then hum.WalkSpeed = 16 end
+            end
+            if v then VD_Notify("Player Utility", "Speed Hack ON", 2) end
+        end })
+        puSection:AddSlider({ Title = "Speed Value", Min = 16, Max = 200, Default = 16, Increment = 1, Callback = function(v) PU.SpeedValue = v end })
+        puSection:AddToggle({ Title = "Skip End Screen", Default = false, Callback = function(v)
+            PU.SkipEndScreen = v and true or false
+            if v then VD_Notify("Player Utility", "Skip End Screen ON", 2) end
+        end })
+        puSection:AddToggle({ Title = "Shift Lock", Default = false, Callback = function(v)
+            PU.ShiftLock = v and true or false
+            if not v and PU._shiftLockWasActive then
+                local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+                if hum then pcall(function() hum.AutoRotate = true end) end
+                PU._shiftLockWasActive = false
+            end
+            if v then VD_Notify("Player Utility", "Shift Lock ON", 2) end
+        end })
+        puSection:AddToggle({ Title = "Hide Survivor Icon", Default = false, Callback = function(v)
+            PU.HideSurvivorIcon = v and true or false
+            if v then PU_ApplyHideSurvivorIcon() else PU_RestoreSurvivorIcon() end
+        end })
+        puSection:AddToggle({ Title = "Show Ping & FPS", Default = false, Callback = function(v)
+            PU.ShowPingFPS = v and true or false
+            if v then
+                PU_CreatePingFPS()
+                PU._FPS.frames = 0; PU._FPS.last = tick()
+                VD_Notify("Player Utility", "Ping & FPS ON", 2)
+            elseif PU._pingGui then
+                pcall(function() PU._pingGui:Destroy() end)
+                PU._pingGui = nil
+            end
+        end })
+        puSection:AddToggle({ Title = "Hide Name", Default = false, Callback = function(v)
+            PU_SetHideName(v); if v then VD_Notify("Player Utility", "Hide Name ON", 2) end
+        end })
+        puSection:AddToggle({ Title = "Unlimited Zoom", Default = false, Callback = function(v)
+            PU.UnlimitedZoom = v and true or false
+            if not v then
+                pcall(function()
+                    LocalPlayer.CameraMaxZoomDistance = 128
+                    LocalPlayer.CameraMinZoomDistance = 0.5
+                end)
+            end
+        end })
+        puSection:AddToggle({ Title = "Noclip", Default = false, Callback = function(v)
+            PU.Noclip = v and true or false
+            if not v then PU_RestoreNoclip() end
+            if v then VD_Notify("Player Utility", "Noclip ON", 2) end
+        end })
+
+        --====================================================--
+        -- SPEED BOOST
+        --====================================================--
+        local sbSection = MakeSection(MiscTab, "Speed Boost")
+        sbSection:AddToggle({ Title = "Enable Speed Boost", Content = "Auto-apply WalkSpeed, disabled saat stun/parry/downed",
+            Default = false, Keybind = true,
+            Callback = function(v)
+                if W.SpeedBoost_SetEnabled then W.SpeedBoost_SetEnabled(v) end
+                if v then VD_Notify("Speed Boost", "Enabled", 2)
+                else VD_Notify("Speed Boost", "Disabled", 2) end
+            end })
+        sbSection:AddSlider({ Title = "Speed Value", Min = 16, Max = 100, Default = 30, Increment = 1,
+            Callback = function(v) if W.SpeedBoost_SetValue then W.SpeedBoost_SetValue(v) end end })
+
+        --====================================================--
+        -- CURSOR FEATURE
+        --====================================================--
+        local cursorSection = MakeSection(MiscTab, "Cursor Feature")
+        cursorSection:AddParagraph({ Title = "Cursor Unlock", Content = "Unlock cursor & disable auto-rotate. Hotkey: Left/Right Alt" })
+        cursorSection:AddToggle({ Title = "Enable Cursor Unlock", Content = "Show cursor & disable camera auto-rotate (ALT toggle)",
+            Default = false, Keybind = true,
+            Callback = function(v)
+                if W.Cursor_SetEnabled then W.Cursor_SetEnabled(v) end
+                if v then VD_Notify("Cursor Unlock", "Enabled", 2)
+                else VD_Notify("Cursor Unlock", "Disabled", 2) end
+            end })
+        cursorSection:AddButton({ Title = "Toggle Cursor Now", Content = "Quick toggle without unchecking",
+            Callback = function()
+                if W.Cursor_SetEnabled then W.Cursor_SetEnabled(not VD.CursorEnabled) end
+                VD_Notify("Cursor Unlock", VD.CursorEnabled and "ON" or "OFF", 2)
+            end })
+
+        --====================================================--
+        -- JERK OFF
+        --====================================================--
+        local jerkSection = MakeSection(MiscTab, "Jerk Off")
+        jerkSection:AddParagraph({ Title = "Jerk Off Tool", Content = "Tool dengan animasi & tooltip meme. Equip buat mulai." })
+        jerkSection:AddToggle({ Title = "Enable Jerk Off Tool", Content = "Auto-spawn tool Jerk Off ke Backpack",
+            Default = false, Keybind = true,
+            Callback = function(v)
+                W.JerkOff_SetEnabled(v)
+                if v then VD_Notify("Jerk Off", "Tool spawned!", 2)
+                else VD_Notify("Jerk Off", "Tool removed", 2) end
+            end })
+
+        --====================================================--
+        -- EMOTE
+        --====================================================--
+        local emoteSection = MakeSection(MiscTab, "Emote")
+        emoteSection:AddToggle({ Title = "Enable Emote", Default = false, Callback = function(v)
+            W.EmoteSystem_SetEnabled(v)
+            if v then VD_Notify("Emote", "Playing: " .. W.EmoteSystem.SelectedEmote, 2)
+            else VD_Notify("Emote", "Stopped", 2) end
+        end })
+        emoteSection:AddDropdown({ Title = "Select Emote", Options = W.EmoteSystem.Options, Default = "Friday Night", Multi = false,
+            Callback = function(v)
+                local val = type(v) == "table" and v[1] or v
+                W.EmoteSystem_SelectEmote(val or "Friday Night")
+                VD_Notify("Emote", "Selected: " .. W.EmoteSystem.SelectedEmote, 2)
+            end })
+        emoteSection:AddButton({ Title = "Stop Emote", Callback = function()
+            W.EmoteSystem_Stop(); W.EmoteSystem.Enabled = false; VD_Notify("Emote", "Stopped", 2)
+        end })
+        emoteSection:AddButton({ Title = "Replay Current Emote", Callback = function()
+            if not W.EmoteSystem.Enabled then VD_Notify("Emote", "Enable dulu!", 2); return end
+            W.EmoteSystem_Play()
+            VD_Notify("Emote", "Replaying: " .. W.EmoteSystem.SelectedEmote, 2)
+        end })--========================================================--
+-- FAZZHUB v0.3.8
+-- PART 19E-2/19 : MISC TAB (BAGIAN 2) - FINAL MISC
+--========================================================--
+
+        --====================================================--
+        -- FAKE AVATAR
+        --====================================================--
+        local FakeAvatarSection = MakeSection(MiscTab, "Fake Avatar")
+        local FakeAvatarEnabled = false
+        local SelectedFakeAva = LocalPlayer.UserId
+        local function LoadAppearanceIntoChar(appearance, character, head)
+            local items = appearance:GetChildren()
+            local function applyMesh(obj)
+                if obj:IsA("CharacterMesh") or obj:IsA("BodyColors") or obj:IsA("Shirt") or obj:IsA("Pants") then
+                    local existing = character:FindFirstChild(obj.Name)
+                    if existing and existing.ClassName == obj.ClassName then existing:Destroy() end
+                    obj:Clone().Parent = character
+                end
+            end
+            for _, item in pairs(items) do
+                if item:IsA("Folder") or item:IsA("Model") then
+                    for _, subItem in pairs(item:GetChildren()) do applyMesh(subItem) end
+                else applyMesh(item) end
+            end
+            for _, item in pairs(items) do
+                if item:IsA("SpecialMesh") and head then
+                    local targetMesh = head:FindFirstChildOfClass("SpecialMesh") or Instance.new("SpecialMesh", head)
+                    targetMesh.MeshType = Enum.MeshType.FileMesh
+                    targetMesh.MeshId = item.MeshId
+                    targetMesh.TextureId = item.TextureId
+                elseif item:IsA("Decal") and item.Name == "face" and head then
+                    if head:FindFirstChild("face") then head.face:Destroy() end
+                    item:Clone().Parent = head
+                end
+            end
+            for _, item in pairs(items) do
+                if item:IsA("Accessory") then
+                    local clone = item:Clone()
+                    local handle = clone:FindFirstChild("Handle")
+                    if handle then
+                        local att = handle:FindFirstChildOfClass("Attachment")
+                        if att then
+                            local targetAtt = character:FindFirstChild(att.Name, true)
+                            if targetAtt then
+                                local weld = Instance.new("Weld")
+                                weld.Part0 = handle; weld.Part1 = targetAtt.Parent
+                                weld.C0 = att.CFrame; weld.C1 = targetAtt.CFrame
+                                weld.Parent = handle
+                            end
+                        end
+                        handle.CanCollide = false; handle.Massless = true; clone.Parent = character
+                    end
+                end
+            end
+        end
+        local function ApplyFakeAvatar()
+            local character = LocalPlayer.Character
+            if not character or not SelectedFakeAva then return end
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            if not humanoid then return end
+            task.spawn(function()
+                local success, appearance = pcall(function()
+                    return game:GetService("Players"):GetCharacterAppearanceAsync(SelectedFakeAva)
+                end)
+                if not success or not appearance then warn("[FakeAvatar] Gagal load data avatar!"); return end
+                for _, obj in pairs(character:GetChildren()) do
+                    if obj:IsA("Accessory") or obj:IsA("Shirt") or obj:IsA("Pants")
+                    or obj:IsA("BodyColors") or obj:IsA("CharacterMesh") or obj:IsA("ShirtGraphic") then
+                        obj:Destroy()
+                    end
+                end
+                local head = character:FindFirstChild("Head")
+                if head then
+                    for _, hObj in pairs(head:GetChildren()) do
+                        if hObj:IsA("SpecialMesh") or hObj:IsA("Decal") then hObj:Destroy() end
+                    end
+                    local m = Instance.new("SpecialMesh", head)
+                    m.MeshType = Enum.MeshType.Head; m.Scale = Vector3.new(1, 1, 1)
+                end
+                local scaleDefaults = { BodyDepthScale = 1, BodyHeightScale = 1, BodyWidthScale = 1, HeadScale = 1, BodyTypeScale = 0, BodyProportionScale = 0 }
+                for scaleName, val in pairs(scaleDefaults) do
+                    local s = humanoid:FindFirstChild(scaleName); if s then s.Value = val end
+                end
+                task.wait(0.1)
+                LoadAppearanceIntoChar(appearance, character, head)
+                pcall(function()
+                    local info = game:GetService("Players"):GetCharacterAppearanceInfoAsync(SelectedFakeAva)
+                    if head and info.assets then
+                        for _, asset in pairs(info.assets) do
+                            if asset.assetType.name == "Face" then
+                                if head:FindFirstChild("face") then head.face:Destroy() end
+                                local f = Instance.new("Decal", head)
+                                f.Name = "face"; f.Texture = "rbxassetid://" .. asset.id
+                                break
+                            end
+                        end
+                    end
+                end)
+            end)
+        end
+        FakeAvatarSection:AddDropdown({ Title = "Fake Avatar Preset",
+            Options = { "Self Avatar", "Random 1", "Random 2", "Random 3", "Random 4", "Random 5", "Random 6", "Random 7" },
+            Default = "Self Avatar",
+            Callback = function(option)
+                local ids = {
+                    ["Self Avatar"] = LocalPlayer.UserId, ["Random 1"] = 2888298851, ["Random 2"] = 10074747755,
+                    ["Random 3"] = 5209567453, ["Random 4"] = 8991982843, ["Random 5"] = 5796319029, ["Random 6"] = 9744452117,
+                    ["Random 7"] = 8476755006
+                }
+                SelectedFakeAva = ids[option] or LocalPlayer.UserId
+                if FakeAvatarEnabled then ApplyFakeAvatar() end
+            end })
+        FakeAvatarSection:AddToggle({ Title = "Enable Fake Avatar", Default = false, Keybind = true, Callback = function(state)
+            FakeAvatarEnabled = state
+            if state then ApplyFakeAvatar() end
+        end })
+        local UsernameInput = ""
+        FakeAvatarSection:AddInput({ Title = "Fake Avatar Via Username", Placeholder = "username (tanpa @)",
+            Callback = function(input) UsernameInput = (input or ""):gsub("^@", "") end })
+        FakeAvatarSection:AddButton({ Title = "Apply From Username", Callback = function()
+            if UsernameInput == "" then ForceNotify("Fake Avatar", "Masukkan username dulu!", 2); return end
+            local ok, userId = pcall(function() return game:GetService("Players"):GetUserIdFromNameAsync(UsernameInput) end)
+            if not ok or not userId then ForceNotify("Fake Avatar", "Username tidak ditemukan: " .. UsernameInput, 2); return end
+            SelectedFakeAva = userId
+            ApplyFakeAvatar()
+            ForceNotify("Fake Avatar", "Applied: @" .. UsernameInput, 2)
+        end })
+        LocalPlayer.CharacterAdded:Connect(function()
+            if FakeAvatarEnabled then task.wait(1); ApplyFakeAvatar() end
+        end)
+
+        --====================================================--
+        -- FAKE KORLESS
+        --====================================================--
+        local KorlessSection = MakeSection(MiscTab, "Fake Korless")
+        local KorlessMorph = { Enabled = false, Connection = nil }
+        local function ApplyKorless()
+            local plr = LocalPlayer
+            local function Morph()
+                repeat task.wait() until plr.Character
+                    and plr.Character:FindFirstChild("HumanoidRootPart")
+                    and plr.Character:FindFirstChild("Right Leg")
+                task.wait(0.1)
+                local char = plr.Character
+                pcall(function()
+                    char.Head.Transparency = 1
+                    local face = char.Head:FindFirstChild("face")
+                    if face then face:Destroy() end
+                    char["Right Leg"].Transparency = 1
+                    local old = char:FindFirstChild("KorlessHead")
+                    if old then old:Destroy() end
+                    local mesh = Instance.new("MeshPart")
+                    mesh.Name = "KorlessHead"
+                    mesh.Size = Vector3.new(1.5, 1.5, 1.5)
+                    mesh.CanCollide = false
+                    mesh.MeshId = "rbxassetid://902942096"
+                    mesh.TextureID = "rbxassetid://902843398"
+                    mesh.CFrame = char["Right Leg"].CFrame * CFrame.new(0, 0.5, 0)
+                    mesh.Parent = char
+                    local weld = Instance.new("WeldConstraint")
+                    weld.Part0 = char["Right Leg"]
+                    weld.Part1 = mesh
+                    weld.Parent = mesh
+                end)
+            end
+            Morph()
+            if KorlessMorph.Connection then KorlessMorph.Connection:Disconnect() end
+            KorlessMorph.Connection = plr.CharacterAdded:Connect(function()
+                task.wait(1)
+                Morph()
+            end)
+        end
+        local function RemoveKorless()
+            local char = LocalPlayer.Character
+            if char then
+                local mesh = char:FindFirstChild("KorlessHead")
+                if mesh then mesh:Destroy() end
+                if char:FindFirstChild("Head") then char.Head.Transparency = 0 end
+                if char:FindFirstChild("Right Leg") then char["Right Leg"].Transparency = 0 end
+            end
+            if KorlessMorph.Connection then
+                KorlessMorph.Connection:Disconnect()
+                KorlessMorph.Connection = nil
+            end
+        end
+        KorlessSection:AddToggle({
+            Title = "Korless Morph",
+            Content = "Ganti kepala jadi Korless (mesh ditaruh di kaki kanan)",
+            Default = false,
+            Callback = function(v)
+                KorlessMorph.Enabled = v
+                if v then ApplyKorless(); VD_Notify("Korless Morph", "Enabled", 2)
+                else RemoveKorless(); VD_Notify("Korless Morph", "Disabled", 2) end
+            end
+        })
+
+        --====================================================--
+        -- HEADER TITLE
+        --====================================================--
+        local HeaderSection = MakeSection(MiscTab, "Header Title")
+        local HeaderEnabled = false
+        local HeaderText = "FAZZHUB"
+        local HeaderState = { Billboard = nil, TextLabel = nil, ShineLabel = nil, ShineGradient = nil, SizeConnection = nil }
+        local BASE_WIDTH = isMobile and 90 or 140
+        local BASE_HEIGHT = isMobile and 20 or 32
+        local BASE_DISTANCE = 12
+        local MIN_SCALE = 0.6
+        local MAX_SCALE = isMobile and 1.1 or 1.4
+        local function Header_Create()
+            if HeaderState.Billboard then HeaderState.Billboard:Destroy() end
+            local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+            if not character:FindFirstChild("Head") then return end
+            local billboard = Instance.new("BillboardGui")
+            billboard.Name = "FazzHubHeaderBillboard"
+            billboard.Adornee = character.Head
+            billboard.Size = UDim2.new(0, BASE_WIDTH, 0, BASE_HEIGHT)
+            billboard.StudsOffset = Vector3.new(0, 1.5, 0)
+            billboard.AlwaysOnTop = true; billboard.LightInfluence = 0
+            billboard.Parent = character
+            HeaderState.Billboard = billboard
+            local textLabel = Instance.new("TextLabel")
+            textLabel.Name = "BaseText"; textLabel.Size = UDim2.new(1, 0, 1, 0)
+            textLabel.BackgroundTransparency = 1; textLabel.TextScaled = true
+            textLabel.Font = Enum.Font.GothamBold; textLabel.TextStrokeTransparency = 0.5
+            textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+            textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+            textLabel.Text = HeaderText; textLabel.ZIndex = 1; textLabel.Parent = billboard
+            HeaderState.TextLabel = textLabel
+            local shineLabel = Instance.new("TextLabel")
+            shineLabel.Name = "ShineText"; shineLabel.Size = UDim2.new(1, 0, 1, 0)
+            shineLabel.BackgroundTransparency = 1; shineLabel.TextScaled = true
+            shineLabel.Font = Enum.Font.GothamBold; shineLabel.TextStrokeTransparency = 1
+            shineLabel.Text = HeaderText; shineLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+            shineLabel.ZIndex = 2; shineLabel.Parent = billboard
+            HeaderState.ShineLabel = shineLabel
+            local shineGradient = Instance.new("UIGradient")
+            shineGradient.Name = "ShineGradient"; shineGradient.Rotation = 20
+            shineGradient.Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0.00, 1), NumberSequenceKeypoint.new(0.30, 1),
+                NumberSequenceKeypoint.new(0.42, 0), NumberSequenceKeypoint.new(0.58, 0),
+                NumberSequenceKeypoint.new(0.70, 1), NumberSequenceKeypoint.new(1.00, 1),
+            })
+            shineGradient.Offset = Vector2.new(-1, 0); shineGradient.Parent = shineLabel
+            HeaderState.ShineGradient = shineGradient
+            if HeaderState.SizeConnection then HeaderState.SizeConnection:Disconnect() end
+            HeaderState.SizeConnection = RunService.RenderStepped:Connect(function()
+                if not billboard or not billboard.Parent then HeaderState.SizeConnection:Disconnect(); return end
+                local head = character:FindFirstChild("Head"); if not head then return end
+                local dist = (Workspace.CurrentCamera.CFrame.Position - head.Position).Magnitude
+                local scaleFactor = math.clamp(BASE_DISTANCE / dist, MIN_SCALE, MAX_SCALE)
+                billboard.Size = UDim2.new(0, BASE_WIDTH * scaleFactor, 0, BASE_HEIGHT * scaleFactor)
+            end)
+            task.spawn(function()
+                while shineLabel and shineLabel.Parent and shineGradient and shineGradient.Parent do
+                    shineGradient.Offset = Vector2.new(-1, 0)
+                    local tween = TweenService:Create(shineGradient, TweenInfo.new(4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), { Offset = Vector2.new(1, 0) })
+                    tween:Play(); tween.Completed:Wait(); task.wait(2)
+                end
+            end)
+        end
+        local function Header_UpdateText(text)
+            HeaderText = text or "FAZZHUB"
+            if HeaderState.TextLabel then HeaderState.TextLabel.Text = HeaderText end
+            if HeaderState.ShineLabel then HeaderState.ShineLabel.Text = HeaderText end
+        end
+        local function Header_Toggle(enabled)
+            if enabled then Header_Create()
+            else
+                if HeaderState.SizeConnection then HeaderState.SizeConnection:Disconnect(); HeaderState.SizeConnection = nil end
+                if HeaderState.Billboard then HeaderState.Billboard:Destroy() end
+                HeaderState.Billboard = nil; HeaderState.TextLabel = nil
+                HeaderState.ShineLabel = nil; HeaderState.ShineGradient = nil
+            end
+        end
+        HeaderSection:AddInput({ Title = "Header Text", Default = "FAZZHUB", Placeholder = "Nama header lu...",
+            Callback = function(input) Header_UpdateText(input) end })
+        HeaderSection:AddToggle({ Title = "Enable Header Title", Default = false, Callback = function(v)
+            HeaderEnabled = v; Header_Toggle(v) end })
+        HeaderSection:AddColorPicker({ Title = "Header Color", Default = Color3.fromRGB(255, 255, 255), Save = false,
+            Callback = function(c)
+                if HeaderState.TextLabel then HeaderState.TextLabel.TextColor3 = c end
+                if HeaderState.ShineLabel then HeaderState.ShineLabel.TextColor3 = Color3.fromRGB(255, 255, 255) end
+            end })
+        LocalPlayer.CharacterAdded:Connect(function()
+            task.wait(1)
+            if HeaderEnabled then Header_Toggle(true) end
+        end)
+
+        --====================================================--
+        -- SPECTATOR COUNTER
+        --====================================================--
+        local SpecSection = MakeSection(MiscTab, "Spectator Counter")
+        local SpecEnabled = false
+        local SpecGui = nil
+        local SpecLabel = nil
+        local SpecThread = nil
+        local SpecExpanded = true
+        local function Spec_CreateUI()
+            if SpecGui then SpecGui:Destroy(); SpecGui = nil end
+            SpecGui = Instance.new("ScreenGui")
+            SpecGui.Name = "FazzHubSpectatorCounter"
+            SpecGui.ResetOnSpawn = false; SpecGui.IgnoreGuiInset = true
+            SpecGui.Parent = CoreGui
+            local mainFrame = Instance.new("Frame", SpecGui)
+            mainFrame.Name = "MainBox"
+            mainFrame.AnchorPoint = Vector2.new(0.5, 0)
+            mainFrame.Position = UDim2.new(0.5, 0, 0.42, 0)
+            mainFrame.Size = UDim2.new(0, 145, 0, 52)
+            mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+            mainFrame.BackgroundTransparency = 0.1
+            mainFrame.BorderSizePixel = 0; mainFrame.Active = true
+            Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 6)
+            local topBar = Instance.new("Frame", mainFrame)
+            topBar.Name = "TopBar"; topBar.Size = UDim2.new(1, 0, 0, 4)
+            topBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255); topBar.BorderSizePixel = 0
+            Instance.new("UICorner", topBar).CornerRadius = UDim.new(0, 6)
+            local header = Instance.new("Frame", mainFrame)
+            header.Name = "Header"; header.Size = UDim2.new(1, 0, 0, 18)
+            header.Position = UDim2.new(0, 0, 0, 4)
+            header.BackgroundTransparency = 1; header.Active = true
+            local title = Instance.new("TextLabel", header)
+            title.Name = "Title"; title.Size = UDim2.new(1, -20, 1, 0)
+            title.BackgroundTransparency = 1; title.Font = Enum.Font.GothamBold
+            title.Text = "Spectators"; title.TextColor3 = Color3.fromRGB(255, 255, 255)
+            title.TextSize = 10; title.TextXAlignment = Enum.TextXAlignment.Center
+            local minBtn = Instance.new("TextButton", header)
+            minBtn.Name = "MinBtn"; minBtn.Size = UDim2.new(0, 18, 0, 18)
+            minBtn.Position = UDim2.new(1, -19, 0, 0)
+            minBtn.BackgroundTransparency = 1; minBtn.Text = "−"
+            minBtn.TextColor3 = Color3.fromRGB(255, 255, 255); minBtn.Font = Enum.Font.GothamBold
+            minBtn.TextSize = 13; minBtn.AutoButtonColor = false
+            local divider = Instance.new("Frame", mainFrame)
+            divider.Name = "Divider"; divider.Size = UDim2.new(1, -12, 0, 1)
+            divider.Position = UDim2.new(0, 6, 0, 23)
+            divider.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            divider.BackgroundTransparency = 0.7; divider.BorderSizePixel = 0
+            local body = Instance.new("Frame", mainFrame)
+            body.Name = "Body"; body.Size = UDim2.new(1, 0, 1, -25)
+            body.Position = UDim2.new(0, 0, 0, 25); body.BackgroundTransparency = 1
+            body.ClipsDescendants = true
+            local bodyLayout = Instance.new("UIListLayout", body)
+            bodyLayout.FillDirection = Enum.FillDirection.Horizontal
+            bodyLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+            bodyLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+            bodyLayout.Padding = UDim.new(0, 5)
+            local eye = Instance.new("ImageLabel", body)
+            eye.Name = "EyeIcon"; eye.Size = UDim2.new(0, 13, 0, 13)
+            eye.BackgroundTransparency = 1; eye.Image = "rbxassetid://13321848320"
+            eye.ImageColor3 = Color3.fromRGB(255, 255, 255); eye.LayoutOrder = 1
+            SpecLabel = Instance.new("TextLabel", body)
+            SpecLabel.Name = "CountLabel"; SpecLabel.BackgroundTransparency = 1
+            SpecLabel.Font = Enum.Font.GothamMedium; SpecLabel.Text = "No spectators"
+            SpecLabel.TextColor3 = Color3.fromRGB(220, 220, 220); SpecLabel.TextSize = 10
+            SpecLabel.AutomaticSize = Enum.AutomaticSize.X; SpecLabel.LayoutOrder = 2
+            local function setExpanded(state)
+                SpecExpanded = state
+                if state then
+                    mainFrame.Size = UDim2.new(0, 145, 0, 52)
+                    divider.Visible = true; body.Visible = true; minBtn.Text = "−"
+                else
+                    mainFrame.Size = UDim2.new(0, 145, 0, 22)
+                    divider.Visible = false; body.Visible = false; minBtn.Text = "+"
+                end
+            end
+            minBtn.MouseButton1Click:Connect(function() setExpanded(not SpecExpanded) end)
+            setExpanded(true)
+            local dragging, dragStart, startPos = false, nil, nil
+            mainFrame.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    dragging = true; dragStart = input.Position; startPos = mainFrame.Position
+                end
+            end)
+            UserInputService.InputChanged:Connect(function(input)
+                if not dragging then return end
+                if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+                    local delta = input.Position - dragStart
+                    mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+                end
+            end)
+            UserInputService.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
+            end)
+        end
+        local function Spec_Update()
+            if not SpecEnabled or not SpecLabel then return end
+            local count = 0
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p.Team and p.Team.Name == "Spectator" then count = count + 1 end
+            end
+            if count == 0 then
+                SpecLabel.Text = "No spectators"; SpecLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+            else
+                SpecLabel.Text = count .. " spectators"; SpecLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+            end
+        end
+        SpecSection:AddToggle({ Title = "Enable Spectator Counter", Default = false, Callback = function(state)
+            SpecEnabled = state
+            if SpecThread then task.cancel(SpecThread); SpecThread = nil end
+            if state then
+                Spec_CreateUI(); Spec_Update()
+                SpecThread = task.spawn(function()
+                    while SpecEnabled do Spec_Update(); task.wait(1.2) end
+                end)
+            else
+                if SpecGui then SpecGui:Destroy(); SpecGui = nil; SpecLabel = nil end
             end
         end })--========================================================--
 -- FAZZHUB v0.3.8
