@@ -341,7 +341,6 @@ local function __FazzHub_Init_Main__()
             if Bombax.AutoNext and Bombax.IsPlaying and not Bombax.IsPaused
                 and snd.TimeLength > 0 and not snd.Looped then
                 if snd.TimePosition >= snd.TimeLength - 0.1 then
-                    -- Auto next random (gak ulang track yang sama)
                     local list = {}
                     for name, id in pairs(MUSIC_LIBRARY) do
                         if name ~= Bombax.CurrentTrack then
@@ -932,6 +931,273 @@ local function __FazzHub_Init_Main__()
         end
     end)--========================================================--
 -- FAZZHUB v0.3.7
+-- PART 6B/19 : AUTO PARRY V1 (BAGIAN 2)
+--========================================================--
+
+    local function ParryGetHitboxPart(char)
+        if not char then return nil end
+        return char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso") or char:FindFirstChild("HumanoidRootPart")
+    end
+
+    local function ParryCheckAndParry(killerChar)
+        if ParryIsOnCooldown() or ParryCooldown.WaitingForResult
+            or ParryCooldown.IsSilenced or not ParryIsEquippedDagger() then return end
+        local cc = ParryGetCharCache()
+        local myRoot = cc.UpperTorso or cc.Root
+        local killerPart = ParryGetHitboxPart(killerChar)
+        if not myRoot or not killerPart then return end
+        local dist = (myRoot.Position - killerPart.Position).Magnitude
+        if VD.PARRY_Aggressive then
+            local ping = math.clamp(LocalPlayer:GetNetworkPing(), 0, 0.3)
+            local killerRoot = killerChar:FindFirstChild("HumanoidRootPart") or killerPart
+            local killerVel = killerRoot.AssemblyLinearVelocity
+            local flatVel = Vector3.new(killerVel.X, 0, killerVel.Z)
+            local predictedPos = killerPart.Position + flatVel * ping
+            local predDist = (myRoot.Position - predictedPos).Magnitude
+            if predDist <= ((VD.PARRY_Distance or 10) + 2.5) then
+                if flatVel.Magnitude > 6 then
+                    local dir = myRoot.Position - killerPart.Position
+                    if dir.Magnitude > 0 and flatVel.Unit:Dot(dir.Unit) > 0.4 then ParryExecute(); return end
+                end
+            end
+        end
+        if dist <= (VD.PARRY_Distance or 10) then ParryExecute() end
+    end
+
+    local function ParryDestroyCircle()
+        if ParryState.CircleFolder then
+            pcall(function() if ParryState.CircleFolder.Parent then ParryState.CircleFolder:Destroy() end end)
+        end
+        ParryState.CircleFolder = nil
+        ParryState.CircleDashes = {}
+        ParryState.CircleRotCFs = {}
+        ParryState.CircleOffsets = {}
+        ParryState.CircleRadius = 0
+        ParryState.CircleBuiltForDagger = false
+        ParryState.CircleLastX = math.huge
+        ParryState.CircleLastY = math.huge
+        ParryState.CircleLastZ = math.huge
+        ParryState.CircleSpawnTime = 0
+    end
+    getgenv()._FazzHub_DestroyParryCircle = ParryDestroyCircle
+
+    local function ParryBuildCircle(radius)
+        ParryDestroyCircle()
+        local folder = Instance.new("Folder")
+        folder.Name = "FazzHubParryCircleDashes"
+        local dashCount = math.clamp(math.floor(radius * 6), 24, 120)
+        local slotLength = (2 * math.pi * radius) / dashCount
+        local dashLength = slotLength * 0.55
+        local dashThickness = 0.03
+        local dashes, rotCFs, offsets = table.create(dashCount), table.create(dashCount), table.create(dashCount)
+        for i = 1, dashCount do
+            local part = Instance.new("Part")
+            part.Name = "Dash" .. i
+            part.Anchored = true; part.CanCollide = false
+            part.CanTouch = false; part.CanQuery = false; part.CastShadow = false
+            part.Material = Enum.Material.Neon
+            part.Color = Color3.fromRGB(255, 255, 255)
+            part.Transparency = 1
+            part.Size = Vector3.new(dashThickness, dashThickness, dashLength)
+            part.Parent = folder
+            local angle = ((i - 1) / dashCount) * math.pi * 2
+            local cosA, sinA = math.cos(angle), math.sin(angle)
+            rotCFs[i] = CFrame.lookAt(Vector3.zero, Vector3.new(-sinA, 0, cosA))
+            offsets[i] = Vector3.new(cosA * radius, 0, sinA * radius)
+            dashes[i] = part
+        end
+        folder.Parent = Workspace
+        ParryState.CircleFolder = folder
+        ParryState.CircleDashes = dashes
+        ParryState.CircleRotCFs = rotCFs
+        ParryState.CircleOffsets = offsets
+        ParryState.CircleRadius = radius
+        ParryState.CircleBuiltForDagger = true
+        ParryState.CircleSpawnTime = tick()
+    end
+
+    local function ParryUpdateCircle(myRoot)
+        if not ParryState.CircleFolder or not ParryState.CircleFolder.Parent then return end
+        local dashes = ParryState.CircleDashes
+        local dashCount = #dashes
+        if dashCount == 0 then return end
+        local center = myRoot.Position - Vector3.new(0, (myRoot.Size.Y * 0.5) + 1.0, 0)
+        local elapsed = tick() - (ParryState.CircleSpawnTime or 0)
+        local spawnT = math.clamp(elapsed / (ParryState.CircleSpawnDuration or 0.55), 0, 1)
+        local eased = 1 - (1 - spawnT)^3
+        local scaleMult = eased
+        if spawnT < 0.7 and spawnT > 0 then
+            local bt = spawnT / 0.7
+            scaleMult = eased + math.sin(bt * math.pi) * 0.1
+        end
+        local spinRot = (1 - eased) * math.pi * 2
+        local spawnAlpha = 1 - eased
+        local busy = ParryIsBusy()
+        local onCD = ParryCooldown.OnCooldown
+        local tc
+        if busy then tc = Color3.fromRGB(255, 20, 20)
+        elseif onCD then tc = Color3.fromRGB(255, 140, 0)
+        else tc = Color3.fromRGB(255, 255, 255) end
+        local targetT = 0
+        if onCD then
+            local period = 0.55
+            local phase = (os.clock() % period) / period
+            local pulse = (math.cos(phase * math.pi * 2) + 1) * 0.5
+            targetT = (1 - pulse) * 0.85
+        end
+        local finalT = math.max(targetT, spawnAlpha)
+        local dx = math.abs(center.X - ParryState.CircleLastX)
+        local dy = math.abs(center.Y - ParryState.CircleLastY)
+        local dz = math.abs(center.Z - ParryState.CircleLastZ)
+        if dx < 0.01 and dy < 0.01 and dz < 0.01 and spawnT >= 1 then return end
+        ParryState.CircleLastX = center.X
+        ParryState.CircleLastY = center.Y
+        ParryState.CircleLastZ = center.Z
+        local rotCFs = ParryState.CircleRotCFs
+        local offsets = ParryState.CircleOffsets
+        local rotCF = CFrame.Angles(0, spinRot, 0)
+        for i = 1, dashCount do
+            local dash = dashes[i]
+            if dash and dash.Parent then
+                local scaledOff = offsets[i] * scaleMult
+                local rotatedOff = rotCF:VectorToWorldSpace(scaledOff)
+                local worldPos = Vector3.new(center.X + rotatedOff.X, center.Y, center.Z + rotatedOff.Z)
+                dash.CFrame = (rotCF * rotCFs[i]) + worldPos
+                dash.Color = tc
+                dash.Transparency = finalT
+            end
+        end
+    end
+
+    local function ParryGetAnimType(track)
+        if not track or not track.Animation then return nil end
+        local animId = track.Animation.AnimationId or ""
+        local numId = animId:match("%d+") or ""
+        local name = string.lower(track.Animation.Name or "")
+        local v = KillerAttackAnims[animId]
+        if v then return v end
+        if numId ~= "" then v = KillerAttackAnims[numId]; if v then return v end end
+        if string.find(name, "lunge", 1, true) or string.find(name, "charge", 1, true) then return "lungehold" end
+        if string.find(name, "attack", 1, true) or string.find(name, "slash", 1, true)
+            or string.find(name, "swing", 1, true) or string.find(name, "stab", 1, true)
+            or string.find(name, "melee", 1, true) then return "attack" end
+        return nil
+    end
+
+    local function ParryHookAnimatorOnChar(plr, char)
+        if not char then return end
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if not hum then return end
+        local anim = hum:FindFirstChildOfClass("Animator") or hum:WaitForChild("Animator", 3)
+        if not anim then return end
+        anim.AnimationPlayed:Connect(function(track)
+            if not VD.PARRY_Enabled then return end
+            if not ParryIsEquippedDagger() then return end
+            local at = ParryGetAnimType(track)
+            if at then
+                ParryState.ActiveAttackers[plr] = { char = char, track = track, type = at, registeredAt = os.clock() }
+            end
+        end)
+    end
+
+    local function ParryHookKillerPlayer(plr)
+        if plr == LocalPlayer then return end
+        if plr.Character then ParryHookAnimatorOnChar(plr, plr.Character) end
+        plr.CharacterAdded:Connect(function(char) task.wait(0.5); ParryHookAnimatorOnChar(plr, char) end)
+    end
+    for _, p in ipairs(Players:GetPlayers()) do ParryHookKillerPlayer(p) end
+    Players.PlayerAdded:Connect(ParryHookKillerPlayer)
+
+    local parryLastPoll = 0
+    local function ParryPollAttacks()
+        if not VD.PARRY_Enabled or not ParryIsEquippedDagger() then return end
+        local now = os.clock()
+        if now - parryLastPoll < 0.15 then return end
+        parryLastPoll = now
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= LocalPlayer then
+                local char = plr.Character
+                if char then
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    if hum then
+                        for _, track in ipairs(hum:GetPlayingAnimationTracks()) do
+                            local at = ParryGetAnimType(track)
+                            if at then
+                                local ex = ParryState.ActiveAttackers[plr]
+                                if not ex or ex.track ~= track then
+                                    ParryState.ActiveAttackers[plr] = { char = char, track = track, type = at, registeredAt = now }
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    local parryLastCleanup = 0
+    local function ParryCleanupAttackers()
+        local now = os.clock()
+        if now - parryLastCleanup < 1.0 then return end
+        parryLastCleanup = now
+        for plr, data in pairs(ParryState.ActiveAttackers) do
+            if not plr or not plr.Parent or not data.track or not data.track.IsPlaying then
+                ParryState.ActiveAttackers[plr] = nil
+            end
+        end
+    end
+
+    local function ParryUpdateLogic()
+        if not VD.PARRY_Enabled then return end
+        if not ParryIsEquippedDagger() then ParryState.ActiveAttackers = {}; return end
+        if ParryCooldown.WaitingForResult then
+            if os.clock() - ParryCooldown.WaitingStart > ParryCooldown.WaitTimeout then
+                if ParryCooldown.ManualDetect then
+                    ParryCooldown.WaitingForResult = false
+                    ParryCooldown.JustFired = false
+                    ParryCooldown.ManualDetect = false
+                else
+                    ParryStartCooldown(ParryCooldown.FallbackCooldown)
+                end
+            end
+        end
+        if ParryIsOnCooldown() or ParryCooldown.WaitingForResult then return end
+        ParryPollAttacks()
+        ParryCleanupAttackers()
+        for plr, data in pairs(ParryState.ActiveAttackers) do
+            if plr and plr.Parent and data.track and data.track.IsPlaying then
+                local shouldCheck = false
+                if data.type == "attack" then
+                    if data.track.TimePosition < 0.35 then shouldCheck = true end
+                elseif data.type == "lungehold" then
+                    shouldCheck = true
+                end
+                if shouldCheck then
+                    ParryCheckAndParry(data.char)
+                    if ParryCooldown.WaitingForResult then break end
+                end
+            else
+                ParryState.ActiveAttackers[plr] = nil
+            end
+        end
+    end
+
+    local function ParryUpdateCircleLogic()
+        local char = LocalPlayer.Character
+        local myRoot = char and char:FindFirstChild("HumanoidRootPart")
+        if VD.PARRY_ShowCircle and VD.PARRY_Enabled and ParryIsEquippedDagger() and myRoot then
+            if not ParryState.CircleFolder or ParryState.CircleRadius ~= (VD.PARRY_Distance or 10) or not ParryState.CircleFolder.Parent then
+                ParryBuildCircle(VD.PARRY_Distance or 10)
+            end
+            ParryUpdateCircle(myRoot)
+        else
+            if ParryState.CircleFolder then ParryDestroyCircle() end
+        end
+    end
+
+    W.ParryState = ParryState
+    W.ParryCooldown = ParryCooldown--========================================================--
+-- FAZZHUB v0.3.7
 -- PART 6A/19 : AUTO PARRY V1 (BAGIAN 1)
 --========================================================--
 
@@ -1202,273 +1468,6 @@ local function __FazzHub_Init_Main__()
     LocalPlayer.ChildAdded:Connect(function(c)
         if c:IsA("PlayerGui") then ParryAttachPlayerGui(c) end
     end)--========================================================--
--- FAZZHUB v0.3.7
--- PART 6B/19 : AUTO PARRY V1 (BAGIAN 2)
---========================================================--
-
-    local function ParryGetHitboxPart(char)
-        if not char then return nil end
-        return char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso") or char:FindFirstChild("HumanoidRootPart")
-    end
-
-    local function ParryCheckAndParry(killerChar)
-        if ParryIsOnCooldown() or ParryCooldown.WaitingForResult
-            or ParryCooldown.IsSilenced or not ParryIsEquippedDagger() then return end
-        local cc = ParryGetCharCache()
-        local myRoot = cc.UpperTorso or cc.Root
-        local killerPart = ParryGetHitboxPart(killerChar)
-        if not myRoot or not killerPart then return end
-        local dist = (myRoot.Position - killerPart.Position).Magnitude
-        if VD.PARRY_Aggressive then
-            local ping = math.clamp(LocalPlayer:GetNetworkPing(), 0, 0.3)
-            local killerRoot = killerChar:FindFirstChild("HumanoidRootPart") or killerPart
-            local killerVel = killerRoot.AssemblyLinearVelocity
-            local flatVel = Vector3.new(killerVel.X, 0, killerVel.Z)
-            local predictedPos = killerPart.Position + flatVel * ping
-            local predDist = (myRoot.Position - predictedPos).Magnitude
-            if predDist <= ((VD.PARRY_Distance or 10) + 2.5) then
-                if flatVel.Magnitude > 6 then
-                    local dir = myRoot.Position - killerPart.Position
-                    if dir.Magnitude > 0 and flatVel.Unit:Dot(dir.Unit) > 0.4 then ParryExecute(); return end
-                end
-            end
-        end
-        if dist <= (VD.PARRY_Distance or 10) then ParryExecute() end
-    end
-
-    local function ParryDestroyCircle()
-        if ParryState.CircleFolder then
-            pcall(function() if ParryState.CircleFolder.Parent then ParryState.CircleFolder:Destroy() end end)
-        end
-        ParryState.CircleFolder = nil
-        ParryState.CircleDashes = {}
-        ParryState.CircleRotCFs = {}
-        ParryState.CircleOffsets = {}
-        ParryState.CircleRadius = 0
-        ParryState.CircleBuiltForDagger = false
-        ParryState.CircleLastX = math.huge
-        ParryState.CircleLastY = math.huge
-        ParryState.CircleLastZ = math.huge
-        ParryState.CircleSpawnTime = 0
-    end
-    getgenv()._FazzHub_DestroyParryCircle = ParryDestroyCircle
-
-    local function ParryBuildCircle(radius)
-        ParryDestroyCircle()
-        local folder = Instance.new("Folder")
-        folder.Name = "FazzHubParryCircleDashes"
-        local dashCount = math.clamp(math.floor(radius * 6), 24, 120)
-        local slotLength = (2 * math.pi * radius) / dashCount
-        local dashLength = slotLength * 0.55
-        local dashThickness = 0.03
-        local dashes, rotCFs, offsets = table.create(dashCount), table.create(dashCount), table.create(dashCount)
-        for i = 1, dashCount do
-            local part = Instance.new("Part")
-            part.Name = "Dash" .. i
-            part.Anchored = true; part.CanCollide = false
-            part.CanTouch = false; part.CanQuery = false; part.CastShadow = false
-            part.Material = Enum.Material.Neon
-            part.Color = Color3.fromRGB(255, 255, 255)
-            part.Transparency = 1
-            part.Size = Vector3.new(dashThickness, dashThickness, dashLength)
-            part.Parent = folder
-            local angle = ((i - 1) / dashCount) * math.pi * 2
-            local cosA, sinA = math.cos(angle), math.sin(angle)
-            rotCFs[i] = CFrame.lookAt(Vector3.zero, Vector3.new(-sinA, 0, cosA))
-            offsets[i] = Vector3.new(cosA * radius, 0, sinA * radius)
-            dashes[i] = part
-        end
-        folder.Parent = Workspace
-        ParryState.CircleFolder = folder
-        ParryState.CircleDashes = dashes
-        ParryState.CircleRotCFs = rotCFs
-        ParryState.CircleOffsets = offsets
-        ParryState.CircleRadius = radius
-        ParryState.CircleBuiltForDagger = true
-        ParryState.CircleSpawnTime = tick()
-    end
-
-    local function ParryUpdateCircle(myRoot)
-        if not ParryState.CircleFolder or not ParryState.CircleFolder.Parent then return end
-        local dashes = ParryState.CircleDashes
-        local dashCount = #dashes
-        if dashCount == 0 then return end
-        local center = myRoot.Position - Vector3.new(0, (myRoot.Size.Y * 0.5) + 1.0, 0)
-        local elapsed = tick() - (ParryState.CircleSpawnTime or 0)
-        local spawnT = math.clamp(elapsed / (ParryState.CircleSpawnDuration or 0.55), 0, 1)
-        local eased = 1 - (1 - spawnT)^3
-        local scaleMult = eased
-        if spawnT < 0.7 and spawnT > 0 then
-            local bt = spawnT / 0.7
-            scaleMult = eased + math.sin(bt * math.pi) * 0.1
-        end
-        local spinRot = (1 - eased) * math.pi * 2
-        local spawnAlpha = 1 - eased
-        local busy = ParryIsBusy()
-        local onCD = ParryCooldown.OnCooldown
-        local tc
-        if busy then tc = Color3.fromRGB(255, 20, 20)
-        elseif onCD then tc = Color3.fromRGB(255, 140, 0)
-        else tc = Color3.fromRGB(255, 255, 255) end
-        local targetT = 0
-        if onCD then
-            local period = 0.55
-            local phase = (os.clock() % period) / period
-            local pulse = (math.cos(phase * math.pi * 2) + 1) * 0.5
-            targetT = (1 - pulse) * 0.85
-        end
-        local finalT = math.max(targetT, spawnAlpha)
-        local dx = math.abs(center.X - ParryState.CircleLastX)
-        local dy = math.abs(center.Y - ParryState.CircleLastY)
-        local dz = math.abs(center.Z - ParryState.CircleLastZ)
-        if dx < 0.01 and dy < 0.01 and dz < 0.01 and spawnT >= 1 then return end
-        ParryState.CircleLastX = center.X
-        ParryState.CircleLastY = center.Y
-        ParryState.CircleLastZ = center.Z
-        local rotCFs = ParryState.CircleRotCFs
-        local offsets = ParryState.CircleOffsets
-        local rotCF = CFrame.Angles(0, spinRot, 0)
-        for i = 1, dashCount do
-            local dash = dashes[i]
-            if dash and dash.Parent then
-                local scaledOff = offsets[i] * scaleMult
-                local rotatedOff = rotCF:VectorToWorldSpace(scaledOff)
-                local worldPos = Vector3.new(center.X + rotatedOff.X, center.Y, center.Z + rotatedOff.Z)
-                dash.CFrame = (rotCF * rotCFs[i]) + worldPos
-                dash.Color = tc
-                dash.Transparency = finalT
-            end
-        end
-    end
-
-    local function ParryGetAnimType(track)
-        if not track or not track.Animation then return nil end
-        local animId = track.Animation.AnimationId or ""
-        local numId = animId:match("%d+") or ""
-        local name = string.lower(track.Animation.Name or "")
-        local v = KillerAttackAnims[animId]
-        if v then return v end
-        if numId ~= "" then v = KillerAttackAnims[numId]; if v then return v end end
-        if string.find(name, "lunge", 1, true) or string.find(name, "charge", 1, true) then return "lungehold" end
-        if string.find(name, "attack", 1, true) or string.find(name, "slash", 1, true)
-            or string.find(name, "swing", 1, true) or string.find(name, "stab", 1, true)
-            or string.find(name, "melee", 1, true) then return "attack" end
-        return nil
-    end
-
-    local function ParryHookAnimatorOnChar(plr, char)
-        if not char then return end
-        local hum = char:FindFirstChildOfClass("Humanoid")
-        if not hum then return end
-        local anim = hum:FindFirstChildOfClass("Animator") or hum:WaitForChild("Animator", 3)
-        if not anim then return end
-        anim.AnimationPlayed:Connect(function(track)
-            if not VD.PARRY_Enabled then return end
-            if not ParryIsEquippedDagger() then return end
-            local at = ParryGetAnimType(track)
-            if at then
-                ParryState.ActiveAttackers[plr] = { char = char, track = track, type = at, registeredAt = os.clock() }
-            end
-        end)
-    end
-
-    local function ParryHookKillerPlayer(plr)
-        if plr == LocalPlayer then return end
-        if plr.Character then ParryHookAnimatorOnChar(plr, plr.Character) end
-        plr.CharacterAdded:Connect(function(char) task.wait(0.5); ParryHookAnimatorOnChar(plr, char) end)
-    end
-    for _, p in ipairs(Players:GetPlayers()) do ParryHookKillerPlayer(p) end
-    Players.PlayerAdded:Connect(ParryHookKillerPlayer)
-
-    local parryLastPoll = 0
-    local function ParryPollAttacks()
-        if not VD.PARRY_Enabled or not ParryIsEquippedDagger() then return end
-        local now = os.clock()
-        if now - parryLastPoll < 0.15 then return end
-        parryLastPoll = now
-        for _, plr in ipairs(Players:GetPlayers()) do
-            if plr ~= LocalPlayer then
-                local char = plr.Character
-                if char then
-                    local hum = char:FindFirstChildOfClass("Humanoid")
-                    if hum then
-                        for _, track in ipairs(hum:GetPlayingAnimationTracks()) do
-                            local at = ParryGetAnimType(track)
-                            if at then
-                                local ex = ParryState.ActiveAttackers[plr]
-                                if not ex or ex.track ~= track then
-                                    ParryState.ActiveAttackers[plr] = { char = char, track = track, type = at, registeredAt = now }
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
-
-    local parryLastCleanup = 0
-    local function ParryCleanupAttackers()
-        local now = os.clock()
-        if now - parryLastCleanup < 1.0 then return end
-        parryLastCleanup = now
-        for plr, data in pairs(ParryState.ActiveAttackers) do
-            if not plr or not plr.Parent or not data.track or not data.track.IsPlaying then
-                ParryState.ActiveAttackers[plr] = nil
-            end
-        end
-    end
-
-    local function ParryUpdateLogic()
-        if not VD.PARRY_Enabled then return end
-        if not ParryIsEquippedDagger() then ParryState.ActiveAttackers = {}; return end
-        if ParryCooldown.WaitingForResult then
-            if os.clock() - ParryCooldown.WaitingStart > ParryCooldown.WaitTimeout then
-                if ParryCooldown.ManualDetect then
-                    ParryCooldown.WaitingForResult = false
-                    ParryCooldown.JustFired = false
-                    ParryCooldown.ManualDetect = false
-                else
-                    ParryStartCooldown(ParryCooldown.FallbackCooldown)
-                end
-            end
-        end
-        if ParryIsOnCooldown() or ParryCooldown.WaitingForResult then return end
-        ParryPollAttacks()
-        ParryCleanupAttackers()
-        for plr, data in pairs(ParryState.ActiveAttackers) do
-            if plr and plr.Parent and data.track and data.track.IsPlaying then
-                local shouldCheck = false
-                if data.type == "attack" then
-                    if data.track.TimePosition < 0.35 then shouldCheck = true end
-                elseif data.type == "lungehold" then
-                    shouldCheck = true
-                end
-                if shouldCheck then
-                    ParryCheckAndParry(data.char)
-                    if ParryCooldown.WaitingForResult then break end
-                end
-            else
-                ParryState.ActiveAttackers[plr] = nil
-            end
-        end
-    end
-
-    local function ParryUpdateCircleLogic()
-        local char = LocalPlayer.Character
-        local myRoot = char and char:FindFirstChild("HumanoidRootPart")
-        if VD.PARRY_ShowCircle and VD.PARRY_Enabled and ParryIsEquippedDagger() and myRoot then
-            if not ParryState.CircleFolder or ParryState.CircleRadius ~= (VD.PARRY_Distance or 10) or not ParryState.CircleFolder.Parent then
-                ParryBuildCircle(VD.PARRY_Distance or 10)
-            end
-            ParryUpdateCircle(myRoot)
-        else
-            if ParryState.CircleFolder then ParryDestroyCircle() end
-        end
-    end
-
-    W.ParryState = ParryState
-    W.ParryCooldown = ParryCooldown--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 7/19 : AUTO PARRY V2
 --========================================================--
@@ -4204,6 +4203,300 @@ local function __FazzHub_Init_Main__()
         W.GunAim_Cfg = GunAim
                                                     end--========================================================--
 -- FAZZHUB v0.3.7
+-- PART 13B/19 : KILLER ABILITIES + AUTO HOOK
+--========================================================--
+
+    --====================================================--
+    -- KILLER ABILITIES SYSTEM
+    --====================================================--
+    W.KillerAbilities = W.KillerAbilities or {
+        AutoStalk = VD.KA_AutoStalk, AutoStalkRange = VD.KA_AutoStalkRange,
+        AutoKillAll = VD.KA_AutoKillAll, DropAllPallet = VD.KA_DropAllPallet,
+        BlockAllVault = VD.KA_BlockAllVault,
+    }
+    local KA = W.KillerAbilities
+
+    function W.KA_GetClosestSurvivor(range, minHealth)
+        local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if not root then return nil end
+        local closest, shortest = nil, (range or math.huge)
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= LocalPlayer and plr.Character and TeamIs(plr, "Survivor") then
+                local hum = plr.Character:FindFirstChildOfClass("Humanoid")
+                local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
+                if hum and hrp and hum.Health > (minHealth or 30) then
+                    local d = (hrp.Position - root.Position).Magnitude
+                    if d <= shortest then shortest = d; closest = plr end
+                end
+            end
+        end
+        return closest
+    end
+
+    local AutoStalkConnection = nil
+    function W.KA_StartAutoStalk()
+        if AutoStalkConnection then return end
+        AutoStalkConnection = RunService.Heartbeat:Connect(function()
+            if not KA.AutoStalk then return end
+            if GetRole() ~= "Killer" then return end
+            local target = W.KA_GetClosestSurvivor(KA.AutoStalkRange, 30)
+            if not target or not target.Character then return end
+            local stalkEvent = ReplicatedStorage:FindFirstChild("Remotes", true)
+                and ReplicatedStorage.Remotes:FindFirstChild("Killers", true)
+                and ReplicatedStorage.Remotes.Killers:FindFirstChild("Stalker", true)
+                and ReplicatedStorage.Remotes.Killers.Stalker:FindFirstChild("StartStalking")
+            if stalkEvent then pcall(function() stalkEvent:FireServer(target) end) end
+        end)
+    end
+
+    function W.KA_StopAutoStalk()
+        if AutoStalkConnection then
+            pcall(function() AutoStalkConnection:Disconnect() end)
+            AutoStalkConnection = nil
+        end
+    end
+
+    function W.KA_SetAutoStalk(v)
+        KA.AutoStalk = v and true or false
+        VD.KA_AutoStalk = KA.AutoStalk
+        if KA.AutoStalk then W.KA_StartAutoStalk() else W.KA_StopAutoStalk() end
+    end
+
+    local KillAllTarget = nil
+    function W.KA_UpdateKillAll()
+        if not KA.AutoKillAll then KillAllTarget = nil; return end
+        if GetRole() ~= "Killer" then KillAllTarget = nil; return end
+        local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if not root then return end
+        local tChar = KillAllTarget and KillAllTarget.Character
+        if not KillAllTarget or not tChar or not tChar.Parent
+            or not tChar:FindFirstChild("Humanoid") or tChar.Humanoid.Health <= 35 then
+            KillAllTarget = W.KA_GetClosestSurvivor(math.huge, 30)
+            tChar = KillAllTarget and KillAllTarget.Character
+        end
+        if KillAllTarget and tChar then
+            local targetHRP = tChar:FindFirstChild("HumanoidRootPart")
+            if targetHRP then
+                local velocity  = targetHRP.AssemblyLinearVelocity
+                local predict   = velocity * 0.15
+                local targetPos = targetHRP.Position + predict
+                local behind    = targetHRP.CFrame.LookVector * -3
+                root.CFrame = CFrame.new(targetPos + behind, targetPos)
+            end
+            pcall(function()
+                local attacks = ReplicatedStorage:FindFirstChild("Remotes")
+                    and ReplicatedStorage.Remotes:FindFirstChild("Attacks")
+                local basic = attacks and attacks:FindFirstChild("BasicAttack")
+                if basic then basic:FireServer(false) end
+            end)
+        end
+    end
+
+    function W.KA_SetAutoKillAll(v)
+        KA.AutoKillAll = v and true or false
+        VD.KA_AutoKillAll = KA.AutoKillAll
+        if not KA.AutoKillAll then KillAllTarget = nil end
+    end
+
+    local lastDropAllPallet = 0
+    function W.KA_DropAllPallets()
+        if not KA.DropAllPallet then return end
+        if GetRole() ~= "Killer" then return end
+        local now = tick()
+        if now - lastDropAllPallet < 2 then return end
+        lastDropAllPallet = now
+        pcall(function()
+            local remotes = ReplicatedStorage:FindFirstChild("Remotes")
+            local palletFold = remotes and remotes:FindFirstChild("Pallet")
+            local dropEvent = palletFold and palletFold:FindFirstChild("PalletDropEvent")
+            if not dropEvent then return end
+            local map = workspace:FindFirstChild("Map")
+            if not map then return end
+            for _, obj in ipairs(map:GetDescendants()) do
+                if obj.Name == "Palletwrong" and (obj:IsA("Model") or obj:IsA("Folder")) then
+                    local target = obj:FindFirstChild("PalletPointSlide") or obj:FindFirstChild("PalletPoint")
+                    if target then pcall(function() dropEvent:FireServer(target) end) end
+                end
+            end
+        end)
+    end
+
+    function W.KA_SetDropAllPallet(v)
+        KA.DropAllPallet = v and true or false
+        VD.KA_DropAllPallet = KA.DropAllPallet
+    end
+
+    local lastBlockVault = 0
+    function W.KA_BlockAllVaults()
+        if not KA.BlockAllVault then return end
+        local VaultEvent = ReplicatedStorage:FindFirstChild("Remotes")
+            and ReplicatedStorage.Remotes:FindFirstChild("Window")
+            and ReplicatedStorage.Remotes.Window:FindFirstChild("VaultEvent")
+        if not VaultEvent then return end
+        local map = workspace:FindFirstChild("Map")
+        if not map then return end
+        for _, trigger in ipairs(map:GetDescendants()) do
+            if trigger.Name == "VaultTrigger" then
+                pcall(function() VaultEvent:FireServer(trigger, true) end)
+            end
+        end
+    end
+
+    function W.KA_SetBlockAllVault(v)
+        KA.BlockAllVault = v and true or false
+        VD.KA_BlockAllVault = KA.BlockAllVault
+    end
+
+    task.spawn(function()
+        while true do
+            task.wait(0.12)
+            if KA.AutoKillAll then pcall(W.KA_UpdateKillAll) end
+            if KA.DropAllPallet then pcall(W.KA_DropAllPallets) end
+            if KA.BlockAllVault then pcall(W.KA_BlockAllVaults) end
+            if VD.KILLER_DestroyPallets then pcall(W.MAWWW_DestroyAllPallets) end
+            pcall(VD_UpdateInfiniteLunge)
+        end
+    end)
+    LocalPlayer.CharacterAdded:Connect(function()
+        task.wait(1)
+        if KA.AutoStalk then pcall(W.KA_StartAutoStalk) end
+    end)
+
+    --====================================================--
+    -- AUTO HOOK (KILLER)
+    --====================================================--
+    do
+        local IsAutoHooking = false
+
+        local function GetMapCacheHooks()
+            local hooks = {}
+            local map = Workspace:FindFirstChild("Map")
+            if not map then return hooks end
+            for _, obj in ipairs(map:GetDescendants()) do
+                if obj:IsA("Model") and obj.Name == "Hook" then
+                    local hp = obj:FindFirstChild("HookPoint")
+                        or obj:FindFirstChild("HookHitbox")
+                        or obj:FindFirstChildWhichIsA("BasePart", true)
+                    if hp then table.insert(hooks, { model = obj, part = hp }) end
+                end
+            end
+            return hooks
+        end
+
+        local function IsPlayerOnHook(character, hooks)
+            local tr = character:FindFirstChild("HumanoidRootPart")
+            if not tr then return false end
+            for _, h in ipairs(hooks) do
+                if (h.part.Position - tr.Position).Magnitude < 6 then return true end
+            end
+            return false
+        end
+
+        local function IsPlayerCarried(character)
+            return character:GetAttribute("IsCarried") == true
+        end
+
+        local function FindDownedSurvivor(hooks)
+            local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if not myRoot then return nil, nil end
+            local closest, closestDist, closestChar = nil, math.huge, nil
+            for _, pl in ipairs(Players:GetPlayers()) do
+                if pl == LocalPlayer or not pl.Character then continue end
+                if not TeamIs(pl, "Survivor") then continue end
+                local tr = pl.Character:FindFirstChild("HumanoidRootPart")
+                local h = pl.Character:FindFirstChildOfClass("Humanoid")
+                if not tr or not h then continue end
+                local pct = h.MaxHealth > 0 and (h.Health / h.MaxHealth) or 0
+                if pct > 0.25 or pct <= 0 then continue end
+                if IsPlayerOnHook(pl.Character, hooks) then continue end
+                if IsPlayerCarried(pl.Character) then continue end
+                local d = (tr.Position - myRoot.Position).Magnitude
+                if d < closestDist then
+                    closestDist = d
+                    closest = tr
+                    closestChar = pl.Character
+                end
+            end
+            return closest, closestChar
+        end
+
+        local function FindNearestHook(targetPos, hooks)
+            local closest, closestDist = nil, math.huge
+            for _, h in ipairs(hooks) do
+                local d = (h.part.Position - targetPos).Magnitude
+                if d < closestDist then closestDist = d; closest = h end
+            end
+            return closest
+        end
+
+        local function DoAutoHook()
+            if not VD.KILLER_AutoHook then return end
+            if IsAutoHooking then return end
+            if GetRole() ~= "Killer" then return end
+            local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if not root then return end
+            local hooks = GetMapCacheHooks()
+            if #hooks == 0 then return end
+            local targetRoot, targetChar = FindDownedSurvivor(hooks)
+            if not targetRoot then return end
+            local nearestHook = FindNearestHook(targetRoot.Position, hooks)
+            if not nearestHook then return end
+
+            IsAutoHooking = true
+            task.spawn(function()
+                local CarryEvent, HookEvent, HookCommit
+                pcall(function()
+                    local carryFolder = ReplicatedStorage:FindFirstChild("Remotes"):FindFirstChild("Carry")
+                    CarryEvent = carryFolder:FindFirstChild("CarrySurvivorEvent")
+                    HookEvent  = carryFolder:FindFirstChild("HookEvent")
+                    HookCommit = carryFolder:FindFirstChild("HookCommit")
+                end)
+                pcall(function()
+                    root.CFrame = CFrame.new(targetRoot.Position + Vector3.new(0, 3, 0), targetRoot.Position)
+                end)
+                task.wait(0.2)
+                pcall(function() if CarryEvent then CarryEvent:FireServer(targetChar) end end)
+                task.wait(0.5)
+                local r2 = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if not r2 then IsAutoHooking = false; return end
+                pcall(function()
+                    r2.CFrame = CFrame.new(nearestHook.part.Position + Vector3.new(0, 3, 0))
+                end)
+                task.wait(0.3)
+                pcall(function()
+                    local hookPoint = nearestHook.model:FindFirstChild("HookPoint")
+                        or nearestHook.model:FindFirstChild("HookHitbox")
+                        or nearestHook.part
+                    if HookEvent then HookEvent:FireServer(hookPoint) end
+                    if HookCommit then HookCommit:FireServer(hookPoint) end
+                end)
+                task.wait(1)
+                IsAutoHooking = false
+            end)
+        end
+
+        function W.KA_StartAutoHook()
+            if W._AutoHookThread then return end
+            W._AutoHookThread = task.spawn(function()
+                while VD.KILLER_AutoHook do
+                    if GetRole() == "Killer" then pcall(DoAutoHook) end
+                    task.wait(1)
+                end
+                W._AutoHookThread = nil
+            end)
+        end
+        function W.KA_StopAutoHook()
+            if W._AutoHookThread then
+                pcall(function() task.cancel(W._AutoHookThread) end)
+                W._AutoHookThread = nil
+            end
+        end
+        function W.KA_SetAutoHook(v)
+            VD.KILLER_AutoHook = v and true or false
+            if VD.KILLER_AutoHook then W.KA_StartAutoHook() else W.KA_StopAutoHook() end
+        end
+                                                        end--========================================================--
+-- FAZZHUB v0.3.7
 -- PART 13C/19 : KILLER PERKS DISPLAY
 --========================================================--
 
@@ -4546,7 +4839,7 @@ local function __FazzHub_Init_Main__()
             VD.KillerPerksDisplay = v and true or false
             if VD.KillerPerksDisplay then Start() else Stop() end
         end
-                                                        end--========================================================--
+                                                            end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 14A/19 : SPEED BOOST + CURSOR FEATURE
 --========================================================--
@@ -4679,7 +4972,7 @@ local function __FazzHub_Init_Main__()
             task.wait(1)
             if VD.CursorEnabled then W.Cursor_SetEnabled(true) end
         end)
-                                                            end--========================================================--
+                                                                end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 14B/19 : SILENT FLASK + SPEAR AIMBOT
 --========================================================--
@@ -5187,7 +5480,7 @@ local function __FazzHub_Init_Main__()
         W.SpearAimbot_SetGravity = function(v) VD.SPEAR_Gravity = tonumber(v) or 50 end
         W.SpearAimbot_SetSpeed   = function(v) VD.SPEAR_Speed   = tonumber(v) or 100 end
         W.SpearAimbot_CycleTarget = Spear_CycleTarget
-    end--========================================================--
+                                                                    end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 14C/19 : DASH LOCK + SWIFT VAULT
 --========================================================--
@@ -5420,7 +5713,7 @@ local function __FazzHub_Init_Main__()
             end
         end
         W.SwiftVault_SetSpeed = function(v) VD.SURF_VaultSpeed = tonumber(v) or 13 end
-                                                                    end--========================================================--
+                                                                        end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 15A/19 : GRAPHICS SYSTEM
 --========================================================--
@@ -5701,7 +5994,7 @@ local function __FazzHub_Init_Main__()
             Graphics_Apply(true); Graphics_ApplyOptimization(true)
             Graphics_ApplyNoScreenEffects(); Graphics_ApplyZoom(); Graphics_ApplyFOV()
         end)
-                                                                        end--========================================================--
+                                                                            end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 15B/19 : PALLET REFLEX + FAKE PARRY V2
 --========================================================--
@@ -6033,7 +6326,7 @@ local function __FazzHub_Init_Main__()
             end
             return false
         end
-                                                                            end--========================================================--
+                                                                                end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 15C/19 : CAMERA DBD + FLOATING BUTTON (BAR)
 --========================================================--
@@ -6608,7 +6901,20 @@ local function __FazzHub_Init_Main__()
         end,
     })
     getgenv().FazzHub_VeilBtn_SetEnabled   = function(en) VeilBtn.SetEnabled(en) end
-    getgenv().FazzHub_VeilBtn_UpdateVisual = function() VeilBtn.UpdateVisual() end--========================================================--
+    getgenv().FazzHub_VeilBtn_UpdateVisual = function() VeilBtn.UpdateVisual() end
+
+    -- 9. Moonwalk
+    local MoonwalkBtnState = { Enabled=false, DragLocked=false, Gui=nil, SavedPos=UDim2.new(0.03,0,0.84,0), Connections={} }
+    local MoonwalkFloatingState = CreateFloatingButton({
+        id="Moonwalk", title="Moonwalk", symbol="🌙", notifyTitle="Moonwalk", state=MoonwalkBtnState,
+        isOn=function() return _G.FazzHub_MoonwalkEnabled or false end,
+        onToggle=function(v)
+            _G.FazzHub_MoonwalkEnabled = v
+            if _G.FazzHub_MoonwalkToggle then pcall(_G.FazzHub_MoonwalkToggle, v) end
+        end,
+    })
+    getgenv().FazzHub_MoonwalkBtn_SetEnabled   = function(en) MoonwalkFloatingState.SetEnabled(en) end
+    getgenv().FazzHub_MoonwalkBtn_UpdateVisual = function() MoonwalkFloatingState.UpdateVisual() end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 16A/19 : SILENT VEIL V1 + LOCK POV
 --========================================================--
@@ -7286,7 +7592,7 @@ local function __FazzHub_Init_Main__()
             IsVeilSilentOn = IsVeilSilentOn,
             setTracker = function(v) VeilTrackerEnabled = v end,
         }
-    end--========================================================--
+                                                                                        end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 16C/19 : SILENT FLASHLIGHT
 --========================================================--
@@ -7463,7 +7769,7 @@ local function __FazzHub_Init_Main__()
                 end)
             end)
         end)
-                                                                                        end--========================================================--
+                                                                                            end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 17A/19 : TOF V1 (BAGIAN 1)
 --========================================================--
@@ -7673,7 +7979,7 @@ local function __FazzHub_Init_Main__()
         local fd = tp - op
         if fd.Magnitude < 0.1 then return end
         pcall(function() e:FireServer(g, fd.Unit) end)
-                                                                                            end--========================================================--
+                                                                                                end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 17B/19 : TOF V1 (BAGIAN 2) + PLAYER UTILITY
 --========================================================--
@@ -8017,7 +8323,7 @@ local function __FazzHub_Init_Main__()
     end
     task.spawn(PU_SetupNoCutsceneHook)--========================================================--
 -- FAZZHUB v0.3.7
--- PART 17C/19 : PLAYER UTILITY (LANJUTAN) + EMOTE + JERK OFF
+-- PART 17C/19 : PLAYER UTILITY LANJUTAN + EMOTE + JERK OFF
 --========================================================--
 
     local function PU_ApplyHideSurvivorIcon()
@@ -8362,7 +8668,7 @@ local function __FazzHub_Init_Main__()
             task.wait(1)
             if JerkTool.Enabled then jerkRunning = true; W.JerkOff_Create() end
         end)
-                                                                                                end--========================================================--
+    end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 18A/19 : NO FALL DAMAGE + NEXT MAP PREDICT
 --========================================================--
@@ -8567,7 +8873,7 @@ local function __FazzHub_Init_Main__()
             VD.NextMapPredict = v and true or false
             if VD.NextMapPredict then Start() else Stop() end
         end
-                                                                                                    end--========================================================--
+                                                                                                        end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 18B/19 : MANUAL/AUTO GENERATOR + GEN BYPASS
 --========================================================--
@@ -9099,18 +9405,15 @@ local function __FazzHub_Init_Main__()
             end
         end)
 
-        -- KLIK TOMBOL GEN → LANGSUNG REPAIR (TANPA RANGE LIMIT)
         actionBtn.MouseButton1Up:Connect(function()
             if not GenBypass.Enabled then return end
             if dragDist > 6 then return end
 
-            -- Anim klik
             TweenService:Create(mainCircle, TweenInfo.new(0.08), { Size = UDim2.fromOffset(54, 54) }):Play()
             task.delay(0.1, function()
                 TweenService:Create(mainCircle, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Size = UDim2.fromOffset(64, 64) }):Play()
             end)
 
-            -- Ripple
             local ripple = Instance.new("Frame")
             ripple.AnchorPoint = Vector2.new(0.5, 0.5)
             ripple.Position = UDim2.new(0.5, 0, 0.5, 0)
@@ -9124,7 +9427,6 @@ local function __FazzHub_Init_Main__()
 
             SetStatus("searching")
 
-            -- AMBIL POINT GENERATOR TERDEKAT (TANPA RANGE LIMIT)
             local myChar = LocalPlayer.Character
             local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
             if not myRoot then SetStatus("standby"); return end
@@ -9152,10 +9454,8 @@ local function __FazzHub_Init_Main__()
                 return
             end
 
-            -- LANGSUNG REPAIR
             SetStatus("busy")
             task.spawn(function()
-                -- Teleport ke generator (jika jauh)
                 if bestDist > 6 then
                     pcall(function()
                         myRoot.CFrame = bestPt.CFrame + Vector3.new(0, 3, 0)
@@ -9163,7 +9463,6 @@ local function __FazzHub_Init_Main__()
                     task.wait(0.15)
                 end
 
-                -- Repair
                 if RepairEventBypass then
                     pcall(function() RepairEventBypass:FireServer(bestPt, true) end)
                     task.wait(0.3)
@@ -9395,10 +9694,7 @@ local function __FazzHub_Init_Main__()
         skillSection:AddToggle({ Title = "Enable Auto Skill Check", Default = false, Callback = function(v)
             W.SkillCheck_SetEnabled(v); if v then VD_Notify("Auto Skill Check", "Enabled", 2) end end })
         skillSection:AddDropdown({ Title = "Mode", Options = {"Legit", "Instant"}, Default = "Legit",
-            Callback = function(v) W.SkillCheck.Mode = v end })--========================================================--
--- FAZZHUB v0.3.7
--- PART 19B/19 : SURVIVOR TAB (LANJUTAN)
---========================================================--
+            Callback = function(v) W.SkillCheck.Mode = v end })
 
         local genSection = MakeSection(SurvivorTab, "Bypass Generator")
         genSection:AddToggle({ Title = "Enable Bypass Generator", Default = false, Callback = function(v)
@@ -9490,7 +9786,10 @@ local function __FazzHub_Init_Main__()
                 GodModeEnabled = state
                 if state then StartGodMode(); VD_Notify("God Mode", "Enabled", 2)
                 else StopGodMode(); VD_Notify("God Mode", "Disabled", 2) end
-            end })
+            end })--========================================================--
+-- FAZZHUB v0.3.7
+-- PART 19B/19 : SURVIVOR TAB (LANJUTAN)
+--========================================================--
 
         local AutoRunSection = MakeSection(SurvivorTab, "Auto Run")
         local AutoRunPCEnabled = false
@@ -9800,14 +10099,19 @@ local function __FazzHub_Init_Main__()
         end
         local function setMoonwalk(state)
             moonwalkEnabled = state
+            _G.FazzHub_MoonwalkEnabled = state
             if state then startMoonwalk() else stopMoonwalk() end
         end
+        _G.FazzHub_MoonwalkToggle = setMoonwalk
         MoonwalkSection:AddToggle({ Title = "Moonwalk", Content = "Jalan mundur + geser kiri-kanan.",
             Default = false, Keybind = true,
             Callback = function(v) setMoonwalk(v); VD_Notify("Moonwalk", v and "Enabled" or "Disabled", 2) end })
         MoonwalkSection:AddSlider({ Title = "Side Speed", Min = 0.1, Max = 3, Default = 0.9, Increment = 0.1, Callback = function(v) MOONWALK_SIDE_SPEED = v end })
         MoonwalkSection:AddSlider({ Title = "Back Speed", Min = 0.1, Max = 3, Default = 1.2, Increment = 0.1, Callback = function(v) MOONWALK_BACK_SPEED = v end })
         MoonwalkSection:AddSlider({ Title = "Switch Interval", Min = 0.02, Max = 0.5, Default = 0.07, Increment = 0.01, Callback = function(v) MOONWALK_INTERVAL = v end })
+        MoonwalkSection:AddToggle({ Title = "Show Moonwalk Floating Button", Default = false, Callback = function(v)
+            if getgenv().FazzHub_MoonwalkBtn_SetEnabled then getgenv().FazzHub_MoonwalkBtn_SetEnabled(v) end
+        end })
         UserInputService.InputBegan:Connect(function(input, gp)
             if gp then return end
             if input.KeyCode == Enum.KeyCode.F8 then setMoonwalk(not moonwalkEnabled) end
@@ -10939,7 +11243,7 @@ local function __FazzHub_Init_Main__()
             end
         end })--========================================================--
 -- FAZZHUB v0.3.7
--- PART 19F/19 : BOMBAX TAB + CONFIG TAB + CLOSING
+-- PART 19F/19 : BOMBAX + CONFIG + CLOSING
 --========================================================--
 
         --====================================================--
