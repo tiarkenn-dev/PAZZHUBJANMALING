@@ -1,5 +1,5 @@
 --========================================================--
--- FAZZHUB v0.3.8 - FULL SCRIPT (FIXED - ALL TABS)
+-- FAZZHUB v0.3.9 - FULL SCRIPT
 -- Image: rbxassetid://72845574620852
 -- PART 1/19 : HEADER + INIT + NOTIFY + HELPER
 --========================================================--
@@ -154,7 +154,7 @@ local function __FazzHub_Init_Main__()
         end
         return pts
     end--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 2/19 : VARIABLE DEFAULTS
 --========================================================--
 
@@ -240,7 +240,7 @@ local function __FazzHub_Init_Main__()
     _G.GLUTO_NEUTRAL    = Color3.fromRGB(90, 90, 90)
     _G.GLUTO_STROKE_OFF = Color3.fromRGB(25, 25, 25)
     _G.GLUTO_BG_OFF     = Color3.fromRGB(0, 0, 0)--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 3/19 : BOMBAX SONG LIBRARY + MUSIC + AUTO NEXT
 -- PATCH: Notif ganti lagu DIHAPUS
 --========================================================--
@@ -256,7 +256,6 @@ local function __FazzHub_Init_Main__()
     }
     local Bombax = W.Bombax
 
-    -- SONG LIBRARY (32 lagu)
     local Songs = {
         {id="101985596918228", judul="One"},
         {id="78520199502339",  judul="Two"},
@@ -415,7 +414,7 @@ local function __FazzHub_Init_Main__()
             W.Bombax_Play(pick.id, pick.name)
         end
         end--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 4/19 : BOMBAX MINI GUI + PROGRESS BAR
 -- PATCH: Background pakai image ID FAZZHUB + transparan
 --========================================================--
@@ -465,7 +464,6 @@ local function __FazzHub_Init_Main__()
             frame.Parent = gui
             Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
 
-            -- BACKGROUND IMAGE (FAZZHUB)
             local bgImage = Instance.new("ImageLabel")
             bgImage.Name = "BgImage"
             bgImage.Size = UDim2.fromScale(1, 1)
@@ -478,7 +476,6 @@ local function __FazzHub_Init_Main__()
             bgImage.Parent = frame
             Instance.new("UICorner", bgImage).CornerRadius = UDim.new(0, 10)
 
-            -- Overlay gelap tipis biar teks kebaca
             local overlay = Instance.new("Frame")
             overlay.Name = "BgOverlay"
             overlay.Size = UDim2.fromScale(1, 1)
@@ -497,7 +494,6 @@ local function __FazzHub_Init_Main__()
             stroke.ZIndex = 20
             MiniState.Frame = frame
 
-            -- HEADER
             local header = Instance.new("Frame", frame)
             header.Name = "Header"
             header.Size = UDim2.new(1, 0, 0, 26)
@@ -532,7 +528,6 @@ local function __FazzHub_Init_Main__()
             minBtn.Parent = header
             Instance.new("UICorner", minBtn).CornerRadius = UDim.new(0, 6)
 
-            -- BODY
             local body = Instance.new("Frame", frame)
             body.Name = "Body"
             body.Size = UDim2.new(1, -16, 1, -36)
@@ -542,7 +537,6 @@ local function __FazzHub_Init_Main__()
             body.Parent = frame
             MiniState.Body = body
 
-            -- TRACK LABEL
             local trackLbl = Instance.new("TextLabel", body)
             trackLbl.Name = "TrackLbl"
             trackLbl.Size = UDim2.new(1, 0, 0, 18)
@@ -556,7 +550,6 @@ local function __FazzHub_Init_Main__()
             trackLbl.ZIndex = 4
             MiniState.TrackLbl = trackLbl
 
-            -- PROGRESS BAR BG
             local progressBg = Instance.new("Frame", body)
             progressBg.Name = "ProgressBg"
             progressBg.Size = UDim2.new(1, 0, 0, 8)
@@ -589,7 +582,6 @@ local function __FazzHub_Init_Main__()
             progressLbl.ZIndex = 4
             MiniState.ProgressLbl = progressLbl
 
-            -- BUTTON ROW
             local btnRow = Instance.new("Frame", body)
             btnRow.Size = UDim2.new(1, 0, 0, 30)
             btnRow.Position = UDim2.new(0, 0, 0, 50)
@@ -651,7 +643,6 @@ local function __FazzHub_Init_Main__()
                 W.Bombax_Next()
             end)
 
-            -- VOLUME
             local volLbl = Instance.new("TextLabel", body)
             volLbl.Name = "VolLbl"
             volLbl.Size = UDim2.new(1, 0, 0, 14)
@@ -684,7 +675,6 @@ local function __FazzHub_Init_Main__()
             Instance.new("UICorner", volFill).CornerRadius = UDim.new(1, 0)
             MiniState.VolFill = volFill
 
-            -- DRAG
             local dragging, dragStart, startPos = false, nil, nil
             header.InputBegan:Connect(function(inp)
                 if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
@@ -705,7 +695,6 @@ local function __FazzHub_Init_Main__()
                 end
             end)
 
-            -- MIN/MAX TOGGLE
             local expanded = true
             minBtn.MouseButton1Click:Connect(function()
                 expanded = not expanded
@@ -778,7 +767,7 @@ local function __FazzHub_Init_Main__()
             BuildMini()
         end)
             end--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 5/19 : AUTO CROUCH + AUTO ATTACK + AUTO FLEE
 --========================================================--
 
@@ -970,7 +959,7 @@ local function __FazzHub_Init_Main__()
             pcall(W.SURV_AutoFlee)
         end
     end)--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 6A/19 : AUTO PARRY V1 (BAGIAN 1)
 --========================================================--
 
@@ -1241,7 +1230,7 @@ local function __FazzHub_Init_Main__()
     LocalPlayer.ChildAdded:Connect(function(c)
         if c:IsA("PlayerGui") then ParryAttachPlayerGui(c) end
     end)--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 6B/19 : AUTO PARRY V1 (BAGIAN 2)
 --========================================================--
 
@@ -1508,7 +1497,7 @@ local function __FazzHub_Init_Main__()
 
     W.ParryState = ParryState
     W.ParryCooldown = ParryCooldown--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 7/19 : AUTO PARRY V2
 --========================================================--
 
@@ -1790,7 +1779,7 @@ local function __FazzHub_Init_Main__()
             end
         end)
                 end--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 8A/19 : SELF HEAL
 --========================================================--
 
@@ -1953,7 +1942,7 @@ local function __FazzHub_Init_Main__()
         if W.InstantHealSelf then W.setInstantHealSelf(true) end
         if W.AutoHealAll then W.setAutoHealAll(true) end
     end)--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 8B/19 : FAKE PERKS
 --========================================================--
 
@@ -2309,8 +2298,9 @@ local function __FazzHub_Init_Main__()
             FP.ActiveBuffs["AdrenalineRush"] = nil
         end
                     end--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 9A/19 : STUN INDICATOR
+-- PATCH: Icon FAZZHUB + Bar Durasi Stun
 --========================================================--
 
     --====================================================--
@@ -2457,6 +2447,8 @@ local function __FazzHub_Init_Main__()
         mainStroke.Thickness = 1.3
         mainStroke.Transparency = 0.15
         mainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+        -- ICON (IMAGE FAZZHUB)
         local iconHolder = Instance.new("Frame")
         iconHolder.Name = "IconHolder"
         iconHolder.Size = UDim2.fromOffset(24, 24)
@@ -2476,18 +2468,17 @@ local function __FazzHub_Init_Main__()
         iconStroke.Color = Color3.fromRGB(255, 255, 255)
         iconStroke.Thickness = 1
         iconStroke.Transparency = 0.25
-        local starIcon = Instance.new("TextLabel")
+
+        local starIcon = Instance.new("ImageLabel")
         starIcon.Name = "StarIcon"
         starIcon.Size = UDim2.fromScale(1, 1)
         starIcon.BackgroundTransparency = 1
-        starIcon.Font = Enum.Font.GothamBlack
-        starIcon.Text = "★"
-        starIcon.TextColor3 = Color3.fromRGB(255, 255, 255)
-        starIcon.TextScaled = true
-        starIcon.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-        starIcon.TextStrokeTransparency = 0.5
+        starIcon.Image = "rbxassetid://72845574620852"
+        starIcon.ImageColor3 = Color3.fromRGB(255, 255, 255)
+        starIcon.ScaleType = Enum.ScaleType.Crop
         starIcon.ZIndex = 4
         starIcon.Parent = iconHolder
+
         local title = Instance.new("TextLabel")
         title.Name = "Title"
         title.Size = UDim2.new(1, -42, 0, 12)
@@ -2502,10 +2493,11 @@ local function __FazzHub_Init_Main__()
         title.TextStrokeTransparency = 0.5
         title.ZIndex = 3
         title.Parent = main
+
         local sub = Instance.new("TextLabel")
         sub.Name = "Sub"
         sub.Size = UDim2.new(1, -42, 0, 8)
-        sub.Position = UDim2.new(0, 34, 0, 18)
+        sub.Position = UDim2.new(0, 34, 0, 17)
         sub.BackgroundTransparency = 1
         sub.Font = Enum.Font.GothamBold
         sub.Text = "SILENT"
@@ -2516,6 +2508,27 @@ local function __FazzHub_Init_Main__()
         sub.TextStrokeTransparency = 0.6
         sub.ZIndex = 3
         sub.Parent = main
+
+        -- BAR DURASI STUN
+        local durBarBg = Instance.new("Frame")
+        durBarBg.Name = "DurBarBg"
+        durBarBg.Size = UDim2.new(1, -42, 0, 3)
+        durBarBg.Position = UDim2.new(0, 34, 1, -5)
+        durBarBg.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+        durBarBg.BorderSizePixel = 0
+        durBarBg.ZIndex = 4
+        durBarBg.Parent = main
+        Instance.new("UICorner", durBarBg).CornerRadius = UDim.new(1, 0)
+
+        local durBarFill = Instance.new("Frame")
+        durBarFill.Name = "DurBarFill"
+        durBarFill.Size = UDim2.new(1, 0, 1, 0)
+        durBarFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        durBarFill.BorderSizePixel = 0
+        durBarFill.ZIndex = 5
+        durBarFill.Parent = durBarBg
+        Instance.new("UICorner", durBarFill).CornerRadius = UDim.new(1, 0)
+
         local accent = Instance.new("Frame")
         accent.Name = "Accent"
         accent.AnchorPoint = Vector2.new(1, 0.5)
@@ -2535,6 +2548,7 @@ local function __FazzHub_Init_Main__()
                 BackgroundTransparency = 0.05,
             }):Play()
         end)
+
         local animActive = true
         local function StopAnim() animActive = false end
         task.spawn(function()
@@ -2544,7 +2558,9 @@ local function __FazzHub_Init_Main__()
                 local pulse = (math.sin(t * 3) + 1) * 0.5
                 mainStroke.Transparency = 0.35 - pulse * 0.2
                 mainStroke.Thickness = 1.2 + pulse * 0.3
-                starIcon.Rotation = math.sin(t * 2) * 10
+                if starIcon and starIcon.Parent then
+                    starIcon.Rotation = math.sin(t * 2) * 10
+                end
                 local p1 = (t * 0.55) % 1
                 pulse1.Size = UDim2.fromOffset(34 + p1 * 40, 34 + p1 * 40)
                 p1s.Transparency = 0.15 + p1 * 0.75
@@ -2554,6 +2570,27 @@ local function __FazzHub_Init_Main__()
                 task.wait(0.03)
             end
         end)
+
+        -- TRACK DURASI STUN
+        local durStart = tick()
+        local DUR_ESTIMATE = 3.0
+        task.spawn(function()
+            while animActive and bbg.Parent and durBarFill and durBarFill.Parent do
+                local elapsed = tick() - durStart
+                local ratio = math.clamp(1 - (elapsed / DUR_ESTIMATE), 0, 1)
+                durBarFill.Size = UDim2.new(ratio, 0, 1, 0)
+                if ratio > 0.5 then
+                    durBarFill.BackgroundColor3 = Color3.fromRGB(120, 255, 160)
+                elseif ratio > 0.2 then
+                    durBarFill.BackgroundColor3 = Color3.fromRGB(255, 200, 100)
+                else
+                    durBarFill.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
+                end
+                if ratio <= 0 then break end
+                task.wait(0.05)
+            end
+        end)
+
         local function ExitAndDestroy()
             animActive = false
             TweenService:Create(main, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
@@ -2606,7 +2643,7 @@ local function __FazzHub_Init_Main__()
             SInd.Cache = {}
         end
                         end--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 9B/19 : TROLL TP + ESCAPE + MASKED
 --========================================================--
 
@@ -2717,7 +2754,7 @@ local function __FazzHub_Init_Main__()
             VD_Notify("Select Masked", "Deactivated", 2)
         else ForceNotify("Select Masked", "Deactivatepower remote not found", 2) end
                             end--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 10A/19 : FULL ESP (BAGIAN 1)
 --========================================================--
 
@@ -2806,7 +2843,7 @@ local function __FazzHub_Init_Main__()
                 StatusESP[char] = nil
             end
                                     end--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 10B/19 : FULL ESP (BAGIAN 2 - STATUS BARU)
 -- PATCH: ESP Status sekarang cuma Nama + Jarak (2 baris)
 --========================================================--
@@ -2904,7 +2941,7 @@ local function __FazzHub_Init_Main__()
                 distScale.Scale = scaleVal
             end
                                         end--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 10C/19 : FULL ESP (BAGIAN 3)
 --========================================================--
 
@@ -3169,7 +3206,7 @@ local function __FazzHub_Init_Main__()
             end
         end)
                                         end--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 11/19 : INVISIBLE
 --========================================================--
 
@@ -3375,7 +3412,7 @@ local function __FazzHub_Init_Main__()
             return "READY"
         end
                                             end--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 12A/19 : BYPASS (LEAP, GRAB, SLASHER, ABYSS)
 --========================================================--
 
@@ -3635,7 +3672,7 @@ local function __FazzHub_Init_Main__()
         if VD.KILLER_BypassCooldown then W.MAWWW_StartAbyssCooldownBypass()
         else W.MAWWW_StopAbyssCooldownBypass() end
                                                 end--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 12B/19 : BYPASS (JEFF, ANTIBLIND, DESTROYPALLET, INFLUNGE)
 --========================================================--
 
@@ -3794,7 +3831,7 @@ local function __FazzHub_Init_Main__()
     LocalPlayer.CharacterRemoving:Connect(function()
         VD_OriginalLungeBoost = nil
     end)--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 13A/19 : AIMLOCK ATTACK + AIMLOCK GUN
 --========================================================--
 
@@ -4037,7 +4074,7 @@ local function __FazzHub_Init_Main__()
         W.GunAim_Start = GA_Start
         W.GunAim_Cfg = GunAim
                                                     end--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 13B/19 : KILLER ABILITIES + AUTO HOOK
 --========================================================--
 
@@ -4331,7 +4368,7 @@ local function __FazzHub_Init_Main__()
             if VD.KILLER_AutoHook then W.KA_StartAutoHook() else W.KA_StopAutoHook() end
         end
                                                         end--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 13C/19 : KILLER PERKS DISPLAY
 --========================================================--
 
@@ -4675,7 +4712,7 @@ local function __FazzHub_Init_Main__()
             if VD.KillerPerksDisplay then Start() else Stop() end
         end
                                                             end--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 14A/19 : SPEED BOOST + CURSOR FEATURE
 --========================================================--
 
@@ -4808,7 +4845,7 @@ local function __FazzHub_Init_Main__()
             if VD.CursorEnabled then W.Cursor_SetEnabled(true) end
         end)
                                                                 end--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 14B/19 : SILENT FLASK + SPEAR AIMBOT
 --========================================================--
 
@@ -5316,7 +5353,7 @@ local function __FazzHub_Init_Main__()
         W.SpearAimbot_SetSpeed   = function(v) VD.SPEAR_Speed   = tonumber(v) or 100 end
         W.SpearAimbot_CycleTarget = Spear_CycleTarget
                                                                     end--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 14C/19 : DASH LOCK + SWIFT VAULT
 --========================================================--
 
@@ -5549,7 +5586,7 @@ local function __FazzHub_Init_Main__()
         end
         W.SwiftVault_SetSpeed = function(v) VD.SURF_VaultSpeed = tonumber(v) or 13 end
                                                                         end--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 15A/19 : GRAPHICS SYSTEM
 --========================================================--
 
@@ -5673,7 +5710,6 @@ local function __FazzHub_Init_Main__()
             else cam.FieldOfView = original.FOV end
         end
 
-        -- POTATO MODE
         local Potato_Enabled = false
         local Potato_Busy = false
         local Potato_Changed = {}
@@ -5830,7 +5866,7 @@ local function __FazzHub_Init_Main__()
             Graphics_ApplyNoScreenEffects(); Graphics_ApplyZoom(); Graphics_ApplyFOV()
         end)
                                                                             end--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 15B/19 : PALLET REFLEX + FAKE PARRY V2
 --========================================================--
 
@@ -6162,9 +6198,9 @@ local function __FazzHub_Init_Main__()
             return false
         end
                                                                                 end--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 15C/19 : CAMERA DBD + FLOATING BUTTON (BARU)
--- PATCH: Floating button versi baru (tanpa icon, tema FAZZHUB)
+-- PATCH: Floating Button 140x38 + BG Image FAZZHUB
 --========================================================--
 
     --====================================================--
@@ -6251,13 +6287,15 @@ local function __FazzHub_Init_Main__()
     end
 
     --====================================================--
-    -- FLOATING BUTTON SYSTEM (BARU - TEMA FAZZHUB, TANPA ICON)
+    -- FLOATING BUTTON SYSTEM (BARU - TEMA FAZZHUB + BG IMAGE)
+    -- PATCH: Ukuran 140x38 + background image FAZZHUB
     --====================================================--
+    local BG_IMAGE_ID_BTN = "rbxassetid://72845574620852"
+
     local function CreateFloatingButton(cfg)
         local state = cfg.state
         state.Connections = state.Connections or {}
 
-        -- TEMA FAZZHUB
         local COLOR_ON      = _G.GLUTO_ACCENT or Color3.fromRGB(220, 220, 230)
         local COLOR_OFF     = Color3.fromRGB(80, 80, 95)
         local COLOR_BG_ON   = Color3.fromRGB(30, 30, 38)
@@ -6265,8 +6303,8 @@ local function __FazzHub_Init_Main__()
         local COLOR_STROKE  = Color3.fromRGB(60, 60, 75)
         local COLOR_TEXT    = Color3.fromRGB(220, 220, 230)
 
-        local W_BTN = 120
-        local H_BTN = 32
+        local W_BTN = 140
+        local H_BTN = 38
 
         local function ClearConns()
             for _, c in ipairs(state.Connections) do pcall(function() c:Disconnect() end) end
@@ -6286,10 +6324,14 @@ local function __FazzHub_Init_Main__()
             local stroke = btn:FindFirstChild("Stroke")
             local label  = btn:FindFirstChild("Label")
             local dot    = btn:FindFirstChild("Dot")
+            local bgImg  = btn:FindFirstChild("BgImage")
             local isOn   = cfg.isOn()
 
             if isOn then
                 TweenService:Create(btn, TweenInfo.new(0.2), { BackgroundColor3 = COLOR_BG_ON }):Play()
+                if bgImg then
+                    TweenService:Create(bgImg, TweenInfo.new(0.2), { ImageTransparency = 0.4 }):Play()
+                end
                 if stroke then
                     TweenService:Create(stroke, TweenInfo.new(0.2), {
                         Color = COLOR_ON, Transparency = 0.1, Thickness = 1.5,
@@ -6305,6 +6347,9 @@ local function __FazzHub_Init_Main__()
                 end
             else
                 TweenService:Create(btn, TweenInfo.new(0.2), { BackgroundColor3 = COLOR_BG_OFF }):Play()
+                if bgImg then
+                    TweenService:Create(bgImg, TweenInfo.new(0.2), { ImageTransparency = 0.65 }):Play()
+                end
                 if stroke then
                     TweenService:Create(stroke, TweenInfo.new(0.2), {
                         Color = COLOR_STROKE, Transparency = 0.4, Thickness = 1,
@@ -6374,9 +6419,33 @@ local function __FazzHub_Init_Main__()
             btn.BorderSizePixel = 0
             btn.Text = ""
             btn.AutoButtonColor = false
+            btn.ClipsDescendants = true
             btn.ZIndex = 3
             btn.Parent = container
             Instance.new("UICorner", btn).CornerRadius = UDim.new(1, 0)
+
+            local bgImg = Instance.new("ImageLabel")
+            bgImg.Name = "BgImage"
+            bgImg.Size = UDim2.fromScale(1, 1)
+            bgImg.Position = UDim2.fromScale(0, 0)
+            bgImg.BackgroundTransparency = 1
+            bgImg.Image = BG_IMAGE_ID_BTN
+            bgImg.ImageTransparency = 0.65
+            bgImg.ScaleType = Enum.ScaleType.Crop
+            bgImg.ZIndex = 3
+            bgImg.Parent = btn
+            Instance.new("UICorner", bgImg).CornerRadius = UDim.new(1, 0)
+
+            local overlay = Instance.new("Frame")
+            overlay.Name = "Overlay"
+            overlay.Size = UDim2.fromScale(1, 1)
+            overlay.Position = UDim2.fromScale(0, 0)
+            overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+            overlay.BackgroundTransparency = 0.35
+            overlay.BorderSizePixel = 0
+            overlay.ZIndex = 4
+            overlay.Parent = btn
+            Instance.new("UICorner", overlay).CornerRadius = UDim.new(1, 0)
 
             local stroke = Instance.new("UIStroke", btn)
             stroke.Name = "Stroke"
@@ -6384,41 +6453,44 @@ local function __FazzHub_Init_Main__()
             stroke.Thickness = 1
             stroke.Transparency = 0.4
             stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+            stroke.ZIndex = 10
 
             local label = Instance.new("TextLabel")
             label.Name = "Label"
-            label.Size = UDim2.new(1, -36, 1, 0)
-            label.Position = UDim2.new(0, 12, 0, 0)
+            label.Size = UDim2.new(1, -40, 1, 0)
+            label.Position = UDim2.new(0, 14, 0, 0)
             label.BackgroundTransparency = 1
             label.Font = Enum.Font.GothamBold
             label.Text = cfg.title
             label.TextColor3 = Color3.fromRGB(170, 170, 185)
-            label.TextSize = 11
+            label.TextSize = 12
             label.TextXAlignment = Enum.TextXAlignment.Left
             label.TextYAlignment = Enum.TextYAlignment.Center
-            label.ZIndex = 4
+            label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+            label.TextStrokeTransparency = 0.5
+            label.ZIndex = 6
             label.Parent = btn
 
             local dot = Instance.new("Frame")
             dot.Name = "Dot"
-            dot.Size = UDim2.fromOffset(8, 8)
-            dot.Position = UDim2.new(1, -14, 0.5, -4)
+            dot.Size = UDim2.fromOffset(9, 9)
+            dot.Position = UDim2.new(1, -16, 0.5, -4.5)
             dot.BackgroundColor3 = Color3.fromRGB(80, 80, 95)
             dot.BackgroundTransparency = 0.3
             dot.BorderSizePixel = 0
-            dot.ZIndex = 5
+            dot.ZIndex = 7
             dot.Parent = btn
             Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
 
             local lock = Instance.new("TextButton")
             lock.Name = "LockBtn"
-            lock.Size = UDim2.fromOffset(18, 18)
-            lock.Position = UDim2.new(1, 0, 0.5, -9)
+            lock.Size = UDim2.fromOffset(20, 20)
+            lock.Position = UDim2.new(1, 0, 0.5, -10)
             lock.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
             lock.BorderSizePixel = 0
             lock.Text = ""
             lock.AutoButtonColor = false
-            lock.ZIndex = 6
+            lock.ZIndex = 8
             lock.Parent = container
             Instance.new("UICorner", lock).CornerRadius = UDim.new(1, 0)
             local lockStroke = Instance.new("UIStroke", lock)
@@ -6433,7 +6505,7 @@ local function __FazzHub_Init_Main__()
             lockIcon.Text = "🔓"
             lockIcon.TextColor3 = Color3.fromRGB(200, 200, 215)
             lockIcon.TextScaled = true
-            lockIcon.ZIndex = 7
+            lockIcon.ZIndex = 9
             lockIcon.Parent = lock
 
             local drag = false
@@ -6488,9 +6560,8 @@ local function __FazzHub_Init_Main__()
         return state
     end
     W.CreateFloatingButton = CreateFloatingButton--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 15D/19 : SELF UNHOOK + 9 FLOATING BAR
--- PATCH: 9 Floating Bar di-update (tanpa symbol, tanpa notifyTitle)
 --========================================================--
 
     --====================================================--
@@ -6635,7 +6706,7 @@ local function __FazzHub_Init_Main__()
     end
 
     --====================================================--
-    -- 9 FLOATING BAR INSTANCES (PATCHED - TANPA SYMBOL)
+    -- 9 FLOATING BAR INSTANCES
     --====================================================--
 
     local SelfHealBtnState = { Enabled=false, DragLocked=false, Gui=nil, SavedPos=UDim2.new(0.03,0,0.28,0), Connections={} }
@@ -6732,7 +6803,7 @@ local function __FazzHub_Init_Main__()
     })
     getgenv().FazzHub_MoonwalkBtn_SetEnabled   = function(en) MoonwalkFloatingState.SetEnabled(en) end
     getgenv().FazzHub_MoonwalkBtn_UpdateVisual = function() MoonwalkFloatingState.UpdateVisual() end--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 16A/19 : SILENT VEIL V1 + LOCK POV
 --========================================================--
 
@@ -7005,7 +7076,7 @@ local function __FazzHub_Init_Main__()
 
     W.LockPOV = LockPOV
     W.LockPOV_SetEnabled = LockPOV_SetEnabled--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 16B/19 : SILENT VEIL V2
 --========================================================--
 
@@ -7410,7 +7481,7 @@ local function __FazzHub_Init_Main__()
             setTracker = function(v) VeilTrackerEnabled = v end,
         }
                                                                                         end--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 16C/19 : SILENT FLASHLIGHT
 --========================================================--
 
@@ -7587,7 +7658,7 @@ local function __FazzHub_Init_Main__()
             end)
         end)
                                                                                             end--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 17A/19 : TOF V1 (BAGIAN 1)
 --========================================================--
 
@@ -7797,7 +7868,7 @@ local function __FazzHub_Init_Main__()
         if fd.Magnitude < 0.1 then return end
         pcall(function() e:FireServer(g, fd.Unit) end)
                                                                                                 end--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 17B/19 : TOF V1 (BAGIAN 2) + PLAYER UTILITY
 --========================================================--
 
@@ -8139,7 +8210,7 @@ local function __FazzHub_Init_Main__()
         end)
     end
     task.spawn(PU_SetupNoCutsceneHook)--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 17C/19 : PLAYER UTILITY LANJUTAN + EMOTE + JERK OFF
 --========================================================--
 
@@ -8486,7 +8557,7 @@ local function __FazzHub_Init_Main__()
             if JerkTool.Enabled then jerkRunning = true; W.JerkOff_Create() end
         end)
                                                                                                     end--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 18A/19 : NO FALL DAMAGE + NEXT MAP PREDICT
 --========================================================--
 
@@ -8691,7 +8762,7 @@ local function __FazzHub_Init_Main__()
             if VD.NextMapPredict then Start() else Stop() end
         end
                                                                                                         end--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 18B/19 : MANUAL/AUTO GENERATOR + GEN BYPASS
 --========================================================--
 
@@ -9335,13 +9406,13 @@ local function __FazzHub_Init_Main__()
     end)
 
     function W.setGenBypass(v) GenBypass.Enabled = v; W.GB_UpdateButton() end--========================================================--
--- FAZZHUB v0.3.8
--- PART 19A/19 : UI BUILD — SURVIVOR TAB + SKILL CHECK V2
--- PATCH: Auto Skill Check lama DIGANTI dengan versi baru (Opsi B)
+-- FAZZHUB v0.3.9
+-- PART 19A/19 : UI BUILD — SURVIVOR TAB
+-- PATCH: Floating menu Skill Check DIHAPUS
 --========================================================--
 
     --====================================================--
-    -- AUTO SKILL CHECK V2 (LOGIC BARU - SEBELUM UI)
+    -- AUTO SKILL CHECK V2 (LOGIC BARU - TANPA MENU)
     --====================================================--
     W.SkillCheck = W.SkillCheck or {
         Enabled = false,
@@ -9450,397 +9521,6 @@ local function __FazzHub_Init_Main__()
 
     function W.SkillCheck_SetFireDelay(v)
         SC.FireDelay = math.clamp(tonumber(v) or 0.05, 0.01, 1)
-    end
-
-    --====================================================--
-    -- AUTO SKILL CHECK MENU GUI (FLOATING PANEL)
-    --====================================================--
-    local SCMenuState = {
-        Gui = nil, Frame = nil, Visible = true,
-        Dragging = false, DragStart = nil, StartPos = nil,
-        SavedPos = UDim2.new(0, 20, 0.5, -120),
-    }
-
-    local function SC_CreateMenu()
-        if SCMenuState.Gui then
-            pcall(function() SCMenuState.Gui:Destroy() end)
-            SCMenuState.Gui = nil
-        end
-        local parent = LocalPlayer:FindFirstChild("PlayerGui")
-        if gethui then
-            local ok, hui = pcall(gethui)
-            if ok and hui then parent = hui end
-        end
-        if not parent then return end
-
-        local gui = Instance.new("ScreenGui")
-        gui.Name = "FazzHub_SkillCheck"
-        gui.ResetOnSpawn = false
-        gui.IgnoreGuiInset = true
-        gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-        gui.DisplayOrder = 200
-        gui.Parent = parent
-        SCMenuState.Gui = gui
-
-        local frame = Instance.new("Frame")
-        frame.Name = "MainFrame"
-        frame.Size = UDim2.fromOffset(220, 168)
-        frame.Position = SCMenuState.SavedPos
-        frame.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
-        frame.BackgroundTransparency = 0.08
-        frame.BorderSizePixel = 0
-        frame.Active = true
-        frame.Parent = gui
-        Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
-        SCMenuState.Frame = frame
-
-        local stroke = Instance.new("UIStroke", frame)
-        stroke.Color = Color3.fromRGB(255, 255, 255)
-        stroke.Thickness = 1.2
-        stroke.Transparency = 0.2
-        stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-
-        local header = Instance.new("Frame", frame)
-        header.Name = "Header"
-        header.Size = UDim2.new(1, 0, 0, 28)
-        header.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
-        header.BackgroundTransparency = 0.2
-        header.BorderSizePixel = 0
-        Instance.new("UICorner", header).CornerRadius = UDim.new(0, 10)
-
-        local title = Instance.new("TextLabel", header)
-        title.Size = UDim2.new(1, -60, 1, 0)
-        title.Position = UDim2.new(0, 10, 0, 0)
-        title.BackgroundTransparency = 1
-        title.Font = Enum.Font.GothamBold
-        title.Text = "🎯 SKILL CHECK"
-        title.TextColor3 = Color3.fromRGB(255, 255, 255)
-        title.TextSize = 12
-        title.TextXAlignment = Enum.TextXAlignment.Left
-
-        local minBtn = Instance.new("TextButton", header)
-        minBtn.Name = "MinBtn"
-        minBtn.Size = UDim2.fromOffset(22, 22)
-        minBtn.Position = UDim2.new(1, -26, 0.5, -11)
-        minBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-        minBtn.BorderSizePixel = 0
-        minBtn.Text = "−"
-        minBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        minBtn.Font = Enum.Font.GothamBold
-        minBtn.TextSize = 14
-        minBtn.Parent = header
-        Instance.new("UICorner", minBtn).CornerRadius = UDim.new(0, 6)
-
-        local body = Instance.new("Frame", frame)
-        body.Name = "Body"
-        body.Size = UDim2.new(1, -16, 1, -36)
-        body.Position = UDim2.new(0, 8, 0, 30)
-        body.BackgroundTransparency = 1
-        body.Parent = frame
-
-        -- ENABLE TOGGLE
-        local enableRow = Instance.new("Frame", body)
-        enableRow.Name = "EnableRow"
-        enableRow.Size = UDim2.new(1, 0, 0, 26)
-        enableRow.Position = UDim2.new(0, 0, 0, 0)
-        enableRow.BackgroundColor3 = Color3.fromRGB(20, 20, 24)
-        enableRow.BorderSizePixel = 0
-        enableRow.Parent = body
-        Instance.new("UICorner", enableRow).CornerRadius = UDim.new(0, 6)
-
-        local enableLbl = Instance.new("TextLabel", enableRow)
-        enableLbl.Size = UDim2.new(1, -60, 1, 0)
-        enableLbl.Position = UDim2.new(0, 10, 0, 0)
-        enableLbl.BackgroundTransparency = 1
-        enableLbl.Font = Enum.Font.GothamBold
-        enableLbl.Text = "Enable"
-        enableLbl.TextColor3 = Color3.fromRGB(200, 200, 210)
-        enableLbl.TextSize = 11
-        enableLbl.TextXAlignment = Enum.TextXAlignment.Left
-
-        local enableBtn = Instance.new("TextButton", enableRow)
-        enableBtn.Name = "EnableBtn"
-        enableBtn.Size = UDim2.fromOffset(40, 20)
-        enableBtn.Position = UDim2.new(1, -48, 0.5, -10)
-        enableBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
-        enableBtn.BorderSizePixel = 0
-        enableBtn.Text = "OFF"
-        enableBtn.TextColor3 = Color3.fromRGB(120, 120, 135)
-        enableBtn.Font = Enum.Font.GothamBold
-        enableBtn.TextSize = 10
-        enableBtn.Parent = enableRow
-        Instance.new("UICorner", enableBtn).CornerRadius = UDim.new(1, 0)
-
-        local enableDot = Instance.new("Frame", enableBtn)
-        enableDot.Name = "Dot"
-        enableDot.Size = UDim2.fromOffset(6, 6)
-        enableDot.Position = UDim2.new(0, 5, 0.5, -3)
-        enableDot.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
-        enableDot.BorderSizePixel = 0
-        enableDot.Parent = enableBtn
-        Instance.new("UICorner", enableDot).CornerRadius = UDim.new(1, 0)
-
-        -- MODE DROPDOWN
-        local modeRow = Instance.new("Frame", body)
-        modeRow.Name = "ModeRow"
-        modeRow.Size = UDim2.new(1, 0, 0, 26)
-        modeRow.Position = UDim2.new(0, 0, 0, 32)
-        modeRow.BackgroundColor3 = Color3.fromRGB(20, 20, 24)
-        modeRow.BorderSizePixel = 0
-        modeRow.Parent = body
-        Instance.new("UICorner", modeRow).CornerRadius = UDim.new(0, 6)
-
-        local modeLbl = Instance.new("TextLabel", modeRow)
-        modeLbl.Size = UDim2.new(1, -100, 1, 0)
-        modeLbl.Position = UDim2.new(0, 10, 0, 0)
-        modeLbl.BackgroundTransparency = 1
-        modeLbl.Font = Enum.Font.GothamBold
-        modeLbl.Text = "Mode"
-        modeLbl.TextColor3 = Color3.fromRGB(200, 200, 210)
-        modeLbl.TextSize = 11
-        modeLbl.TextXAlignment = Enum.TextXAlignment.Left
-
-        local modeBtn = Instance.new("TextButton", modeRow)
-        modeBtn.Name = "ModeBtn"
-        modeBtn.Size = UDim2.fromOffset(80, 20)
-        modeBtn.Position = UDim2.new(1, -88, 0.5, -10)
-        modeBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
-        modeBtn.BorderSizePixel = 0
-        modeBtn.Text = "Legit"
-        modeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        modeBtn.Font = Enum.Font.GothamBold
-        modeBtn.TextSize = 10
-        modeBtn.Parent = modeRow
-        Instance.new("UICorner", modeBtn).CornerRadius = UDim.new(0, 6)
-
-        -- CHECK DELAY
-        local checkRow = Instance.new("Frame", body)
-        checkRow.Name = "CheckRow"
-        checkRow.Size = UDim2.new(1, 0, 0, 26)
-        checkRow.Position = UDim2.new(0, 0, 0, 64)
-        checkRow.BackgroundColor3 = Color3.fromRGB(20, 20, 24)
-        checkRow.BorderSizePixel = 0
-        checkRow.Parent = body
-        Instance.new("UICorner", checkRow).CornerRadius = UDim.new(0, 6)
-
-        local checkLbl = Instance.new("TextLabel", checkRow)
-        checkLbl.Size = UDim2.new(1, -110, 1, 0)
-        checkLbl.Position = UDim2.new(0, 10, 0, 0)
-        checkLbl.BackgroundTransparency = 1
-        checkLbl.Font = Enum.Font.GothamBold
-        checkLbl.Text = "Check Delay"
-        checkLbl.TextColor3 = Color3.fromRGB(200, 200, 210)
-        checkLbl.TextSize = 11
-        checkLbl.TextXAlignment = Enum.TextXAlignment.Left
-
-        local checkVal = Instance.new("TextLabel", checkRow)
-        checkVal.Name = "Value"
-        checkVal.Size = UDim2.fromOffset(50, 20)
-        checkVal.Position = UDim2.new(1, -58, 0.5, -10)
-        checkVal.BackgroundTransparency = 1
-        checkVal.Font = Enum.Font.GothamBold
-        checkVal.Text = "0.2s"
-        checkVal.TextColor3 = Color3.fromRGB(0, 220, 130)
-        checkVal.TextSize = 11
-        checkVal.TextXAlignment = Enum.TextXAlignment.Right
-        checkVal.Parent = checkRow
-
-        local checkBtnBg = Instance.new("Frame", checkRow)
-        checkBtnBg.Name = "BtnBg"
-        checkBtnBg.Size = UDim2.fromOffset(40, 16)
-        checkBtnBg.Position = UDim2.new(1, -102, 0.5, -8)
-        checkBtnBg.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
-        checkBtnBg.BorderSizePixel = 0
-        checkBtnBg.Parent = checkRow
-        Instance.new("UICorner", checkBtnBg).CornerRadius = UDim.new(0, 4)
-
-        local checkMinus = Instance.new("TextButton", checkBtnBg)
-        checkMinus.Name = "Minus"
-        checkMinus.Size = UDim2.new(0.5, 0, 1, 0)
-        checkMinus.BackgroundTransparency = 1
-        checkMinus.Text = "−"
-        checkMinus.TextColor3 = Color3.fromRGB(255, 255, 255)
-        checkMinus.Font = Enum.Font.GothamBold
-        checkMinus.TextSize = 12
-        checkMinus.Parent = checkBtnBg
-
-        local checkPlus = Instance.new("TextButton", checkBtnBg)
-        checkPlus.Name = "Plus"
-        checkPlus.Size = UDim2.new(0.5, 0, 1, 0)
-        checkPlus.Position = UDim2.new(0.5, 0, 0, 0)
-        checkPlus.BackgroundTransparency = 1
-        checkPlus.Text = "+"
-        checkPlus.TextColor3 = Color3.fromRGB(255, 255, 255)
-        checkPlus.Font = Enum.Font.GothamBold
-        checkPlus.TextSize = 12
-        checkPlus.Parent = checkBtnBg
-
-        -- FIRE DELAY
-        local fireRow = Instance.new("Frame", body)
-        fireRow.Name = "FireRow"
-        fireRow.Size = UDim2.new(1, 0, 0, 26)
-        fireRow.Position = UDim2.new(0, 0, 0, 96)
-        fireRow.BackgroundColor3 = Color3.fromRGB(20, 20, 24)
-        fireRow.BorderSizePixel = 0
-        fireRow.Parent = body
-        Instance.new("UICorner", fireRow).CornerRadius = UDim.new(0, 6)
-
-        local fireLbl = Instance.new("TextLabel", fireRow)
-        fireLbl.Size = UDim2.new(1, -110, 1, 0)
-        fireLbl.Position = UDim2.new(0, 10, 0, 0)
-        fireLbl.BackgroundTransparency = 1
-        fireLbl.Font = Enum.Font.GothamBold
-        fireLbl.Text = "Fire Delay"
-        fireLbl.TextColor3 = Color3.fromRGB(200, 200, 210)
-        fireLbl.TextSize = 11
-        fireLbl.TextXAlignment = Enum.TextXAlignment.Left
-
-        local fireVal = Instance.new("TextLabel", fireRow)
-        fireVal.Name = "Value"
-        fireVal.Size = UDim2.fromOffset(50, 20)
-        fireVal.Position = UDim2.new(1, -58, 0.5, -10)
-        fireVal.BackgroundTransparency = 1
-        fireVal.Font = Enum.Font.GothamBold
-        fireVal.Text = "0.05s"
-        fireVal.TextColor3 = Color3.fromRGB(0, 220, 130)
-        fireVal.TextSize = 11
-        fireVal.TextXAlignment = Enum.TextXAlignment.Right
-        fireVal.Parent = fireRow
-
-        local fireBtnBg = Instance.new("Frame", fireRow)
-        fireBtnBg.Name = "BtnBg"
-        fireBtnBg.Size = UDim2.fromOffset(40, 16)
-        fireBtnBg.Position = UDim2.new(1, -102, 0.5, -8)
-        fireBtnBg.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
-        fireBtnBg.BorderSizePixel = 0
-        fireBtnBg.Parent = fireRow
-        Instance.new("UICorner", fireBtnBg).CornerRadius = UDim.new(0, 4)
-
-        local fireMinus = Instance.new("TextButton", fireBtnBg)
-        fireMinus.Name = "Minus"
-        fireMinus.Size = UDim2.new(0.5, 0, 1, 0)
-        fireMinus.BackgroundTransparency = 1
-        fireMinus.Text = "−"
-        fireMinus.TextColor3 = Color3.fromRGB(255, 255, 255)
-        fireMinus.Font = Enum.Font.GothamBold
-        fireMinus.TextSize = 12
-        fireMinus.Parent = fireBtnBg
-
-        local firePlus = Instance.new("TextButton", fireBtnBg)
-        firePlus.Name = "Plus"
-        firePlus.Size = UDim2.new(0.5, 0, 1, 0)
-        firePlus.Position = UDim2.new(0.5, 0, 0, 0)
-        firePlus.BackgroundTransparency = 1
-        firePlus.Text = "+"
-        firePlus.TextColor3 = Color3.fromRGB(255, 255, 255)
-        firePlus.Font = Enum.Font.GothamBold
-        firePlus.TextSize = 12
-        firePlus.Parent = fireBtnBg
-
-        local function UpdateEnableVisual()
-            if SC.Enabled then
-                enableBtn.BackgroundColor3 = Color3.fromRGB(15, 25, 20)
-                enableBtn.Text = "ON"
-                enableBtn.TextColor3 = Color3.fromRGB(0, 220, 130)
-                enableDot.BackgroundColor3 = Color3.fromRGB(0, 220, 130)
-            else
-                enableBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
-                enableBtn.Text = "OFF"
-                enableBtn.TextColor3 = Color3.fromRGB(120, 120, 135)
-                enableDot.BackgroundColor3 = Color3.fromRGB(80, 80, 90)
-            end
-        end
-        enableBtn.MouseButton1Click:Connect(function()
-            W.SkillCheck_SetEnabled(not SC.Enabled)
-            UpdateEnableVisual()
-        end)
-
-        local modeOptions = { "Legit", "Instant" }
-        local modeIndex = 1
-        for i, opt in ipairs(modeOptions) do
-            if opt == SC.Mode then modeIndex = i; break end
-        end
-        modeBtn.Text = modeOptions[modeIndex]
-        modeBtn.MouseButton1Click:Connect(function()
-            modeIndex = modeIndex + 1
-            if modeIndex > #modeOptions then modeIndex = 1 end
-            local newMode = modeOptions[modeIndex]
-            W.SkillCheck_SetMode(newMode)
-            modeBtn.Text = newMode
-        end)
-
-        local function UpdateCheckDelay(v)
-            SC.CheckDelay = math.clamp(tonumber(v) or 0.2, 0.05, 2)
-            checkVal.Text = string.format("%.2fs", SC.CheckDelay)
-        end
-        UpdateCheckDelay(SC.CheckDelay)
-        checkMinus.MouseButton1Click:Connect(function() UpdateCheckDelay(SC.CheckDelay - 0.05) end)
-        checkPlus.MouseButton1Click:Connect(function() UpdateCheckDelay(SC.CheckDelay + 0.05) end)
-
-        local function UpdateFireDelay(v)
-            SC.FireDelay = math.clamp(tonumber(v) or 0.05, 0.01, 1)
-            fireVal.Text = string.format("%.2fs", SC.FireDelay)
-        end
-        UpdateFireDelay(SC.FireDelay)
-        fireMinus.MouseButton1Click:Connect(function() UpdateFireDelay(SC.FireDelay - 0.01) end)
-        firePlus.MouseButton1Click:Connect(function() UpdateFireDelay(SC.FireDelay + 0.01) end)
-
-        header.InputBegan:Connect(function(inp)
-            if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
-                SCMenuState.Dragging = true
-                SCMenuState.DragStart = inp.Position
-                SCMenuState.StartPos = frame.Position
-            end
-        end)
-        UserInputService.InputChanged:Connect(function(inp)
-            if not SCMenuState.Dragging then return end
-            if inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch then
-                local d = inp.Position - SCMenuState.DragStart
-                local newPos = UDim2.new(
-                    SCMenuState.StartPos.X.Scale, SCMenuState.StartPos.X.Offset + d.X,
-                    SCMenuState.StartPos.Y.Scale, SCMenuState.StartPos.Y.Offset + d.Y
-                )
-                frame.Position = newPos
-                SCMenuState.SavedPos = newPos
-            end
-        end)
-        UserInputService.InputEnded:Connect(function(inp)
-            if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
-                SCMenuState.Dragging = false
-            end
-        end)
-
-        local minimized = false
-        local fullSize = UDim2.fromOffset(220, 168)
-        minBtn.MouseButton1Click:Connect(function()
-            minimized = not minimized
-            if minimized then
-                frame.Size = UDim2.fromOffset(220, 28)
-                body.Visible = false
-                minBtn.Text = "+"
-            else
-                frame.Size = fullSize
-                body.Visible = true
-                minBtn.Text = "−"
-            end
-        end)
-
-        UpdateEnableVisual()
-    end
-
-    W.SkillCheckMenu_Show = function()
-        if not SCMenuState.Gui or not SCMenuState.Gui.Parent then
-            SC_CreateMenu()
-        else
-            SCMenuState.Gui.Enabled = true
-        end
-    end
-    W.SkillCheckMenu_Hide = function()
-        if SCMenuState.Gui then
-            pcall(function() SCMenuState.Gui:Destroy() end)
-            SCMenuState.Gui = nil
-            SCMenuState.Frame = nil
-        end
     end
 
     --====================================================--
@@ -10012,7 +9692,7 @@ local function __FazzHub_Init_Main__()
         end })
 
         --====================================================--
-        -- AUTO SKILL CHECK (VERSI BARU - OPSI B)
+        -- AUTO SKILL CHECK (TANPA FLOATING MENU)
         --====================================================--
         local skillSection = MakeSection(SurvivorTab, "Auto Skill Check")
         skillSection:AddToggle({
@@ -10022,10 +9702,8 @@ local function __FazzHub_Init_Main__()
             Callback = function(v)
                 W.SkillCheck_SetEnabled(v)
                 if v then
-                    W.SkillCheckMenu_Show()
                     VD_Notify("Auto Skill Check", "Enabled", 2)
                 else
-                    W.SkillCheckMenu_Hide()
                     VD_Notify("Auto Skill Check", "Disabled", 2)
                 end
             end
@@ -10055,14 +9733,6 @@ local function __FazzHub_Init_Main__()
             Increment = 0.01,
             Suffix = "s",
             Callback = function(v) W.SkillCheck_SetFireDelay(v) end
-        })
-        skillSection:AddButton({
-            Title = "Show Skill Check Menu",
-            Content = "Buka floating panel kontrol",
-            Callback = function()
-                W.SkillCheckMenu_Show()
-                VD_Notify("Auto Skill Check", "Menu opened", 2)
-            end
         })
 
         local genSection = MakeSection(SurvivorTab, "Bypass Generator")
@@ -10156,7 +9826,7 @@ local function __FazzHub_Init_Main__()
                 if state then StartGodMode(); VD_Notify("God Mode", "Enabled", 2)
                 else StopGodMode(); VD_Notify("God Mode", "Disabled", 2) end
             end })--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 19B/19 : SURVIVOR TAB (LANJUTAN)
 --========================================================--
 
@@ -10501,7 +10171,7 @@ local function __FazzHub_Init_Main__()
                 else VD_Notify("Killer Perks Display", "Disabled", 2) end
             end
         })--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 19C/19 : VISUALS TAB + KILLER TAB (BAGIAN 1)
 --========================================================--
 
@@ -10793,7 +10463,7 @@ local function __FazzHub_Init_Main__()
                 end
             end
         })--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 19D/19 : KILLER TAB (LANJUTAN)
 --========================================================--
 
@@ -11046,7 +10716,7 @@ local function __FazzHub_Init_Main__()
                 if hum and hum.WalkSpeed == 0 then hum.WalkSpeed = 16 end
             end
         end })--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 19E-1/19 : MISC TAB (BAGIAN 1)
 --========================================================--
 
@@ -11243,7 +10913,7 @@ local function __FazzHub_Init_Main__()
             W.EmoteSystem_Play()
             VD_Notify("Emote", "Replaying: " .. W.EmoteSystem.SelectedEmote, 2)
         end })--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 19E-2/19 : MISC TAB (BAGIAN 2) - FINAL MISC
 --========================================================--
 
@@ -11650,7 +11320,7 @@ local function __FazzHub_Init_Main__()
                 if SpecGui then SpecGui:Destroy(); SpecGui = nil; SpecLabel = nil end
             end
         end })--========================================================--
--- FAZZHUB v0.3.8
+-- FAZZHUB v0.3.9
 -- PART 19F/19 : BOMBAX + CONFIG + CLOSING (FINAL)
 --========================================================--
 
@@ -12071,13 +11741,13 @@ local function __FazzHub_Init_Main__()
     end)
     RunService.RenderStepped:Connect(function() pcall(Veil_UpdateAimbot) end)
 
-    print("[FAZZHUB v0.3.8] Loaded!")
+    print("[FAZZHUB v0.3.9] Loaded!")
     print("  - All features loaded with Bombax Music Player")
     print("  - ESP Status: Name + Distance only")
-    print("  - Auto Skill Check V2 (floating menu)")
-    print("  - Floating Button v2 (theme FAZZHUB)")
-    print("  - Bombax Mini: FAZZHUB background image")
-    ForceNotify("FAZZHUB v0.3.8 Loaded", "All features ready", 6)
+    print("  - Auto Skill Check V2 (no floating menu)")
+    print("  - Floating Button v2 (140x38 + BG image FAZZHUB)")
+    print("  - Stun Indicator: Icon FAZZHUB + Duration Bar")
+    ForceNotify("FAZZHUB v0.3.9 Loaded", "All features ready", 6)
 
 end
 
