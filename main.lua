@@ -1,5 +1,5 @@
 --========================================================--
--- FAZZHUB v0.4.0 - FULL SCRIPT
+-- FAZZHUB v0.3.9 - FULL SCRIPT
 -- Image: rbxassetid://72845574620852
 -- PART 1/19 : HEADER + INIT + NOTIFY + HELPER
 --========================================================--
@@ -154,7 +154,7 @@ local function __FazzHub_Init_Main__()
         end
         return pts
     end--========================================================--
--- FAZZHUB v0.4.0
+-- FAZZHUB v0.3.9
 -- PART 2/19 : VARIABLE DEFAULTS
 --========================================================--
 
@@ -240,9 +240,9 @@ local function __FazzHub_Init_Main__()
     _G.GLUTO_NEUTRAL    = Color3.fromRGB(90, 90, 90)
     _G.GLUTO_STROKE_OFF = Color3.fromRGB(25, 25, 25)
     _G.GLUTO_BG_OFF     = Color3.fromRGB(0, 0, 0)--========================================================--
--- FAZZHUB v0.4.0
+-- FAZZHUB v0.3.9
 -- PART 3/19 : BOMBAX SONG LIBRARY + MUSIC + AUTO NEXT
--- PATCH: +6 lagu baru (32 → 38 lagu)
+-- PATCH: Notif ganti lagu DIHAPUS
 --========================================================--
 
     --====================================================--
@@ -256,7 +256,6 @@ local function __FazzHub_Init_Main__()
     }
     local Bombax = W.Bombax
 
-    -- SONG LIBRARY (38 lagu)
     local Songs = {
         {id="101985596918228", judul="One"},
         {id="78520199502339",  judul="Two"},
@@ -290,13 +289,6 @@ local function __FazzHub_Init_Main__()
         {id="101280279977761", judul="Kini Kita Pe Kisah"},
         {id="117080961502380", judul="DJ Music Dubstep x Bangun Tidur Selfie"},
         {id="110337096446518", judul="DJ Onia"},
-        -- [PATCH v0.4.0] 6 lagu baru
-        {id="91630275902282",  judul="Uwir Uwir"},
-        {id="81803213206369",  judul="Kaka Pun Manis"},
-        {id="130363203409553", judul="Satu Malam"},
-        {id="92768059443544",  judul="Habibi"},
-        {id="111485011584825", judul="Teh Hijau"},
-        {id="93423022448185",  judul="Ip Kupi"},
     }
 
     local MUSIC_LIBRARY = {}
@@ -422,7 +414,360 @@ local function __FazzHub_Init_Main__()
             W.Bombax_Play(pick.id, pick.name)
         end
         end--========================================================--
--- FAZZHUB v0.4.0
+-- FAZZHUB v0.3.9
+-- PART 4/19 : BOMBAX MINI GUI + PROGRESS BAR
+-- PATCH: Background pakai image ID FAZZHUB + transparan
+--========================================================--
+
+    --====================================================--
+    -- BOMBAX MINI GUI (Bar + Progress)
+    --====================================================--
+    do
+        local MiniState = {
+            Gui = nil,
+            SavedPos = UDim2.new(0, 20, 0.5, -100),
+            Expanded = true,
+            Frame = nil, Body = nil,
+            TrackLbl = nil, VolLbl = nil, VolFill = nil,
+            ProgressFill = nil, ProgressLbl = nil,
+        }
+
+        local BG_IMAGE_ID = "rbxassetid://72845574620852"
+
+        local function BuildMini()
+            if MiniState.Gui then pcall(function() MiniState.Gui:Destroy() end) end
+            local parent = LocalPlayer:FindFirstChild("PlayerGui")
+            if gethui then
+                local ok2, hui = pcall(gethui)
+                if ok2 and hui then parent = hui end
+            end
+            if not parent then return end
+
+            local gui = Instance.new("ScreenGui")
+            gui.Name = "FAZZHUB_BombaxMini"
+            gui.ResetOnSpawn = false
+            gui.IgnoreGuiInset = true
+            gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+            gui.DisplayOrder = 200
+            gui.Parent = parent
+            MiniState.Gui = gui
+
+            local frame = Instance.new("Frame")
+            frame.Name = "MiniFrame"
+            frame.Size = UDim2.fromOffset(230, 168)
+            frame.Position = MiniState.SavedPos
+            frame.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
+            frame.BackgroundTransparency = 1
+            frame.BorderSizePixel = 0
+            frame.Active = true
+            frame.ClipsDescendants = true
+            frame.Parent = gui
+            Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
+
+            local bgImage = Instance.new("ImageLabel")
+            bgImage.Name = "BgImage"
+            bgImage.Size = UDim2.fromScale(1, 1)
+            bgImage.Position = UDim2.fromScale(0, 0)
+            bgImage.BackgroundTransparency = 1
+            bgImage.Image = BG_IMAGE_ID
+            bgImage.ImageTransparency = 0.35
+            bgImage.ScaleType = Enum.ScaleType.Crop
+            bgImage.ZIndex = 0
+            bgImage.Parent = frame
+            Instance.new("UICorner", bgImage).CornerRadius = UDim.new(0, 10)
+
+            local overlay = Instance.new("Frame")
+            overlay.Name = "BgOverlay"
+            overlay.Size = UDim2.fromScale(1, 1)
+            overlay.Position = UDim2.fromScale(0, 0)
+            overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+            overlay.BackgroundTransparency = 0.55
+            overlay.BorderSizePixel = 0
+            overlay.ZIndex = 1
+            overlay.Parent = frame
+            Instance.new("UICorner", overlay).CornerRadius = UDim.new(0, 10)
+
+            local stroke = Instance.new("UIStroke", frame)
+            stroke.Color = Color3.fromRGB(255, 255, 255)
+            stroke.Thickness = 1.2
+            stroke.Transparency = 0.2
+            stroke.ZIndex = 20
+            MiniState.Frame = frame
+
+            local header = Instance.new("Frame", frame)
+            header.Name = "Header"
+            header.Size = UDim2.new(1, 0, 0, 26)
+            header.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
+            header.BackgroundTransparency = 0.35
+            header.BorderSizePixel = 0
+            header.ZIndex = 3
+            Instance.new("UICorner", header).CornerRadius = UDim.new(0, 10)
+
+            local title = Instance.new("TextLabel", header)
+            title.Size = UDim2.new(1, -60, 1, 0)
+            title.Position = UDim2.new(0, 10, 0, 0)
+            title.BackgroundTransparency = 1
+            title.Font = Enum.Font.GothamBold
+            title.Text = "🎵 BOMBAX"
+            title.TextColor3 = Color3.fromRGB(255, 255, 255)
+            title.TextSize = 12
+            title.TextXAlignment = Enum.TextXAlignment.Left
+            title.ZIndex = 4
+
+            local minBtn = Instance.new("TextButton", header)
+            minBtn.Name = "MinBtn"
+            minBtn.Size = UDim2.fromOffset(22, 22)
+            minBtn.Position = UDim2.new(1, -26, 0.5, -11)
+            minBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+            minBtn.BorderSizePixel = 0
+            minBtn.Text = "−"
+            minBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            minBtn.Font = Enum.Font.GothamBold
+            minBtn.TextSize = 14
+            minBtn.ZIndex = 5
+            minBtn.Parent = header
+            Instance.new("UICorner", minBtn).CornerRadius = UDim.new(0, 6)
+
+            local body = Instance.new("Frame", frame)
+            body.Name = "Body"
+            body.Size = UDim2.new(1, -16, 1, -36)
+            body.Position = UDim2.new(0, 8, 0, 30)
+            body.BackgroundTransparency = 1
+            body.ZIndex = 3
+            body.Parent = frame
+            MiniState.Body = body
+
+            local trackLbl = Instance.new("TextLabel", body)
+            trackLbl.Name = "TrackLbl"
+            trackLbl.Size = UDim2.new(1, 0, 0, 18)
+            trackLbl.BackgroundTransparency = 1
+            trackLbl.Font = Enum.Font.GothamMedium
+            trackLbl.Text = "No track playing"
+            trackLbl.TextColor3 = Color3.fromRGB(220, 220, 230)
+            trackLbl.TextSize = 10
+            trackLbl.TextXAlignment = Enum.TextXAlignment.Left
+            trackLbl.TextTruncate = Enum.TextTruncate.AtEnd
+            trackLbl.ZIndex = 4
+            MiniState.TrackLbl = trackLbl
+
+            local progressBg = Instance.new("Frame", body)
+            progressBg.Name = "ProgressBg"
+            progressBg.Size = UDim2.new(1, 0, 0, 8)
+            progressBg.Position = UDim2.new(0, 0, 0, 22)
+            progressBg.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+            progressBg.BackgroundTransparency = 0.2
+            progressBg.BorderSizePixel = 0
+            progressBg.ZIndex = 4
+            Instance.new("UICorner", progressBg).CornerRadius = UDim.new(1, 0)
+
+            local progressFill = Instance.new("Frame", progressBg)
+            progressFill.Name = "ProgressFill"
+            progressFill.Size = UDim2.new(0, 0, 1, 0)
+            progressFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            progressFill.BorderSizePixel = 0
+            progressFill.ZIndex = 5
+            Instance.new("UICorner", progressFill).CornerRadius = UDim.new(1, 0)
+            MiniState.ProgressFill = progressFill
+
+            local progressLbl = Instance.new("TextLabel", body)
+            progressLbl.Name = "ProgressLbl"
+            progressLbl.Size = UDim2.new(1, 0, 0, 12)
+            progressLbl.Position = UDim2.new(0, 0, 0, 32)
+            progressLbl.BackgroundTransparency = 1
+            progressLbl.Font = Enum.Font.GothamBold
+            progressLbl.Text = "0:00 / 0:00"
+            progressLbl.TextColor3 = Color3.fromRGB(180, 180, 200)
+            progressLbl.TextSize = 9
+            progressLbl.TextXAlignment = Enum.TextXAlignment.Right
+            progressLbl.ZIndex = 4
+            MiniState.ProgressLbl = progressLbl
+
+            local btnRow = Instance.new("Frame", body)
+            btnRow.Size = UDim2.new(1, 0, 0, 30)
+            btnRow.Position = UDim2.new(0, 0, 0, 50)
+            btnRow.BackgroundTransparency = 1
+            btnRow.ZIndex = 4
+
+            local function makeBtn(name, text, xPos, callback)
+                local b = Instance.new("TextButton", btnRow)
+                b.Name = name
+                b.Size = UDim2.fromOffset(56, 26)
+                b.Position = UDim2.fromOffset(xPos, 0)
+                b.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+                b.BackgroundTransparency = 0.2
+                b.BorderSizePixel = 0
+                b.Text = text
+                b.TextColor3 = Color3.fromRGB(255, 255, 255)
+                b.Font = Enum.Font.GothamBold
+                b.TextSize = 11
+                b.ZIndex = 5
+                Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
+                local s = Instance.new("UIStroke", b)
+                s.Color = Color3.fromRGB(255, 255, 255)
+                s.Thickness = 1
+                s.Transparency = 0.5
+                b.MouseButton1Click:Connect(callback)
+                return b
+            end
+
+            makeBtn("PlayBtn", "▶", 0, function()
+                if Bombax.CurrentTrack and MUSIC_LIBRARY[Bombax.CurrentTrack] then
+                    W.Bombax_Play(MUSIC_LIBRARY[Bombax.CurrentTrack], Bombax.CurrentTrack)
+                elseif Bombax.CurrentSound and Bombax.CurrentSound.SoundId ~= "" then
+                    W.Bombax_Play(Bombax.CurrentSound.SoundId, Bombax.CurrentTrack or "Unknown")
+                else
+                    ForceNotify("Bombax", "Pilih lagu dulu di tab Bombax", 2)
+                end
+            end)
+            makeBtn("PauseBtn", "⏸", 60, function() W.Bombax_Pause() end)
+            makeBtn("StopBtn", "⏹", 120, function() W.Bombax_Stop() end)
+
+            local nextBtn = Instance.new("TextButton", btnRow)
+            nextBtn.Name = "NextBtn"
+            nextBtn.Size = UDim2.fromOffset(26, 26)
+            nextBtn.Position = UDim2.new(1, -26, 0, 0)
+            nextBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+            nextBtn.BackgroundTransparency = 0.2
+            nextBtn.BorderSizePixel = 0
+            nextBtn.Text = "⏭"
+            nextBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            nextBtn.Font = Enum.Font.GothamBold
+            nextBtn.TextSize = 12
+            nextBtn.ZIndex = 5
+            Instance.new("UICorner", nextBtn).CornerRadius = UDim.new(0, 6)
+            local nbStroke = Instance.new("UIStroke", nextBtn)
+            nbStroke.Color = Color3.fromRGB(255, 255, 255)
+            nbStroke.Thickness = 1
+            nbStroke.Transparency = 0.5
+            nextBtn.MouseButton1Click:Connect(function()
+                W.Bombax_Next()
+            end)
+
+            local volLbl = Instance.new("TextLabel", body)
+            volLbl.Name = "VolLbl"
+            volLbl.Size = UDim2.new(1, 0, 0, 14)
+            volLbl.Position = UDim2.new(0, 0, 0, 84)
+            volLbl.BackgroundTransparency = 1
+            volLbl.Font = Enum.Font.GothamBold
+            volLbl.Text = "🔊 Volume: 2.0x"
+            volLbl.TextColor3 = Color3.fromRGB(180, 180, 200)
+            volLbl.TextSize = 9
+            volLbl.TextXAlignment = Enum.TextXAlignment.Left
+            volLbl.ZIndex = 4
+            MiniState.VolLbl = volLbl
+
+            local volBar = Instance.new("Frame", body)
+            volBar.Name = "VolBar"
+            volBar.Size = UDim2.new(1, 0, 0, 6)
+            volBar.Position = UDim2.new(0, 0, 0, 100)
+            volBar.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+            volBar.BackgroundTransparency = 0.2
+            volBar.BorderSizePixel = 0
+            volBar.ZIndex = 4
+            Instance.new("UICorner", volBar).CornerRadius = UDim.new(1, 0)
+
+            local volFill = Instance.new("Frame", volBar)
+            volFill.Name = "VolFill"
+            volFill.Size = UDim2.new(0.2, 0, 1, 0)
+            volFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            volFill.BorderSizePixel = 0
+            volFill.ZIndex = 5
+            Instance.new("UICorner", volFill).CornerRadius = UDim.new(1, 0)
+            MiniState.VolFill = volFill
+
+            local dragging, dragStart, startPos = false, nil, nil
+            header.InputBegan:Connect(function(inp)
+                if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+                    dragging = true; dragStart = inp.Position; startPos = frame.Position
+                end
+            end)
+            UserInputService.InputChanged:Connect(function(inp)
+                if not dragging then return end
+                if inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch then
+                    local d = inp.Position - dragStart
+                    frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
+                    MiniState.SavedPos = frame.Position
+                end
+            end)
+            UserInputService.InputEnded:Connect(function(inp)
+                if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+                    dragging = false
+                end
+            end)
+
+            local expanded = true
+            minBtn.MouseButton1Click:Connect(function()
+                expanded = not expanded
+                if expanded then
+                    TweenService:Create(frame, TweenInfo.new(0.25), { Size = UDim2.fromOffset(230, 168) }):Play()
+                    minBtn.Text = "−"
+                    body.Visible = true
+                else
+                    TweenService:Create(frame, TweenInfo.new(0.25), { Size = UDim2.fromOffset(230, 26) }):Play()
+                    minBtn.Text = "+"
+                    body.Visible = false
+                end
+            end)
+
+            W.Bombax_MiniUpdate = function()
+                if not MiniState.Gui then return end
+                local trackTxt = Bombax.CurrentTrack or "No track"
+                if MiniState.TrackLbl then MiniState.TrackLbl.Text = "🎵 " .. trackTxt end
+                if MiniState.VolLbl then MiniState.VolLbl.Text = string.format("🔊 Volume: %.1fx", Bombax.Volume) end
+                if MiniState.VolFill then
+                    local ratio = math.clamp(Bombax.Volume / 10, 0, 1)
+                    MiniState.VolFill.Size = UDim2.new(ratio, 0, 1, 0)
+                end
+            end
+
+            task.spawn(function()
+                while MiniState.Gui and MiniState.Gui.Parent do
+                    if Bombax.CurrentSound then
+                        local snd = Bombax.CurrentSound
+                        local pos = snd.TimePosition or 0
+                        local len = snd.TimeLength or 0
+                        if MiniState.ProgressFill and len > 0 then
+                            local ratio = math.clamp(pos / len, 0, 1)
+                            MiniState.ProgressFill.Size = UDim2.new(ratio, 0, 1, 0)
+                        end
+                        if MiniState.ProgressLbl then
+                            local function fmt(t)
+                                t = math.max(0, math.floor(t))
+                                local m = math.floor(t / 60)
+                                local s = t % 60
+                                return string.format("%d:%02d", m, s)
+                            end
+                            MiniState.ProgressLbl.Text = fmt(pos) .. " / " .. fmt(len)
+                        end
+                    end
+                    task.wait(0.2)
+                end
+            end)
+
+            W.Bombax_MiniUpdate()
+        end
+
+        function W.Bombax_MiniToggle()
+            MiniState.Expanded = not MiniState.Expanded
+            if MiniState.Expanded then BuildMini()
+            else
+                if MiniState.Gui then pcall(function() MiniState.Gui:Destroy() end); MiniState.Gui = nil end
+            end
+        end
+
+        function W.Bombax_MiniEnable(v)
+            if v then BuildMini()
+            else
+                if MiniState.Gui then pcall(function() MiniState.Gui:Destroy() end); MiniState.Gui = nil end
+            end
+        end
+
+        task.spawn(function()
+            task.wait(1)
+            BuildMini()
+        end)
+            end--========================================================--
+-- FAZZHUB v0.3.9
 -- PART 5/19 : AUTO CROUCH + AUTO ATTACK + AUTO FLEE
 --========================================================--
 
@@ -614,7 +959,7 @@ local function __FazzHub_Init_Main__()
             pcall(W.SURV_AutoFlee)
         end
     end)--========================================================--
--- FAZZHUB v0.4.0
+-- FAZZHUB v0.3.9
 -- PART 6A/19 : AUTO PARRY V1 (BAGIAN 1)
 --========================================================--
 
@@ -885,7 +1230,7 @@ local function __FazzHub_Init_Main__()
     LocalPlayer.ChildAdded:Connect(function(c)
         if c:IsA("PlayerGui") then ParryAttachPlayerGui(c) end
     end)--========================================================--
--- FAZZHUB v0.4.0
+-- FAZZHUB v0.3.9
 -- PART 6B/19 : AUTO PARRY V1 (BAGIAN 2)
 --========================================================--
 
@@ -1152,7 +1497,7 @@ local function __FazzHub_Init_Main__()
 
     W.ParryState = ParryState
     W.ParryCooldown = ParryCooldown--========================================================--
--- FAZZHUB v0.4.0
+-- FAZZHUB v0.3.9
 -- PART 7/19 : AUTO PARRY V2
 --========================================================--
 
@@ -1433,8 +1778,8 @@ local function __FazzHub_Init_Main__()
                 AP2_State.Adornment = nil
             end
         end)
-            end--========================================================--
--- FAZZHUB v0.4.0
+                end--========================================================--
+-- FAZZHUB v0.3.9
 -- PART 8A/19 : SELF HEAL
 --========================================================--
 
@@ -1597,7 +1942,7 @@ local function __FazzHub_Init_Main__()
         if W.InstantHealSelf then W.setInstantHealSelf(true) end
         if W.AutoHealAll then W.setAutoHealAll(true) end
     end)--========================================================--
--- FAZZHUB v0.4.0
+-- FAZZHUB v0.3.9
 -- PART 8B/19 : FAKE PERKS
 --========================================================--
 
@@ -1952,8 +2297,8 @@ local function __FazzHub_Init_Main__()
             FP_Clean("AdrenalineRush")
             FP.ActiveBuffs["AdrenalineRush"] = nil
         end
-                end--========================================================--
--- FAZZHUB v0.4.0
+                    end--========================================================--
+-- FAZZHUB v0.3.9
 -- PART 9A/19 : STUN INDICATOR
 -- PATCH: Icon FAZZHUB + Bar Durasi Stun
 --========================================================--
@@ -2297,8 +2642,8 @@ local function __FazzHub_Init_Main__()
             end
             SInd.Cache = {}
         end
-                    end--========================================================--
--- FAZZHUB v0.4.0
+                        end--========================================================--
+-- FAZZHUB v0.3.9
 -- PART 9B/19 : TROLL TP + ESCAPE + MASKED
 --========================================================--
 
@@ -2408,8 +2753,8 @@ local function __FazzHub_Init_Main__()
             pcall(function() ev:FireServer() end)
             VD_Notify("Select Masked", "Deactivated", 2)
         else ForceNotify("Select Masked", "Deactivatepower remote not found", 2) end
-                        end--========================================================--
--- FAZZHUB v0.4.0
+                            end--========================================================--
+-- FAZZHUB v0.3.9
 -- PART 10A/19 : FULL ESP (BAGIAN 1)
 --========================================================--
 
@@ -2497,10 +2842,10 @@ local function __FazzHub_Init_Main__()
                 pcall(function() StatusESP[char]:Destroy() end)
                 StatusESP[char] = nil
             end
-                                end--========================================================--
--- FAZZHUB v0.4.0
+                                    end--========================================================--
+-- FAZZHUB v0.3.9
 -- PART 10B/19 : FULL ESP (BAGIAN 2 - STATUS BARU)
--- PATCH: ESP Status cuma Nama + Jarak (2 baris)
+-- PATCH: ESP Status sekarang cuma Nama + Jarak (2 baris)
 --========================================================--
 
         local function CreateStatusESP(plr, char, root)
@@ -2518,6 +2863,7 @@ local function __FazzHub_Init_Main__()
             local dist = (head.Position - root.Position).Magnitude
             if dist > FESPS.Radius then RemoveStatusESP(char); return end
 
+            -- Warna beda per team (Survivor biru, Killer merah)
             local accentColor = Color3.fromRGB(255, 255, 255)
             if TeamIs(plr, "Killer") then accentColor = FESPC.Killer
             elseif TeamIs(plr, "Survivor") then accentColor = FESPC.Survivor end
@@ -2594,8 +2940,8 @@ local function __FazzHub_Init_Main__()
                 scaleVal = math.clamp(scaleVal, 0.6, 1.05)
                 distScale.Scale = scaleVal
             end
-                                    end--========================================================--
--- FAZZHUB v0.4.0
+                                        end--========================================================--
+-- FAZZHUB v0.3.9
 -- PART 10C/19 : FULL ESP (BAGIAN 3)
 --========================================================--
 
@@ -2859,8 +3205,8 @@ local function __FazzHub_Init_Main__()
                 end
             end
         end)
-                                    end--========================================================--
--- FAZZHUB v0.4.0
+                                        end--========================================================--
+-- FAZZHUB v0.3.9
 -- PART 11/19 : INVISIBLE
 --========================================================--
 
@@ -3065,8 +3411,8 @@ local function __FazzHub_Init_Main__()
             if MV.Enabled then return "ON" end
             return "READY"
         end
-                                        end--========================================================--
--- FAZZHUB v0.4.0
+                                            end--========================================================--
+-- FAZZHUB v0.3.9
 -- PART 12A/19 : BYPASS (LEAP, GRAB, SLASHER, ABYSS)
 --========================================================--
 
@@ -3325,8 +3671,8 @@ local function __FazzHub_Init_Main__()
         VD.KILLER_BypassCooldown = v and true or false
         if VD.KILLER_BypassCooldown then W.MAWWW_StartAbyssCooldownBypass()
         else W.MAWWW_StopAbyssCooldownBypass() end
-                                            end--========================================================--
--- FAZZHUB v0.4.0
+                                                end--========================================================--
+-- FAZZHUB v0.3.9
 -- PART 12B/19 : BYPASS (JEFF, ANTIBLIND, DESTROYPALLET, INFLUNGE)
 --========================================================--
 
@@ -3485,7 +3831,7 @@ local function __FazzHub_Init_Main__()
     LocalPlayer.CharacterRemoving:Connect(function()
         VD_OriginalLungeBoost = nil
     end)--========================================================--
--- FAZZHUB v0.4.0
+-- FAZZHUB v0.3.9
 -- PART 13A/19 : AIMLOCK ATTACK + AIMLOCK GUN
 --========================================================--
 
@@ -3727,8 +4073,8 @@ local function __FazzHub_Init_Main__()
 
         W.GunAim_Start = GA_Start
         W.GunAim_Cfg = GunAim
-                                                end--========================================================--
--- FAZZHUB v0.4.0
+                                                    end--========================================================--
+-- FAZZHUB v0.3.9
 -- PART 13B/19 : KILLER ABILITIES + AUTO HOOK
 --========================================================--
 
@@ -4021,8 +4367,8 @@ local function __FazzHub_Init_Main__()
             VD.KILLER_AutoHook = v and true or false
             if VD.KILLER_AutoHook then W.KA_StartAutoHook() else W.KA_StopAutoHook() end
         end
-                                                    end--========================================================--
--- FAZZHUB v0.4.0
+                                                        end--========================================================--
+-- FAZZHUB v0.3.9
 -- PART 13C/19 : KILLER PERKS DISPLAY
 --========================================================--
 
@@ -4365,8 +4711,8 @@ local function __FazzHub_Init_Main__()
             VD.KillerPerksDisplay = v and true or false
             if VD.KillerPerksDisplay then Start() else Stop() end
         end
-                                                        end--========================================================--
--- FAZZHUB v0.4.0
+                                                            end--========================================================--
+-- FAZZHUB v0.3.9
 -- PART 14A/19 : SPEED BOOST + CURSOR FEATURE
 --========================================================--
 
@@ -4498,8 +4844,8 @@ local function __FazzHub_Init_Main__()
             task.wait(1)
             if VD.CursorEnabled then W.Cursor_SetEnabled(true) end
         end)
-                                                            end--========================================================--
--- FAZZHUB v0.4.0
+                                                                end--========================================================--
+-- FAZZHUB v0.3.9
 -- PART 14B/19 : SILENT FLASK + SPEAR AIMBOT
 --========================================================--
 
@@ -5006,8 +5352,8 @@ local function __FazzHub_Init_Main__()
         W.SpearAimbot_SetGravity = function(v) VD.SPEAR_Gravity = tonumber(v) or 50 end
         W.SpearAimbot_SetSpeed   = function(v) VD.SPEAR_Speed   = tonumber(v) or 100 end
         W.SpearAimbot_CycleTarget = Spear_CycleTarget
-                                                                end--========================================================--
--- FAZZHUB v0.4.0
+    end--========================================================--
+-- FAZZHUB v0.3.9
 -- PART 14C/19 : DASH LOCK + SWIFT VAULT
 --========================================================--
 
@@ -5239,8 +5585,8 @@ local function __FazzHub_Init_Main__()
             end
         end
         W.SwiftVault_SetSpeed = function(v) VD.SURF_VaultSpeed = tonumber(v) or 13 end
-                                                                    end--========================================================--
--- FAZZHUB v0.4.0
+                                                                        end--========================================================--
+-- FAZZHUB v0.3.9
 -- PART 15A/19 : GRAPHICS SYSTEM
 --========================================================--
 
@@ -5364,7 +5710,6 @@ local function __FazzHub_Init_Main__()
             else cam.FieldOfView = original.FOV end
         end
 
-        -- POTATO MODE
         local Potato_Enabled = false
         local Potato_Busy = false
         local Potato_Changed = {}
@@ -5520,8 +5865,8 @@ local function __FazzHub_Init_Main__()
             Graphics_Apply(true); Graphics_ApplyOptimization(true)
             Graphics_ApplyNoScreenEffects(); Graphics_ApplyZoom(); Graphics_ApplyFOV()
         end)
-                                                                        end--========================================================--
--- FAZZHUB v0.4.0
+                                                                            end--========================================================--
+-- FAZZHUB v0.3.9
 -- PART 15B/19 : PALLET REFLEX + FAKE PARRY V2
 --========================================================--
 
@@ -5852,10 +6197,10 @@ local function __FazzHub_Init_Main__()
             end
             return false
         end
-                                                                            end--========================================================--
--- FAZZHUB v0.4.0
--- PART 15C/19 : CAMERA DBD + FLOATING BUTTON
--- PATCH: Floating Button 140x38 + BG Image FAZZHUB (0.5)
+                                                                                end--========================================================--
+-- FAZZHUB v0.3.9
+-- PART 15C/19 : CAMERA DBD + FLOATING BUTTON (BARU)
+-- PATCH: Floating Button 140x38 + BG Image FAZZHUB
 --========================================================--
 
     --====================================================--
@@ -5942,7 +6287,8 @@ local function __FazzHub_Init_Main__()
     end
 
     --====================================================--
-    -- FLOATING BUTTON SYSTEM (TEMA FAZZHUB + BG IMAGE 0.5)
+    -- FLOATING BUTTON SYSTEM (BARU - TEMA FAZZHUB + BG IMAGE)
+    -- PATCH: Ukuran 140x38 + background image FAZZHUB
     --====================================================--
     local BG_IMAGE_ID_BTN = "rbxassetid://72845574620852"
 
@@ -5984,7 +6330,7 @@ local function __FazzHub_Init_Main__()
             if isOn then
                 TweenService:Create(btn, TweenInfo.new(0.2), { BackgroundColor3 = COLOR_BG_ON }):Play()
                 if bgImg then
-                    TweenService:Create(bgImg, TweenInfo.new(0.2), { ImageTransparency = 0.5 }):Play()
+                    TweenService:Create(bgImg, TweenInfo.new(0.2), { ImageTransparency = 0.4 }):Play()
                 end
                 if stroke then
                     TweenService:Create(stroke, TweenInfo.new(0.2), {
@@ -6214,7 +6560,7 @@ local function __FazzHub_Init_Main__()
         return state
     end
     W.CreateFloatingButton = CreateFloatingButton--========================================================--
--- FAZZHUB v0.4.0
+-- FAZZHUB v0.3.9
 -- PART 15D/19 : SELF UNHOOK + 9 FLOATING BAR
 --========================================================--
 
@@ -6457,7 +6803,7 @@ local function __FazzHub_Init_Main__()
     })
     getgenv().FazzHub_MoonwalkBtn_SetEnabled   = function(en) MoonwalkFloatingState.SetEnabled(en) end
     getgenv().FazzHub_MoonwalkBtn_UpdateVisual = function() MoonwalkFloatingState.UpdateVisual() end--========================================================--
--- FAZZHUB v0.4.0
+-- FAZZHUB v0.3.9
 -- PART 16A/19 : SILENT VEIL V1 + LOCK POV
 --========================================================--
 
@@ -6739,7 +7085,7 @@ local function __FazzHub_Init_Main__()
     -- SILENT VEIL V2 (W424 Silent Veil — Renamed to FAZZHUB)
     --====================================================--
     do
-        local Veil2Cfg2 = {}
+        local Veil2Cfg2 = {}          -- aslinya "Config" di ALFzxzz
         local Camera = Workspace.CurrentCamera
 
         local Veil2 = Veil2 or {}
@@ -7137,7 +7483,7 @@ local function __FazzHub_Init_Main__()
             setTracker = function(v) VeilTrackerEnabled = v end,
         }
     end--========================================================--
--- FAZZHUB v0.4.0
+-- FAZZHUB v0.3.9
 -- PART 16C/19 : SILENT FLASHLIGHT
 --========================================================--
 
@@ -7313,8 +7659,8 @@ local function __FazzHub_Init_Main__()
                 end)
             end)
         end)
-                                                                                        end--========================================================--
--- FAZZHUB v0.4.0
+                                                                                            end--========================================================--
+-- FAZZHUB v0.3.9
 -- PART 17A/19 : TOF V1 (BAGIAN 1)
 --========================================================--
 
@@ -7523,8 +7869,8 @@ local function __FazzHub_Init_Main__()
         local fd = tp - op
         if fd.Magnitude < 0.1 then return end
         pcall(function() e:FireServer(g, fd.Unit) end)
-                                                                                            end--========================================================--
--- FAZZHUB v0.4.0
+                                                                                                end--========================================================--
+-- FAZZHUB v0.3.9
 -- PART 17B/19 : TOF V1 (BAGIAN 2) + PLAYER UTILITY
 --========================================================--
 
@@ -7866,7 +8212,7 @@ local function __FazzHub_Init_Main__()
         end)
     end
     task.spawn(PU_SetupNoCutsceneHook)--========================================================--
--- FAZZHUB v0.4.0
+-- FAZZHUB v0.3.9
 -- PART 17C/19 : PLAYER UTILITY LANJUTAN + EMOTE + JERK OFF
 --========================================================--
 
@@ -8212,8 +8558,8 @@ local function __FazzHub_Init_Main__()
             task.wait(1)
             if JerkTool.Enabled then jerkRunning = true; W.JerkOff_Create() end
         end)
-                                                                                                end--========================================================--
--- FAZZHUB v0.4.0
+                                                                                                    end--========================================================--
+-- FAZZHUB v0.3.9
 -- PART 18A/19 : NO FALL DAMAGE + NEXT MAP PREDICT
 --========================================================--
 
@@ -8417,597 +8763,7 @@ local function __FazzHub_Init_Main__()
             VD.NextMapPredict = v and true or false
             if VD.NextMapPredict then Start() else Stop() end
         end
-                                                                                                    end--========================================================--
--- FAZZHUB v0.4.0
--- PART 18B/19 : MANUAL/AUTO GENERATOR + GEN BYPASS
--- PATCH: Tombol Gen Bypass kecilin (70x70) + hapus efek pulse
---========================================================--
-
-    --====================================================--
-    -- MANUAL & AUTO GENERATOR
-    --====================================================--
-    do
-        local RepairEvent = nil
-        pcall(function()
-            RepairEvent = ReplicatedStorage.Remotes.Generator.RepairEvent
-        end)
-
-        local REPAIR_ANIM_ID = "rbxassetid://92960319113695"
-        local ManualThread, AutoThread = nil, nil
-        local ManualPoint, AutoPoint = nil, nil
-        local LastFire = 0
-        local RepairAnimTrack = nil
-
-        local function IsKillerNearPos(pos, radius)
-            for _, pl in ipairs(Players:GetPlayers()) do
-                if pl ~= LocalPlayer and TeamIs(pl, "Killer") and pl.Character then
-                    local hrp = pl.Character:FindFirstChild("HumanoidRootPart")
-                    if hrp and (hrp.Position - pos).Magnitude <= radius then
-                        return true
-                    end
-                end
-            end
-            return false
-        end
-
-        local function GetNearestKillerDist()
-            local myChar = LocalPlayer.Character
-            local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
-            if not myRoot then return nil, math.huge end
-            local best, dist = nil, math.huge
-            for _, pl in ipairs(Players:GetPlayers()) do
-                if pl ~= LocalPlayer and TeamIs(pl, "Killer") and pl.Character then
-                    local hrp = pl.Character:FindFirstChild("HumanoidRootPart")
-                    if hrp then
-                        local d = (hrp.Position - myRoot.Position).Magnitude
-                        if d < dist then dist = d; best = hrp end
-                    end
-                end
-            end
-            return best, dist
-        end
-
-        local function PlayRepairAnim()
-            local char = LocalPlayer.Character
-            if not char then return end
-            local hum = char:FindFirstChildOfClass("Humanoid")
-            local animator = hum and hum:FindFirstChildOfClass("Animator")
-            if not animator then return end
-            if RepairAnimTrack and RepairAnimTrack.IsPlaying then return end
-            pcall(function()
-                local anim = Instance.new("Animation")
-                anim.AnimationId = REPAIR_ANIM_ID
-                RepairAnimTrack = animator:LoadAnimation(anim)
-                RepairAnimTrack.Priority = Enum.AnimationPriority.Action
-                RepairAnimTrack:Play()
-            end)
-        end
-
-        local function StopRepairAnim()
-            if RepairAnimTrack and RepairAnimTrack.IsPlaying then
-                pcall(function() RepairAnimTrack:Stop() end)
-            end
-            RepairAnimTrack = nil
-        end
-
-        local function StopRepair(point)
-            StopRepairAnim()
-            if point and RepairEvent then
-                pcall(function() RepairEvent:FireServer(point, false) end)
-            end
-        end
-
-        local function IsGenDone(gen)
-            local p = gen:GetAttribute("RepairProgress") or gen:GetAttribute("ProgressRepair") or 0
-            return p >= 100
-        end
-
-        local function GetNearestGenPointInReach()
-            local myChar = LocalPlayer.Character
-            local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
-            if not myRoot then return nil end
-            local bestPt, bestDist = nil, 5.5
-            for _, gen in ipairs(W.GB_GetAllGenerators()) do
-                for _, pt in ipairs(W.GB_GetPoints(gen)) do
-                    if pt and pt.Parent then
-                        local d = (myRoot.Position - pt.Position).Magnitude
-                        if d < bestDist then
-                            bestDist = d
-                            bestPt = pt
-                        end
-                    end
-                end
-            end
-            return bestPt
-        end
-
-        local function GetSafeNearestGenPoint()
-            local myChar = LocalPlayer.Character
-            local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
-            if not myRoot then return nil end
-            local bestPt, bestDist = nil, math.huge
-            for _, gen in ipairs(W.GB_GetAllGenerators()) do
-                if IsGenDone(gen) then continue end
-                local genPivot
-                pcall(function() genPivot = gen:GetPivot().Position end)
-                if genPivot and IsKillerNearPos(genPivot, VD.KillerEscapeDist) then
-                    continue
-                end
-                for _, pt in ipairs(W.GB_GetPoints(gen)) do
-                    if pt and pt.Parent then
-                        local d = (pt.Position - myRoot.Position).Magnitude
-                        if d < bestDist then
-                            bestDist = d
-                            bestPt = pt
-                        end
-                    end
-                end
-            end
-            return bestPt
-        end
-
-        local function StartManualThread()
-            if ManualThread then pcall(function() task.cancel(ManualThread) end); ManualThread = nil end
-            ManualThread = task.spawn(function()
-                while VD.ManualGen do
-                    local myChar = LocalPlayer.Character
-                    local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
-                    local hum = myChar and myChar:FindFirstChildOfClass("Humanoid")
-                    if not myRoot or not hum or hum.Health <= 0 then task.wait(0.2); continue end
-
-                    local _, kd = GetNearestKillerDist()
-                    if kd <= VD.KillerEscapeDist then
-                        if ManualPoint then
-                            StopRepair(ManualPoint)
-                            ManualPoint = nil
-                            VD_Notify("Manual Gen", "Killer near — release repair", 2)
-                        end
-                        task.wait(0.3)
-                        continue
-                    end
-
-                    local pt = GetNearestGenPointInReach()
-                    if pt then
-                        ManualPoint = pt
-                        local now = tick()
-                        if now - LastFire >= 0.5 then
-                            pcall(function() if RepairEvent then RepairEvent:FireServer(pt, true) end end)
-                            PlayRepairAnim()
-                            LastFire = now
-                        end
-                    else
-                        if ManualPoint then StopRepair(ManualPoint); ManualPoint = nil end
-                    end
-                    task.wait(0.1)
-                end
-                if ManualPoint then StopRepair(ManualPoint) end
-                ManualPoint = nil
-            end)
-        end
-
-        local function StopManualThread()
-            if ManualThread then pcall(function() task.cancel(ManualThread) end); ManualThread = nil end
-            if ManualPoint then StopRepair(ManualPoint) end
-            ManualPoint = nil
-        end
-
-        local function StartAutoThread()
-            if AutoThread then pcall(function() task.cancel(AutoThread) end); AutoThread = nil end
-            AutoThread = task.spawn(function()
-                while VD.AutoGen do
-                    local myChar = LocalPlayer.Character
-                    local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
-                    local hum = myChar and myChar:FindFirstChildOfClass("Humanoid")
-                    if not myRoot or not hum or hum.Health <= 0 then task.wait(0.3); continue end
-
-                    local _, kd = GetNearestKillerDist()
-                    if kd <= VD.KillerEscapeDist then
-                        if AutoPoint then StopRepair(AutoPoint); AutoPoint = nil end
-                        local safePt = GetSafeNearestGenPoint()
-                        if safePt then
-                            AutoPoint = safePt
-                            pcall(function()
-                                myRoot.CFrame = CFrame.new(safePt.Position + Vector3.new(0, 3, 0))
-                            end)
-                            task.wait(0.2)
-                        end
-                        task.wait(0.2)
-                        continue
-                    end
-
-                    if AutoPoint and AutoPoint.Parent then
-                        local now = tick()
-                        if now - LastFire >= 0.5 then
-                            pcall(function() if RepairEvent then RepairEvent:FireServer(AutoPoint, true) end end)
-                            PlayRepairAnim()
-                            LastFire = now
-                        end
-                    else
-                        local pt = GetNearestGenPointInReach()
-                        if pt then
-                            AutoPoint = pt
-                        else
-                            local safePt = GetSafeNearestGenPoint()
-                            if safePt then
-                                AutoPoint = safePt
-                                pcall(function()
-                                    myRoot.CFrame = CFrame.new(safePt.Position + Vector3.new(0, 3, 0))
-                                end)
-                                task.wait(0.2)
-                            end
-                        end
-                    end
-                    task.wait(0.1)
-                end
-                if AutoPoint then StopRepair(AutoPoint) end
-                AutoPoint = nil
-            end)
-        end
-
-        local function StopAutoThread()
-            if AutoThread then pcall(function() task.cancel(AutoThread) end); AutoThread = nil end
-            if AutoPoint then StopRepair(AutoPoint) end
-            AutoPoint = nil
-        end
-
-        W.ManualGen_SetEnabled = function(v)
-            VD.ManualGen = v and true or false
-            if VD.ManualGen then StartManualThread() else StopManualThread() end
-        end
-
-        W.AutoGen_SetEnabled = function(v)
-            VD.AutoGen = v and true or false
-            if VD.AutoGen then StartAutoThread() else StopAutoThread() end
-        end
-
-        W.GenAuto_SetDistance = function(v)
-            VD.KillerEscapeDist = tonumber(v) or 30
-        end
-
-        LocalPlayer.CharacterAdded:Connect(function()
-            task.wait(1)
-            if VD.ManualGen then StartManualThread() end
-            if VD.AutoGen then StartAutoThread() end
-        end)
-    end
-
-    --====================================================--
-    -- GEN BYPASS (Klik Tombol = Repair Langsung)
-    -- PATCH: Ukuran 70x70 + hapus animasi pulse
-    --====================================================--
-    W.GenBypass = W.GenBypass or {
-        Enabled=false, Button=nil, UI=nil, Cache={}, CacheTimer=0,
-        Processed={}, HotkeyCode=Enum.KeyCode.B, TriggerRange=8
-    }
-    local GenBypass = W.GenBypass
-
-    local RepairEventBypass = nil
-    pcall(function()
-        RepairEventBypass = ReplicatedStorage.Remotes.Generator.RepairEvent
-    end)
-
-    function W.GB_GetAllGeneratorsCached()
-        local now = tick()
-        if now - GenBypass.CacheTimer < 5 then return GenBypass.Cache end
-        GenBypass.Cache = {}; GenBypass.CacheTimer = now
-        local mf = Workspace:FindFirstChild("Map")
-        if not mf then return GenBypass.Cache end
-        pcall(function()
-            for _, v in pairs(mf:GetDescendants()) do
-                if not v:IsA("Model") then continue end
-                if v.Name ~= "Generator" then continue end
-                local real = v:GetAttribute("RepairProgress") ~= nil
-                          or v:GetAttribute("kickcount") ~= nil
-                          or v:GetAttribute("ProgressRepair") ~= nil
-                if real then table.insert(GenBypass.Cache, v) end
-            end
-        end)
-        return GenBypass.Cache
-    end
-
-    function W.GB_WaitRepairing(pt, t)
-        local s = tick()
-        while tick() - s < (t or 1) do
-            if pt:GetAttribute("IsRepairing") == true then return true end
-            task.wait(0.05)
-        end
-        return false
-    end
-
-    function W.GB_DoRepair(tp)
-        local gm = tp.Parent
-        if GenBypass.Processed[gm] then return end
-        GenBypass.Processed[gm] = true
-        local c = LocalPlayer.Character
-        local hrp = c and c:FindFirstChild("HumanoidRootPart")
-        if not hrp then GenBypass.Processed[gm] = nil; return end
-        local re = ReplicatedStorage:FindFirstChild("Remotes")
-            and ReplicatedStorage.Remotes:FindFirstChild("Generator")
-            and ReplicatedStorage.Remotes.Generator:FindFirstChild("RepairEvent")
-        local og = hrp.CFrame
-        pcall(function()
-            for _, p in pairs(W.GB_GetPoints(gm)) do
-                if p ~= tp and p.Parent then
-                    hrp.Anchored = true
-                    hrp.CFrame = p.CFrame
-                    task.wait(0.15)
-                    pcall(function() if re then re:FireServer(p, true) end end)
-                    if not W.GB_WaitRepairing(p, 0.8) then
-                        pcall(function() if re then re:FireServer(p, false) end end)
-                        task.wait(0.1)
-                        hrp.CFrame = p.CFrame
-                        task.wait(0.15)
-                        pcall(function() if re then re:FireServer(p, true) end end)
-                        W.GB_WaitRepairing(p, 0.5)
-                    end
-                    hrp.Anchored = false
-                    task.wait(0.05)
-                end
-            end
-        end)
-        pcall(function()
-            if hrp and hrp.Parent then hrp.Anchored = false; hrp.CFrame = og end
-        end)
-        task.wait(0.1)
-        pcall(function() if re then re:FireServer(tp, false) end end)
-    end
-
-    function W.GB_GetNearestPoint()
-        local c = LocalPlayer.Character
-        local hrp = c and c:FindFirstChild("HumanoidRootPart")
-        if not hrp then return nil end
-        local best, bd = nil, math.huge
-        for _, g in pairs(W.GB_GetAllGeneratorsCached()) do
-            for _, p in pairs(W.GB_GetPoints(g)) do
-                local d = (hrp.Position - p.Position).Magnitude
-                if d < bd then bd = d; best = p end
-            end
-        end
-        return best, bd
-    end
-
-    function W.GB_IsPromptVisible()
-        local ok2, fr = pcall(function() return LocalPlayer.PlayerGui.pcprompts.Frame.GeneratorRepair end)
-        return ok2 and fr and fr.Visible
-    end
-
-    function W.GB_UpdateButton()
-        if GenBypass.Enabled then
-            if not GenBypass._Wrap or not GenBypass.UI or not GenBypass.UI.Parent then
-                W.GB_CreateButton(); task.wait(0.05)
-            end
-            if GenBypass._ShowCard then GenBypass._ShowCard() end
-        else
-            if GenBypass._HideCard then GenBypass._HideCard() end
-        end
-    end
-
-    function W.GB_CreateButton()
-        local pg = LocalPlayer:FindFirstChild("PlayerGui")
-        if not pg then return end
-        local old = pg:FindFirstChild("FazzHubGenBypassUI"); if old then old:Destroy() end
-        if GenBypass._StopAnim then pcall(GenBypass._StopAnim); GenBypass._StopAnim = nil end
-        GenBypass.UI = Instance.new("ScreenGui")
-        GenBypass.UI.Name = "FazzHubGenBypassUI"
-        GenBypass.UI.ResetOnSpawn = false
-        GenBypass.UI.IgnoreGuiInset = true
-        GenBypass.UI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-        GenBypass.UI.DisplayOrder = 100
-        GenBypass.UI.Parent = pg
-
-        local wrap = Instance.new("Frame")
-        wrap.Name = "Wrap"; wrap.AnchorPoint = Vector2.new(1, 0)
-        wrap.Position = UDim2.new(1, -20, 0.48, 0)
-        wrap.Size = UDim2.fromOffset(70, 70)
-        wrap.BackgroundTransparency = 1; wrap.Active = true
-        wrap.ZIndex = 2; wrap.Parent = GenBypass.UI
-
-        local glow = Instance.new("Frame")
-        glow.Name = "Glow"; glow.AnchorPoint = Vector2.new(0.5, 0.5)
-        glow.Position = UDim2.new(0.5, 0, 0.5, 0)
-        glow.Size = UDim2.fromOffset(56, 56)
-        glow.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        glow.BackgroundTransparency = 0.85; glow.BorderSizePixel = 0
-        glow.ZIndex = 1; glow.Parent = wrap
-        Instance.new("UICorner", glow).CornerRadius = UDim.new(1, 0)
-
-        local mainCircle = Instance.new("Frame")
-        mainCircle.Name = "MainCircle"; mainCircle.AnchorPoint = Vector2.new(0.5, 0.5)
-        mainCircle.Position = UDim2.new(0.5, 0, 0.5, 0)
-        mainCircle.Size = UDim2.fromOffset(42, 42)
-        mainCircle.BackgroundColor3 = Color3.fromRGB(12, 12, 15)
-        mainCircle.BackgroundTransparency = 0.05; mainCircle.BorderSizePixel = 0
-        mainCircle.ZIndex = 4; mainCircle.Parent = wrap
-        Instance.new("UICorner", mainCircle).CornerRadius = UDim.new(1, 0)
-
-        local mainGrad = Instance.new("UIGradient")
-        mainGrad.Rotation = 135
-        mainGrad.Color = ColorSequence.new({
-            ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 30, 36)),
-            ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 8, 10)),
-        })
-        mainGrad.Parent = mainCircle
-
-        local mainStroke = Instance.new("UIStroke", mainCircle)
-        mainStroke.Name = "MainStroke"; mainStroke.Color = Color3.fromRGB(255, 255, 255)
-        mainStroke.Thickness = 1.4; mainStroke.Transparency = 0.15
-        mainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-
-        local genText = Instance.new("TextLabel")
-        genText.Name = "GenText"; genText.AnchorPoint = Vector2.new(0.5, 0.5)
-        genText.Position = UDim2.new(0.5, 0, 0.5, 0)
-        genText.Size = UDim2.fromOffset(42, 22)
-        genText.BackgroundTransparency = 1; genText.Font = Enum.Font.GothamBlack
-        genText.Text = "GEN"; genText.TextColor3 = Color3.fromRGB(255, 255, 255)
-        genText.TextSize = 15; genText.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-        genText.TextStrokeTransparency = 0.5
-        genText.ZIndex = 7; genText.Parent = wrap
-
-        local actionBtn = Instance.new("TextButton")
-        actionBtn.Name = "ActionBtn"; actionBtn.Size = UDim2.fromScale(1, 1)
-        actionBtn.BackgroundTransparency = 1; actionBtn.Text = ""
-        actionBtn.AutoButtonColor = false; actionBtn.ZIndex = 10; actionBtn.Parent = wrap
-
-        mainCircle.Size = UDim2.fromOffset(0, 0)
-        glow.Size = UDim2.fromOffset(0, 0)
-        genText.TextTransparency = 1; genText.TextStrokeTransparency = 1
-
-        GenBypass._Wrap = wrap; GenBypass._Glow = glow
-        GenBypass._MainCircle = mainCircle; GenBypass._MainStroke = mainStroke
-        GenBypass._GenText = genText; GenBypass._ActionBtn = actionBtn
-
-        local function ShowCard()
-            wrap.Visible = true
-            TweenService:Create(glow, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                Size = UDim2.fromOffset(56, 56), BackgroundTransparency = 0.85,
-            }):Play()
-            TweenService:Create(mainCircle, TweenInfo.new(0.55, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                Size = UDim2.fromOffset(42, 42), BackgroundTransparency = 0.05,
-            }):Play()
-            TweenService:Create(genText, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                TextTransparency = 0, TextStrokeTransparency = 0.5,
-            }):Play()
-        end
-
-        local function HideCard()
-            TweenService:Create(glow, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-                Size = UDim2.fromOffset(0, 0), BackgroundTransparency = 1,
-            }):Play()
-            TweenService:Create(mainCircle, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-                Size = UDim2.fromOffset(0, 0), BackgroundTransparency = 1,
-            }):Play()
-            TweenService:Create(genText, TweenInfo.new(0.2), {
-                TextTransparency = 1, TextStrokeTransparency = 1,
-            }):Play()
-            task.delay(0.3, function()
-                if GenBypass._StopAnim then pcall(GenBypass._StopAnim); GenBypass._StopAnim = nil end
-                if GenBypass.UI then pcall(function() GenBypass.UI:Destroy() end); GenBypass.UI = nil end
-                GenBypass._Wrap = nil; GenBypass._ShowCard = nil
-                GenBypass._HideCard = nil; GenBypass._SetStatus = nil
-                GenBypass._Card = nil
-            end)
-        end
-
-        GenBypass._ShowCard = ShowCard; GenBypass._HideCard = HideCard
-        GenBypass._StopAnim = function() end
-
-        local function SetStatus(mode)
-            if mode == "ready" then
-                mainStroke.Color = Color3.fromRGB(120, 255, 160)
-                genText.TextColor3 = Color3.fromRGB(120, 255, 160)
-                glow.BackgroundColor3 = Color3.fromRGB(120, 255, 160)
-            elseif mode == "busy" then
-                mainStroke.Color = Color3.fromRGB(255, 200, 100)
-                genText.TextColor3 = Color3.fromRGB(255, 200, 100)
-                glow.BackgroundColor3 = Color3.fromRGB(255, 200, 100)
-            elseif mode == "searching" then
-                mainStroke.Color = Color3.fromRGB(150, 200, 255)
-                genText.TextColor3 = Color3.fromRGB(150, 200, 255)
-                glow.BackgroundColor3 = Color3.fromRGB(150, 200, 255)
-            else
-                mainStroke.Color = Color3.fromRGB(255, 255, 255)
-                genText.TextColor3 = Color3.fromRGB(255, 255, 255)
-                glow.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-            end
-        end
-        GenBypass._SetStatus = SetStatus
-
-        local drag = false
-        local dStart, sPos
-        local dragDist = 0
-        wrap.InputBegan:Connect(function(inp)
-            if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
-                drag = true; dStart = inp.Position; sPos = wrap.Position; dragDist = 0
-            end
-        end)
-        UserInputService.InputChanged:Connect(function(inp)
-            if not drag then return end
-            if inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch then
-                local d = inp.Position - dStart
-                dragDist = math.abs(d.X) + math.abs(d.Y)
-                wrap.Position = UDim2.new(sPos.X.Scale, sPos.X.Offset + d.X, sPos.Y.Scale, sPos.Y.Offset + d.Y)
-            end
-        end)
-        UserInputService.InputEnded:Connect(function(inp)
-            if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
-                drag = false
-            end
-        end)
-
-        actionBtn.MouseButton1Up:Connect(function()
-            if not GenBypass.Enabled then return end
-            if dragDist > 6 then return end
-
-            TweenService:Create(mainCircle, TweenInfo.new(0.08), { Size = UDim2.fromOffset(36, 36) }):Play()
-            task.delay(0.1, function()
-                TweenService:Create(mainCircle, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Size = UDim2.fromOffset(42, 42) }):Play()
-            end)
-
-            local ripple = Instance.new("Frame")
-            ripple.AnchorPoint = Vector2.new(0.5, 0.5)
-            ripple.Position = UDim2.new(0.5, 0, 0.5, 0)
-            ripple.Size = UDim2.fromOffset(42, 42)
-            ripple.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-            ripple.BackgroundTransparency = 0.55; ripple.BorderSizePixel = 0
-            ripple.ZIndex = 3; ripple.Parent = wrap
-            Instance.new("UICorner", ripple).CornerRadius = UDim.new(1, 0)
-            TweenService:Create(ripple, TweenInfo.new(0.6), { Size = UDim2.fromOffset(110, 110), BackgroundTransparency = 1 }):Play()
-            task.delay(0.6, function() if ripple then ripple:Destroy() end end)
-
-            SetStatus("searching")
-
-            local bp, bd = W.GB_GetNearestPoint()
-            if bp and bd <= GenBypass.TriggerRange then
-                SetStatus("busy")
-                task.spawn(function()
-                    W.GB_DoRepair(bp); task.wait(0.5); SetStatus("ready")
-                end)
-            else
-                task.wait(0.6); SetStatus("standby")
-            end
-        end)
-
-        task.spawn(function()
-            task.wait(0.1)
-            if GenBypass.Enabled then ShowCard() end
-        end)
-    end
-
-    W.GB_CreateButton()
-    LocalPlayer.CharacterAdded:Connect(function()
-        task.wait(0.5); W.GB_CreateButton(); W.GB_UpdateButton()
-    end)
-
-    UserInputService.InputBegan:Connect(function(input, gp)
-        if gp or isMobile then return end
-        if input.KeyCode == GenBypass.HotkeyCode and GenBypass.Enabled then
-            if not W.GB_IsPromptVisible() then return end
-            local bp, bd = W.GB_GetNearestPoint()
-            if not bp or bd > GenBypass.TriggerRange then return end
-            if GenBypass.Processed[bp.Parent] then return end
-            W.GB_DoRepair(bp)
-        end
-    end)
-
-    task.spawn(function()
-        while true do
-            task.wait(2)
-            local c = LocalPlayer.Character
-            local hrp = c and c:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                for gm in pairs(GenBypass.Processed) do
-                    if not gm or not gm.Parent then GenBypass.Processed[gm] = nil; continue end
-                    local near = false
-                    for _, p in pairs(W.GB_GetPoints(gm)) do
-                        if p.Parent and (hrp.Position - p.Position).Magnitude <= 10 then near = true; break end
-                    end
-                    if not near then GenBypass.Processed[gm] = nil end
-                end
-            end
-        end
-    end)
-
-    function W.setGenBypass(v) GenBypass.Enabled = v; W.GB_UpdateButton() end--========================================================--
+                                                                                                        end--========================================================--
 -- FAZZHUB v0.4.0
 -- PART 18B/19 : MANUAL/AUTO GENERATOR + GEN BYPASS
 -- PATCH: Tombol Gen Bypass kecilin (70x70) + hapus efek pulse
