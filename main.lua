@@ -221,13 +221,13 @@ local function __FazzHub_Init_Main__()
     VD.ManualGen            = VD.ManualGen or false
     VD.AutoGen              = VD.AutoGen or false
     VD.KillerEscapeDist     = VD.KillerEscapeDist or 30
-    VD.Wisnu_AutoParry       = VD.Wisnu_AutoParry       or false
-    VD.Wisnu_ParryAggressive = VD.Wisnu_ParryAggressive or false
-    VD.Wisnu_ParrySafety     = VD.Wisnu_ParrySafety     or false
-    VD.Wisnu_ParryDistance   = VD.Wisnu_ParryDistance   or 6
-    VD.Wisnu_ParryFace       = VD.Wisnu_ParryFace       or 0.7
-    VD.Wisnu_ParryCircle     = VD.Wisnu_ParryCircle     or true
-    VD.Wisnu_IgnoredSkills   = VD.Wisnu_IgnoredSkills   or {}
+    VD.AP2_AutoParry       = VD.AP2_AutoParry       or false
+    VD.AP2_ParryAggressive = VD.AP2_ParryAggressive or false
+    VD.AP2_ParrySafety     = VD.AP2_ParrySafety     or false
+    VD.AP2_ParryDistance   = VD.AP2_ParryDistance   or 6
+    VD.AP2_ParryFace       = VD.AP2_ParryFace       or 0.7
+    VD.AP2_ParryCircle     = VD.AP2_ParryCircle     or true
+    VD.AP2_IgnoredSkills   = VD.AP2_IgnoredSkills   or {}
     VD.KillerPerksDisplay   = VD.KillerPerksDisplay   or false
     VD.SpeedBoostEnabled    = VD.SpeedBoostEnabled    or false
     VD.SpeedBoostValue      = VD.SpeedBoostValue      or 30
@@ -241,7 +241,7 @@ local function __FazzHub_Init_Main__()
     _G.GLUTO_STROKE_OFF = Color3.fromRGB(25, 25, 25)
     _G.GLUTO_BG_OFF     = Color3.fromRGB(0, 0, 0)--========================================================--
 -- FAZZHUB v0.3.7
--- PART 3/19 : BOMBAX SONG LIBRARY + MUSIC FUNCTIONS
+-- PART 3/19 : BOMBAX SONG LIBRARY + MUSIC + AUTO NEXT
 --========================================================--
 
     --====================================================--
@@ -250,11 +250,14 @@ local function __FazzHub_Init_Main__()
     W.Bombax = W.Bombax or {
         CurrentSound = nil, IsPlaying = false, IsPaused = false,
         Volume = 2, Looped = false, CurrentTrack = nil, History = {},
+        CurrentSoundId = nil, TrackLength = 0, TrackPosition = 0,
+        _AutoNextConn = nil, AutoNext = true,
     }
     local Bombax = W.Bombax
 
-    -- SONG LIBRARY (ID udah work semua)
+    -- SONG LIBRARY (32 lagu)
     local Songs = {
+        -- Bombax Original
         {id="101985596918228", judul="One"},
         {id="78520199502339",  judul="Two"},
         {id="78253224480952",  judul="Three"},
@@ -287,31 +290,6 @@ local function __FazzHub_Init_Main__()
         {id="101280279977761", judul="Kini Kita Pe Kisah"},
         {id="117080961502380", judul="DJ Music Dubstep x Bangun Tidur Selfie"},
         {id="110337096446518", judul="DJ Onia"},
-        {id="1843488651",  judul="DJ Bila Nanti"},
-        {id="1842349273",  judul="DJ Selow"},
-        {id="1841273461",  judul="DJ Ku Bahagia"},
-        {id="1839853287",  judul="DJ Sakit Gigi"},
-        {id="1842177413",  judul="DJ Ambyar"},
-        {id="1841748631",  judul="DJ Ojo Dibandingke"},
-        {id="1843529193",  judul="DJ Tresno Tekan"},
-        {id="1841241273",  judul="DJ Widodari"},
-        {id="1843342891",  judul="DJ Kopi Dangdut"},
-        {id="1842561631",  judul="DJ Sayang"},
-        {id="1837879088",  judul="Tokyo Drift"},
-        {id="1836318267",  judul="Astronomia (Coffin Dance)"},
-        {id="1839185163",  judul="Rasputin"},
-        {id="1836155251",  judul="Kimi no Na wa"},
-        {id="1836026512",  judul="Sicko Mode"},
-        {id="1837773371",  judul="Bad Guy"},
-        {id="1836316481",  judul="Believer"},
-        {id="1837253557",  judul="Faded"},
-        {id="1836027169",  judul="Shape of You"},
-        {id="1837773812",  judul="Sunflower"},
-        {id="1836317092",  judul="Havana"},
-        {id="1839185079",  judul="Levitating"},
-        {id="1836026873",  judul="Blinding Lights"},
-        {id="1837774107",  judul="Stay"},
-        {id="1836317614",  judul="Peaches"},
     }
 
     local MUSIC_LIBRARY = {}
@@ -319,6 +297,7 @@ local function __FazzHub_Init_Main__()
         MUSIC_LIBRARY[s.judul] = "rbxassetid://" .. s.id
     end
     W.Bombax_MusicLibrary = MUSIC_LIBRARY
+    W.Bombax_Songs = Songs
 
     local function Bombax_EnsureSound()
         if Bombax.CurrentSound and Bombax.CurrentSound.Parent then return Bombax.CurrentSound end
@@ -343,10 +322,42 @@ local function __FazzHub_Init_Main__()
         Bombax.IsPlaying = true
         Bombax.IsPaused = false
         Bombax.CurrentTrack = trackName or soundId
+        Bombax.CurrentSoundId = soundId
+        Bombax.TrackLength = snd.TimeLength or 0
+        Bombax.TrackPosition = 0
         table.insert(Bombax.History, { name = trackName, id = soundId, time = tick() })
         ForceNotify("Bombax 🎵", "Playing: " .. tostring(trackName or soundId), 3)
         if W.Bombax_MiniUpdate then pcall(W.Bombax_MiniUpdate) end
     end
+
+    -- AUTO NEXT saat lagu habis
+    local function Bombax_SetupAutoNext()
+        if Bombax._AutoNextConn then return end
+        Bombax._AutoNextConn = RunService.Heartbeat:Connect(function()
+            if not Bombax.CurrentSound then return end
+            local snd = Bombax.CurrentSound
+            Bombax.TrackLength = snd.TimeLength or 0
+            Bombax.TrackPosition = snd.TimePosition or 0
+            if Bombax.AutoNext and Bombax.IsPlaying and not Bombax.IsPaused
+                and snd.TimeLength > 0 and not snd.Looped then
+                if snd.TimePosition >= snd.TimeLength - 0.1 then
+                    -- Auto next random (gak ulang track yang sama)
+                    local list = {}
+                    for name, id in pairs(MUSIC_LIBRARY) do
+                        if name ~= Bombax.CurrentTrack then
+                            table.insert(list, { name = name, id = id })
+                        end
+                    end
+                    if #list > 0 then
+                        local pick = list[math.random(1, #list)]
+                        task.wait(0.15)
+                        W.Bombax_Play(pick.id, pick.name)
+                    end
+                end
+            end
+        end)
+    end
+    Bombax_SetupAutoNext()
 
     function W.Bombax_Stop()
         if Bombax.CurrentSound then
@@ -392,29 +403,40 @@ local function __FazzHub_Init_Main__()
         local cleanId = tostring(id):gsub("rbxassetid://", ""):gsub("%D", "")
         if cleanId == "" then ForceNotify("Bombax ❌", "Sound ID tidak valid!", 2); return end
         W.Bombax_Play("rbxassetid://" .. cleanId, "Custom: " .. cleanId)
+    end
+
+    -- Play Next (manual)
+    function W.Bombax_Next()
+        local list = {}
+        for name, id in pairs(MUSIC_LIBRARY) do
+            if name ~= Bombax.CurrentTrack then
+                table.insert(list, { name = name, id = id })
+            end
+        end
+        if #list > 0 then
+            local pick = list[math.random(1, #list)]
+            W.Bombax_Play(pick.id, pick.name)
+        end
         end--========================================================--
 -- FAZZHUB v0.3.7
--- PART 4/19 : BOMBAX MINI GUI (Floating Window)
+-- PART 4/19 : BOMBAX MINI GUI + PROGRESS BAR
 --========================================================--
 
     --====================================================--
-    -- BOMBAX MINI GUI (Floating, Bisa Buka/Tutup)
+    -- BOMBAX MINI GUI (Bar + Progress)
     --====================================================--
     do
         local MiniState = {
             Gui = nil,
             SavedPos = UDim2.new(0, 20, 0.5, -100),
             Expanded = true,
-            Frame = nil,
-            Body = nil,
-            TrackLbl = nil,
-            VolLbl = nil,
-            VolFill = nil,
+            Frame = nil, Body = nil,
+            TrackLbl = nil, VolLbl = nil, VolFill = nil,
+            ProgressFill = nil, ProgressLbl = nil,
         }
 
         local function BuildMini()
             if MiniState.Gui then pcall(function() MiniState.Gui:Destroy() end) end
-
             local parent = LocalPlayer:FindFirstChild("PlayerGui")
             if gethui then
                 local ok2, hui = pcall(gethui)
@@ -433,10 +455,10 @@ local function __FazzHub_Init_Main__()
 
             local frame = Instance.new("Frame")
             frame.Name = "MiniFrame"
-            frame.Size = UDim2.fromOffset(220, 150)
+            frame.Size = UDim2.fromOffset(230, 168)
             frame.Position = MiniState.SavedPos
             frame.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
-            frame.BackgroundTransparency = 0.1
+            frame.BackgroundTransparency = 0.08
             frame.BorderSizePixel = 0
             frame.Active = true
             frame.ClipsDescendants = true
@@ -448,6 +470,7 @@ local function __FazzHub_Init_Main__()
             stroke.Transparency = 0.2
             MiniState.Frame = frame
 
+            -- HEADER
             local header = Instance.new("Frame", frame)
             header.Name = "Header"
             header.Size = UDim2.new(1, 0, 0, 26)
@@ -479,6 +502,7 @@ local function __FazzHub_Init_Main__()
             minBtn.Parent = header
             Instance.new("UICorner", minBtn).CornerRadius = UDim.new(0, 6)
 
+            -- BODY
             local body = Instance.new("Frame", frame)
             body.Name = "Body"
             body.Size = UDim2.new(1, -16, 1, -36)
@@ -487,6 +511,7 @@ local function __FazzHub_Init_Main__()
             body.Parent = frame
             MiniState.Body = body
 
+            -- TRACK LABEL
             local trackLbl = Instance.new("TextLabel", body)
             trackLbl.Name = "TrackLbl"
             trackLbl.Size = UDim2.new(1, 0, 0, 18)
@@ -499,9 +524,41 @@ local function __FazzHub_Init_Main__()
             trackLbl.TextTruncate = Enum.TextTruncate.AtEnd
             MiniState.TrackLbl = trackLbl
 
+            -- PROGRESS BAR BG
+            local progressBg = Instance.new("Frame", body)
+            progressBg.Name = "ProgressBg"
+            progressBg.Size = UDim2.new(1, 0, 0, 8)
+            progressBg.Position = UDim2.new(0, 0, 0, 22)
+            progressBg.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+            progressBg.BorderSizePixel = 0
+            Instance.new("UICorner", progressBg).CornerRadius = UDim.new(1, 0)
+
+            -- PROGRESS FILL
+            local progressFill = Instance.new("Frame", progressBg)
+            progressFill.Name = "ProgressFill"
+            progressFill.Size = UDim2.new(0, 0, 1, 0)
+            progressFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            progressFill.BorderSizePixel = 0
+            Instance.new("UICorner", progressFill).CornerRadius = UDim.new(1, 0)
+            MiniState.ProgressFill = progressFill
+
+            -- TIME LABEL
+            local progressLbl = Instance.new("TextLabel", body)
+            progressLbl.Name = "ProgressLbl"
+            progressLbl.Size = UDim2.new(1, 0, 0, 12)
+            progressLbl.Position = UDim2.new(0, 0, 0, 32)
+            progressLbl.BackgroundTransparency = 1
+            progressLbl.Font = Enum.Font.GothamBold
+            progressLbl.Text = "0:00 / 0:00"
+            progressLbl.TextColor3 = Color3.fromRGB(160, 160, 180)
+            progressLbl.TextSize = 9
+            progressLbl.TextXAlignment = Enum.TextXAlignment.Right
+            MiniState.ProgressLbl = progressLbl
+
+            -- BUTTON ROW
             local btnRow = Instance.new("Frame", body)
             btnRow.Size = UDim2.new(1, 0, 0, 30)
-            btnRow.Position = UDim2.new(0, 0, 0, 24)
+            btnRow.Position = UDim2.new(0, 0, 0, 50)
             btnRow.BackgroundTransparency = 1
 
             local function makeBtn(name, text, xPos, callback)
@@ -536,10 +593,31 @@ local function __FazzHub_Init_Main__()
             makeBtn("PauseBtn", "⏸", 60, function() W.Bombax_Pause() end)
             makeBtn("StopBtn", "⏹", 120, function() W.Bombax_Stop() end)
 
+            -- NEXT BUTTON (kanan)
+            local nextBtn = Instance.new("TextButton", btnRow)
+            nextBtn.Name = "NextBtn"
+            nextBtn.Size = UDim2.fromOffset(26, 26)
+            nextBtn.Position = UDim2.new(1, -26, 0, 0)
+            nextBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+            nextBtn.BorderSizePixel = 0
+            nextBtn.Text = "⏭"
+            nextBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            nextBtn.Font = Enum.Font.GothamBold
+            nextBtn.TextSize = 12
+            Instance.new("UICorner", nextBtn).CornerRadius = UDim.new(0, 6)
+            local nbStroke = Instance.new("UIStroke", nextBtn)
+            nbStroke.Color = Color3.fromRGB(255, 255, 255)
+            nbStroke.Thickness = 1
+            nbStroke.Transparency = 0.5
+            nextBtn.MouseButton1Click:Connect(function()
+                W.Bombax_Next()
+            end)
+
+            -- VOLUME
             local volLbl = Instance.new("TextLabel", body)
             volLbl.Name = "VolLbl"
             volLbl.Size = UDim2.new(1, 0, 0, 14)
-            volLbl.Position = UDim2.new(0, 0, 0, 60)
+            volLbl.Position = UDim2.new(0, 0, 0, 84)
             volLbl.BackgroundTransparency = 1
             volLbl.Font = Enum.Font.GothamBold
             volLbl.Text = "🔊 Volume: 2.0x"
@@ -551,7 +629,7 @@ local function __FazzHub_Init_Main__()
             local volBar = Instance.new("Frame", body)
             volBar.Name = "VolBar"
             volBar.Size = UDim2.new(1, 0, 0, 6)
-            volBar.Position = UDim2.new(0, 0, 0, 76)
+            volBar.Position = UDim2.new(0, 0, 0, 100)
             volBar.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
             volBar.BorderSizePixel = 0
             Instance.new("UICorner", volBar).CornerRadius = UDim.new(1, 0)
@@ -585,16 +663,16 @@ local function __FazzHub_Init_Main__()
                 end
             end)
 
-            -- MIN / MAX TOGGLE
+            -- MIN/MAX TOGGLE
             local expanded = true
             minBtn.MouseButton1Click:Connect(function()
                 expanded = not expanded
                 if expanded then
-                    TweenService:Create(frame, TweenInfo.new(0.25), { Size = UDim2.fromOffset(220, 150) }):Play()
+                    TweenService:Create(frame, TweenInfo.new(0.25), { Size = UDim2.fromOffset(230, 168) }):Play()
                     minBtn.Text = "−"
                     body.Visible = true
                 else
-                    TweenService:Create(frame, TweenInfo.new(0.25), { Size = UDim2.fromOffset(220, 26) }):Play()
+                    TweenService:Create(frame, TweenInfo.new(0.25), { Size = UDim2.fromOffset(230, 26) }):Play()
                     minBtn.Text = "+"
                     body.Visible = false
                 end
@@ -611,32 +689,51 @@ local function __FazzHub_Init_Main__()
                     MiniState.VolFill.Size = UDim2.new(ratio, 0, 1, 0)
                 end
             end
+
+            -- PROGRESS LOOP
+            task.spawn(function()
+                while MiniState.Gui and MiniState.Gui.Parent do
+                    if Bombax.CurrentSound then
+                        local snd = Bombax.CurrentSound
+                        local pos = snd.TimePosition or 0
+                        local len = snd.TimeLength or 0
+                        if MiniState.ProgressFill and len > 0 then
+                            local ratio = math.clamp(pos / len, 0, 1)
+                            MiniState.ProgressFill.Size = UDim2.new(ratio, 0, 1, 0)
+                        end
+                        if MiniState.ProgressLbl then
+                            local function fmt(t)
+                                t = math.max(0, math.floor(t))
+                                local m = math.floor(t / 60)
+                                local s = t % 60
+                                return string.format("%d:%02d", m, s)
+                            end
+                            MiniState.ProgressLbl.Text = fmt(pos) .. " / " .. fmt(len)
+                        end
+                    end
+                    task.wait(0.2)
+                end
+            end)
+
             W.Bombax_MiniUpdate()
         end
 
         function W.Bombax_MiniToggle()
             MiniState.Expanded = not MiniState.Expanded
-            if MiniState.Expanded then
-                BuildMini()
+            if MiniState.Expanded then BuildMini()
             else
-                if MiniState.Gui then
-                    pcall(function() MiniState.Gui:Destroy() end)
-                    MiniState.Gui = nil
-                end
+                if MiniState.Gui then pcall(function() MiniState.Gui:Destroy() end); MiniState.Gui = nil end
             end
         end
 
         function W.Bombax_MiniEnable(v)
             if v then BuildMini()
             else
-                if MiniState.Gui then
-                    pcall(function() MiniState.Gui:Destroy() end)
-                    MiniState.Gui = nil
-                end
+                if MiniState.Gui then pcall(function() MiniState.Gui:Destroy() end); MiniState.Gui = nil end
             end
         end
 
-        -- Auto build mini GUI saat script load
+        -- Auto build
         task.spawn(function()
             task.wait(1)
             BuildMini()
@@ -835,11 +932,11 @@ local function __FazzHub_Init_Main__()
         end
     end)--========================================================--
 -- FAZZHUB v0.3.7
--- PART 6/19 : AUTO PARRY V1 (ORIGINAL)
+-- PART 6A/19 : AUTO PARRY V1 (BAGIAN 1)
 --========================================================--
 
     --====================================================--
-    -- AUTO PARRY V1 (ORIGINAL)
+    -- AUTO PARRY V1
     --====================================================--
     local ParryState = {
         LastParry = 0, ActiveAttackers = {},
@@ -864,6 +961,7 @@ local function __FazzHub_Init_Main__()
             parryFireRemote = dagger:FindFirstChild("parry")
         end
     end)
+
     local KillerAttackAnims = {
         ["78432063483146"]="attack",["121216847022485"]="attack",["74968262036854"]="attack",
         ["132817836308238"]="attack",["82666958311998"]="attack",["111920872708571"]="attack",
@@ -886,6 +984,7 @@ local function __FazzHub_Init_Main__()
         ParryCooldown.JustFired = false
         ParryCooldown.ManualDetect = false
     end
+
     local function ParryClearCooldown()
         ParryCooldown.OnCooldown = false
         ParryCooldown.CooldownEnd = 0
@@ -893,11 +992,13 @@ local function __FazzHub_Init_Main__()
         ParryCooldown.JustFired = false
         ParryCooldown.ManualDetect = false
     end
+
     local function ParryIsOnCooldown()
         if not ParryCooldown.OnCooldown then return false end
         if os.clock() >= ParryCooldown.CooldownEnd then ParryClearCooldown(); return false end
         return true
     end
+
     if parryResultRemote then
         parryResultRemote.OnClientEvent:Connect(function(success, cd)
             if not ParryCooldown.WaitingForResult and not ParryCooldown.JustFired then return end
@@ -906,6 +1007,7 @@ local function __FazzHub_Init_Main__()
             else ParryStartCooldown(ParryCooldown.FallbackCooldown) end
         end)
     end
+
     local function ParryHookSilenced(char)
         if not char then return end
         ParryCooldown.IsSilenced = CollectionService:HasTag(char, "Silenced")
@@ -942,6 +1044,7 @@ local function __FazzHub_Init_Main__()
         if not inst then return false end
         return inst:IsA("Model") or inst:IsA("Tool") or inst:IsA("Accessory")
     end
+
     local function ParryIsEquippedDagger()
         local now = os.clock()
         if now - DaggerCache.LastCheck < DaggerCache.Interval then return DaggerCache.Value end
@@ -979,11 +1082,13 @@ local function __FazzHub_Init_Main__()
         end
         return false
     end
+
     local function ParryIsLowHealth()
         local hum = ParryGetCharCache().Hum
         if not hum then return false end
         return hum.Health < hum.MaxHealth * 0.5
     end
+
     local function ParryCanFire()
         if not ParryIsEquippedDagger() then return false end
         if ParryCooldown.IsSilenced then return false end
@@ -1098,12 +1203,9 @@ local function __FazzHub_Init_Main__()
         if c:IsA("PlayerGui") then ParryAttachPlayerGui(c) end
     end)--========================================================--
 -- FAZZHUB v0.3.7
--- PART 6B/19 : AUTO PARRY V1 (LANJUTAN)
+-- PART 6B/19 : AUTO PARRY V1 (BAGIAN 2)
 --========================================================--
 
-    --====================================================--
-    -- AUTO PARRY V1 - LOGIC & CIRCLE
-    --====================================================--
     local function ParryGetHitboxPart(char)
         if not char then return nil end
         return char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso") or char:FindFirstChild("HumanoidRootPart")
@@ -1368,14 +1470,14 @@ local function __FazzHub_Init_Main__()
     W.ParryState = ParryState
     W.ParryCooldown = ParryCooldown--========================================================--
 -- FAZZHUB v0.3.7
--- PART 7/19 : AUTO PARRY V2 (WISNU)
+-- PART 7/19 : AUTO PARRY V2
 --========================================================--
 
     --====================================================--
-    -- AUTO PARRY V2 (WISNU)
+    -- AUTO PARRY V2
     --====================================================--
     do
-        local W_VALID_PARRY_IDS = {
+        local AP2_VALID_PARRY_IDS = {
             ["122812055447896"] = "Veil lunge",
             ["133963973694098"] = "Mayers Basic",
             ["117042998468241"] = "Mayers lunge",
@@ -1400,14 +1502,14 @@ local function __FazzHub_Init_Main__()
             ["80411309607666"]  = "Abyssal S1"
         }
 
-        local W_State = { Cooldown = false, CooldownThread = nil, lastParry = 0, Adornment = nil }
-        local W_Attached = {}
+        local AP2_State = { Cooldown = false, CooldownThread = nil, lastParry = 0, Adornment = nil }
+        local AP2_Attached = {}
 
-        local function W_IsKiller(p) return p and p.Team and p.Team.Name == "Killer" end
-        local function W_IsDowned(char) return char and (char:GetAttribute("Knocked") == true or char:GetAttribute("IsHooked") == true) end
+        local function AP2_IsKiller(p) return p and p.Team and p.Team.Name == "Killer" end
+        local function AP2_IsDowned(char) return char and (char:GetAttribute("Knocked") == true or char:GetAttribute("IsHooked") == true) end
 
-        local function W_IsSafeToParry(char)
-            if not VD.Wisnu_ParrySafety then return true end
+        local function AP2_IsSafeToParry(char)
+            if not VD.AP2_ParrySafety then return true end
             if not char then return false end
             local interactObj = char:FindFirstChild("CheckInterractable")
             if interactObj then
@@ -1420,7 +1522,7 @@ local function __FazzHub_Init_Main__()
             return true
         end
 
-        local function W_PressRightClick()
+        local function AP2_PressRightClick()
             if not VirtualInputManager then return end
             pcall(function()
                 VirtualInputManager:SendMouseButtonEvent(0, 0, 1, true, game, 0)
@@ -1429,7 +1531,7 @@ local function __FazzHub_Init_Main__()
             end)
         end
 
-        local function W_TapMobileParryButton()
+        local function AP2_TapMobileParryButton()
             local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
             if not playerGui then return end
             local survivorMob = playerGui:FindFirstChild("Survivor-mob")
@@ -1443,13 +1545,13 @@ local function __FazzHub_Init_Main__()
                     end)
                 end
             else
-                W_PressRightClick()
+                AP2_PressRightClick()
             end
         end
 
-        local function W_ExecuteParry()
-            if W_State.Cooldown then return end
-            W_State.lastParry = tick()
+        local function AP2_ExecuteParry()
+            if AP2_State.Cooldown then return end
+            AP2_State.lastParry = tick()
             pcall(function()
                 local parryRemote = ReplicatedStorage:FindFirstChild("Remotes")
                     :FindFirstChild("Items")
@@ -1458,7 +1560,7 @@ local function __FazzHub_Init_Main__()
                 if parryRemote then
                     for i = 1, 10 do parryRemote:FireServer() end
                 end
-                task.spawn(W_TapMobileParryButton)
+                task.spawn(AP2_TapMobileParryButton)
             end)
         end
 
@@ -1469,16 +1571,16 @@ local function __FazzHub_Init_Main__()
             if parryResultRemote then
                 parryResultRemote.OnClientEvent:Connect(function(arg1, arg2)
                     local cdDur = tonumber(arg2) or ((arg1 == true) and 90 or 60)
-                    W_State.Cooldown = true
-                    if W_State.CooldownThread then task.cancel(W_State.CooldownThread) end
-                    W_State.CooldownThread = task.delay(cdDur, function()
-                        W_State.Cooldown = false
+                    AP2_State.Cooldown = true
+                    if AP2_State.CooldownThread then task.cancel(AP2_State.CooldownThread) end
+                    AP2_State.CooldownThread = task.delay(cdDur, function()
+                        AP2_State.Cooldown = false
                     end)
                 end)
             end
         end)
 
-        local function W_TriggerCrouch()
+        local function AP2_TriggerCrouch()
             local startT = tick()
             task.spawn(function()
                 local char = LocalPlayer.Character
@@ -1518,134 +1620,134 @@ local function __FazzHub_Init_Main__()
             end)
         end
 
-        local function W_AttachParrySensor(kChar)
-            if not kChar or W_Attached[kChar] then return end
-            W_Attached[kChar] = true
+        local function AP2_AttachParrySensor(kChar)
+            if not kChar or AP2_Attached[kChar] then return end
+            AP2_Attached[kChar] = true
             local humanoid = kChar:FindFirstChild("Humanoid")
             if not humanoid then humanoid = kChar:WaitForChild("Humanoid", 5); if not humanoid then return end end
             local animator = humanoid:FindFirstChildOfClass("Animator")
             if not animator then animator = humanoid:WaitForChild("Animator", 5); if not animator then return end end
 
             humanoid.ChildAdded:Connect(function(child)
-                if child:IsA("Animator") then W_Attached[kChar] = nil; W_AttachParrySensor(kChar) end
+                if child:IsA("Animator") then AP2_Attached[kChar] = nil; AP2_AttachParrySensor(kChar) end
             end)
             kChar.AncestryChanged:Connect(function(_, parent)
-                if not parent then W_Attached[kChar] = nil end
+                if not parent then AP2_Attached[kChar] = nil end
             end)
 
             animator.AnimationPlayed:Connect(function(track)
                 local animId = track.Animation and track.Animation.AnimationId or ""
                 local id = animId:match("%d+")
-                local attackName = W_VALID_PARRY_IDS[id]
+                local attackName = AP2_VALID_PARRY_IDS[id]
                 if not attackName then return end
 
                 if id == "80411309607666" and VD.AutoCrouch then
                     local myChar = LocalPlayer.Character
-                    if W_IsDowned(myChar) then return end
+                    if AP2_IsDowned(myChar) then return end
                     local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
                     local kHRP = kChar:FindFirstChild("HumanoidRootPart")
                     if myHRP and kHRP then
-                        if (myHRP.Position - kHRP.Position).Magnitude <= 40 then W_TriggerCrouch() end
+                        if (myHRP.Position - kHRP.Position).Magnitude <= 40 then AP2_TriggerCrouch() end
                     end
                     return
                 end
 
-                if not VD.Wisnu_AutoParry then return end
-                if W_State.Cooldown then return end
-                if VD.Wisnu_IgnoredSkills and VD.Wisnu_IgnoredSkills[attackName] then return end
+                if not VD.AP2_AutoParry then return end
+                if AP2_State.Cooldown then return end
+                if VD.AP2_IgnoredSkills and VD.AP2_IgnoredSkills[attackName] then return end
 
                 local myChar = LocalPlayer.Character
-                if W_IsDowned(myChar) or not W_IsSafeToParry(myChar) then return end
+                if AP2_IsDowned(myChar) or not AP2_IsSafeToParry(myChar) then return end
                 local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
                 local kHRP = kChar:FindFirstChild("HumanoidRootPart")
                 if not myHRP or not kHRP then return end
 
                 local startDistance = (myHRP.Position - kHRP.Position).Magnitude
 
-                if VD.Wisnu_ParryAggressive then
+                if VD.AP2_ParryAggressive then
                     local aggressiveRadius = 12
-                    local detectionRadius = VD.Wisnu_ParryDistance + 5
+                    local detectionRadius = VD.AP2_ParryDistance + 5
                     if startDistance > detectionRadius then return end
                     if startDistance <= aggressiveRadius then
-                        W_ExecuteParry()
+                        AP2_ExecuteParry()
                     else
                         local tracker
                         local startTime = os.clock()
                         tracker = RunService.Heartbeat:Connect(function()
-                            if os.clock() - startTime >= 1.5 or W_State.Cooldown or not myHRP or not kHRP or W_IsDowned(myChar) then
+                            if os.clock() - startTime >= 1.5 or AP2_State.Cooldown or not myHRP or not kHRP or AP2_IsDowned(myChar) then
                                 if tracker then tracker:Disconnect() end
                                 return
                             end
                             if (myHRP.Position - kHRP.Position).Magnitude <= aggressiveRadius then
-                                W_ExecuteParry()
+                                AP2_ExecuteParry()
                                 if tracker then tracker:Disconnect() end
                             end
                         end)
                     end
                 else
-                    if startDistance > VD.Wisnu_ParryDistance then return end
+                    if startDistance > VD.AP2_ParryDistance then return end
                     local myPosFlat = Vector3.new(myHRP.Position.X, 0, myHRP.Position.Z)
                     local kPosFlat = Vector3.new(kHRP.Position.X, 0, kHRP.Position.Z)
                     local flatDelta = myPosFlat - kPosFlat
                     if flatDelta.Magnitude > 0 then
                         local flatDirection = flatDelta.Unit
                         local kLookFlat = Vector3.new(kHRP.CFrame.LookVector.X, 0, kHRP.CFrame.LookVector.Z).Unit
-                        if kLookFlat:Dot(flatDirection) < VD.Wisnu_ParryFace then return end
+                        if kLookFlat:Dot(flatDirection) < VD.AP2_ParryFace then return end
                     end
-                    W_ExecuteParry()
+                    AP2_ExecuteParry()
                 end
             end)
         end
 
-        local function W_TryAttach(p)
-            if p ~= LocalPlayer and W_IsKiller(p) and p.Character then W_AttachParrySensor(p.Character) end
+        local function AP2_TryAttach(p)
+            if p ~= LocalPlayer and AP2_IsKiller(p) and p.Character then AP2_AttachParrySensor(p.Character) end
         end
 
-        local function W_SetupPlayer(p)
+        local function AP2_SetupPlayer(p)
             if p == LocalPlayer then return end
-            p.CharacterAdded:Connect(function() W_TryAttach(p) end)
-            p:GetPropertyChangedSignal("Team"):Connect(function() W_TryAttach(p) end)
-            if p.Character then W_TryAttach(p) end
+            p.CharacterAdded:Connect(function() AP2_TryAttach(p) end)
+            p:GetPropertyChangedSignal("Team"):Connect(function() AP2_TryAttach(p) end)
+            if p.Character then AP2_TryAttach(p) end
         end
 
-        for _, p in pairs(Players:GetPlayers()) do W_SetupPlayer(p) end
-        Players.PlayerAdded:Connect(W_SetupPlayer)
+        for _, p in pairs(Players:GetPlayers()) do AP2_SetupPlayer(p) end
+        Players.PlayerAdded:Connect(AP2_SetupPlayer)
         task.spawn(function()
             while true do
                 task.wait(5)
-                for _, p in pairs(Players:GetPlayers()) do W_TryAttach(p) end
+                for _, p in pairs(Players:GetPlayers()) do AP2_TryAttach(p) end
             end
         end)
 
         RunService.Heartbeat:Connect(function()
             local char = LocalPlayer.Character
             local hrp = char and char:FindFirstChild("HumanoidRootPart")
-            if VD.Wisnu_ParryCircle and VD.Wisnu_AutoParry and hrp then
-                if not W_State.Adornment or W_State.Adornment.Parent ~= hrp then
-                    if W_State.Adornment then W_State.Adornment:Destroy() end
-                    W_State.Adornment = Instance.new("CylinderHandleAdornment")
-                    W_State.Adornment.Name = "FazzHubAutoParryCircleESP"
-                    W_State.Adornment.Height = 0.05
-                    W_State.Adornment.Transparency = 0.3
-                    W_State.Adornment.Adornee = hrp
-                    W_State.Adornment.Parent = hrp
-                    W_State.Adornment.ZIndex = 0
-                    W_State.Adornment.AlwaysOnTop = false
+            if VD.AP2_ParryCircle and VD.AP2_AutoParry and hrp then
+                if not AP2_State.Adornment or AP2_State.Adornment.Parent ~= hrp then
+                    if AP2_State.Adornment then AP2_State.Adornment:Destroy() end
+                    AP2_State.Adornment = Instance.new("CylinderHandleAdornment")
+                    AP2_State.Adornment.Name = "FazzHubAutoParryCircleESP"
+                    AP2_State.Adornment.Height = 0.05
+                    AP2_State.Adornment.Transparency = 0.3
+                    AP2_State.Adornment.Adornee = hrp
+                    AP2_State.Adornment.Parent = hrp
+                    AP2_State.Adornment.ZIndex = 0
+                    AP2_State.Adornment.AlwaysOnTop = false
                 end
-                local cR = VD.Wisnu_ParryDistance
-                W_State.Adornment.Radius = cR
-                W_State.Adornment.InnerRadius = math.max(0.1, cR - 0.15)
-                W_State.Adornment.CFrame = CFrame.new(0, -3, 0) * CFrame.Angles(math.rad(90), 0, 0)
-                if W_State.Cooldown then
-                    W_State.Adornment.Color3 = Color3.fromRGB(128, 128, 128)
-                elseif VD.Wisnu_ParryAggressive then
-                    W_State.Adornment.Color3 = Color3.fromRGB(255, 255, 255)
+                local cR = VD.AP2_ParryDistance
+                AP2_State.Adornment.Radius = cR
+                AP2_State.Adornment.InnerRadius = math.max(0.1, cR - 0.15)
+                AP2_State.Adornment.CFrame = CFrame.new(0, -3, 0) * CFrame.Angles(math.rad(90), 0, 0)
+                if AP2_State.Cooldown then
+                    AP2_State.Adornment.Color3 = Color3.fromRGB(128, 128, 128)
+                elseif VD.AP2_ParryAggressive then
+                    AP2_State.Adornment.Color3 = Color3.fromRGB(255, 255, 255)
                 else
-                    W_State.Adornment.Color3 = Color3.fromRGB(255, 255, 255)
+                    AP2_State.Adornment.Color3 = Color3.fromRGB(255, 255, 255)
                 end
-            elseif W_State.Adornment then
-                W_State.Adornment:Destroy()
-                W_State.Adornment = nil
+            elseif AP2_State.Adornment then
+                AP2_State.Adornment:Destroy()
+                AP2_State.Adornment = nil
             end
         end)
                 end--========================================================--
@@ -2466,7 +2568,7 @@ local function __FazzHub_Init_Main__()
         end
                         end--========================================================--
 -- FAZZHUB v0.3.7
--- PART 9B/19 : TROLL TP + INSTANT ESCAPE + SELECT MASKED
+-- PART 9B/19 : TROLL TP + ESCAPE + MASKED
 --========================================================--
 
     --====================================================--
@@ -2577,7 +2679,7 @@ local function __FazzHub_Init_Main__()
         else ForceNotify("Select Masked", "Deactivatepower remote not found", 2) end
                             end--========================================================--
 -- FAZZHUB v0.3.7
--- PART 10A/19 : FULL ESP SYSTEM (BAGIAN 1)
+-- PART 10A/19 : FULL ESP (BAGIAN 1)
 --========================================================--
 
     --====================================================--
@@ -2700,7 +2802,7 @@ local function __FazzHub_Init_Main__()
             return "IDLE", Color3.fromRGB(150, 150, 150)
                                     end--========================================================--
 -- FAZZHUB v0.3.7
--- PART 10B/19 : FULL ESP SYSTEM (BAGIAN 2)
+-- PART 10B/19 : FULL ESP (BAGIAN 2)
 --========================================================--
 
         local function CreateStatusESP(plr, char, root)
@@ -2969,7 +3071,7 @@ local function __FazzHub_Init_Main__()
             end
                                         end--========================================================--
 -- FAZZHUB v0.3.7
--- PART 10C/19 : FULL ESP SYSTEM (BAGIAN 3)
+-- PART 10C/19 : FULL ESP (BAGIAN 3)
 --========================================================--
 
         local function GetGameValue(obj, name)
@@ -3234,11 +3336,11 @@ local function __FazzHub_Init_Main__()
         end)
                                         end--========================================================--
 -- FAZZHUB v0.3.7
--- PART 11/19 : INVISIBLE (MENGHUB API)
+-- PART 11/19 : INVISIBLE
 --========================================================--
 
     --====================================================--
-    -- INVISIBLE (MengHub API)
+    -- INVISIBLE
     --====================================================--
     do
         local MV = getgenv().FazzHubInvis
@@ -3291,7 +3393,7 @@ local function __FazzHub_Init_Main__()
             if _G.MengHub and _G.MengHub.Invisible and Invis_ValidateAPI(_G.MengHub.Invisible) then
                 MV.API = _G.MengHub.Invisible
                 MV.Ready = true
-                print("[FazzHubInvis] MengHub API sudah tersedia di _G")
+                print("[FazzHubInvis] API sudah tersedia di _G")
                 return true
             end
             MV.Loading = true; MV.Ready = false
@@ -3556,10 +3658,10 @@ local function __FazzHub_Init_Main__()
     --====================================================--
     -- SLASHER BYPASS
     --====================================================--
-    getgenv().MAWWW_SlasherCooldownBypassThread = nil
+    getgenv().Bypass_SlasherThread = nil
 
     function W.MAWWW_StartSlasherCooldownBypass()
-        if getgenv().MAWWW_SlasherCooldownBypassThread then return end
+        if getgenv().Bypass_SlasherThread then return end
         pcall(function()
             local b = true
             local mt = debug.getmetatable(b)
@@ -3571,7 +3673,7 @@ local function __FazzHub_Init_Main__()
             mt.__sub = function() return 0 end
             if setreadonly then setreadonly(mt, true) end
         end)
-        getgenv().MAWWW_SlasherCooldownBypassThread = task.spawn(function()
+        getgenv().Bypass_SlasherThread = task.spawn(function()
             local toggleFunc = nil
             local pursuitHandler = nil
             local function scanGCForSlasher()
@@ -3616,7 +3718,7 @@ local function __FazzHub_Init_Main__()
                     end)
                 end
             end
-            getgenv().MAWWW_SlasherCooldownBypassThread = nil
+            getgenv().Bypass_SlasherThread = nil
         end)
     end
 
@@ -3653,34 +3755,34 @@ local function __FazzHub_Init_Main__()
     --====================================================--
     -- ABYSS BYPASS
     --====================================================--
-    getgenv().MAWWW_AbyssCooldownBypassConnection = nil
-    getgenv().MAWWW_CorruptHandlerFunc = nil
+    getgenv().Bypass_AbyssConn = nil
+    getgenv().Bypass_CorruptFunc = nil
 
     function W.MAWWW_StartAbyssCooldownBypass()
-        if not getgenv().MAWWW_CorruptHandlerFunc then
+        if not getgenv().Bypass_CorruptFunc then
             pcall(function()
                 for _, v in pairs(getgc(true)) do
                     if type(v) == "function" and islclosure(v) then
                         local constants = debug.getconstants(v)
                         if table.find(constants, "corrupt") and table.find(constants, "Immobile") then
-                            getgenv().MAWWW_CorruptHandlerFunc = v
+                            getgenv().Bypass_CorruptFunc = v
                             break
                         end
                     end
                 end
             end)
         end
-        if not getgenv().MAWWW_CorruptHandlerFunc then return end
-        if getgenv().MAWWW_AbyssCooldownBypassConnection then
-            getgenv().MAWWW_AbyssCooldownBypassConnection:Disconnect()
+        if not getgenv().Bypass_CorruptFunc then return end
+        if getgenv().Bypass_AbyssConn then
+            getgenv().Bypass_AbyssConn:Disconnect()
         end
-        getgenv().MAWWW_AbyssCooldownBypassConnection = RunService.Heartbeat:Connect(function()
+        getgenv().Bypass_AbyssConn = RunService.Heartbeat:Connect(function()
             if not VD.KILLER_BypassCooldown then return end
-            if getgenv().MAWWW_CorruptHandlerFunc then
-                local upvalues = debug.getupvalues(getgenv().MAWWW_CorruptHandlerFunc)
+            if getgenv().Bypass_CorruptFunc then
+                local upvalues = debug.getupvalues(getgenv().Bypass_CorruptFunc)
                 for idx, val in pairs(upvalues) do
                     if type(val) == "boolean" and val == false then
-                        debug.setupvalue(getgenv().MAWWW_CorruptHandlerFunc, idx, true)
+                        debug.setupvalue(getgenv().Bypass_CorruptFunc, idx, true)
                     end
                 end
             end
@@ -3688,9 +3790,9 @@ local function __FazzHub_Init_Main__()
     end
 
     function W.MAWWW_StopAbyssCooldownBypass()
-        if getgenv().MAWWW_AbyssCooldownBypassConnection then
-            getgenv().MAWWW_AbyssCooldownBypassConnection:Disconnect()
-            getgenv().MAWWW_AbyssCooldownBypassConnection = nil
+        if getgenv().Bypass_AbyssConn then
+            getgenv().Bypass_AbyssConn:Disconnect()
+            getgenv().Bypass_AbyssConn = nil
         end
     end
 
@@ -3706,11 +3808,11 @@ local function __FazzHub_Init_Main__()
     --====================================================--
     -- JEFF INF FRENZY
     --====================================================--
-    getgenv().MAWWW_JeffCooldownBypassThread = nil
+    getgenv().Bypass_JeffThread = nil
 
     function W.MAWWW_StartJeffCooldownBypass()
-        if getgenv().MAWWW_JeffCooldownBypassThread then return end
-        getgenv().MAWWW_JeffCooldownBypassThread = task.spawn(function()
+        if getgenv().Bypass_JeffThread then return end
+        getgenv().Bypass_JeffThread = task.spawn(function()
             while task.wait() do
                 if not VD.KILLER_InfFrenzy then break end
                 pcall(function()
@@ -3720,7 +3822,7 @@ local function __FazzHub_Init_Main__()
                     end
                 end)
             end
-            getgenv().MAWWW_JeffCooldownBypassThread = nil
+            getgenv().Bypass_JeffThread = nil
         end)
     end
 
@@ -3781,12 +3883,12 @@ local function __FazzHub_Init_Main__()
     --====================================================--
     -- DESTROY PALLET
     --====================================================--
-    getgenv().MAWWW_IsBreakingPallet = false
+    getgenv().Bypass_IsBreakingPallet = false
 
     function W.MAWWW_DestroyAllPallets()
         if not VD.KILLER_DestroyPallets then return end
         if W.GetRole() ~= "Killer" then return end
-        if getgenv().MAWWW_IsBreakingPallet then return end
+        if getgenv().Bypass_IsBreakingPallet then return end
 
         local char = LocalPlayer.Character
         local root = char and char:FindFirstChild("HumanoidRootPart")
@@ -3809,7 +3911,7 @@ local function __FazzHub_Init_Main__()
         end
         if not nearest then return end
 
-        getgenv().MAWWW_IsBreakingPallet = true
+        getgenv().Bypass_IsBreakingPallet = true
         task.spawn(function()
             pcall(function()
                 local r = ReplicatedStorage:FindFirstChild("Remotes")
@@ -3828,7 +3930,7 @@ local function __FazzHub_Init_Main__()
                 if os.clock() - start > 3 then break end
                 task.wait(0.1)
             end
-            getgenv().MAWWW_IsBreakingPallet = false
+            getgenv().Bypass_IsBreakingPallet = false
         end)
     end
 
@@ -4102,301 +4204,7 @@ local function __FazzHub_Init_Main__()
         W.GunAim_Cfg = GunAim
                                                     end--========================================================--
 -- FAZZHUB v0.3.7
--- PART 13B/19 : KILLER ABILITIES + AUTO HOOK
---========================================================--
-
-    --====================================================--
-    -- KILLER ABILITIES SYSTEM
-    --====================================================--
-    W.KillerAbilities = W.KillerAbilities or {
-        AutoStalk = VD.KA_AutoStalk, AutoStalkRange = VD.KA_AutoStalkRange,
-        AutoKillAll = VD.KA_AutoKillAll, DropAllPallet = VD.KA_DropAllPallet,
-        BlockAllVault = VD.KA_BlockAllVault,
-    }
-    local KA = W.KillerAbilities
-
-    function W.KA_GetClosestSurvivor(range, minHealth)
-        local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if not root then return nil end
-        local closest, shortest = nil, (range or math.huge)
-        for _, plr in ipairs(Players:GetPlayers()) do
-            if plr ~= LocalPlayer and plr.Character and TeamIs(plr, "Survivor") then
-                local hum = plr.Character:FindFirstChildOfClass("Humanoid")
-                local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
-                if hum and hrp and hum.Health > (minHealth or 30) then
-                    local d = (hrp.Position - root.Position).Magnitude
-                    if d <= shortest then shortest = d; closest = plr end
-                end
-            end
-        end
-        return closest
-    end
-
-    local AutoStalkConnection = nil
-    function W.KA_StartAutoStalk()
-        if AutoStalkConnection then return end
-        AutoStalkConnection = RunService.Heartbeat:Connect(function()
-            if not KA.AutoStalk then return end
-            if GetRole() ~= "Killer" then return end
-            local target = W.KA_GetClosestSurvivor(KA.AutoStalkRange, 30)
-            if not target or not target.Character then return end
-            local stalkEvent = ReplicatedStorage:FindFirstChild("Remotes", true)
-                and ReplicatedStorage.Remotes:FindFirstChild("Killers", true)
-                and ReplicatedStorage.Remotes.Killers:FindFirstChild("Stalker", true)
-                and ReplicatedStorage.Remotes.Killers.Stalker:FindFirstChild("StartStalking")
-            if stalkEvent then pcall(function() stalkEvent:FireServer(target) end) end
-        end)
-    end
-
-    function W.KA_StopAutoStalk()
-        if AutoStalkConnection then
-            pcall(function() AutoStalkConnection:Disconnect() end)
-            AutoStalkConnection = nil
-        end
-    end
-
-    function W.KA_SetAutoStalk(v)
-        KA.AutoStalk = v and true or false
-        VD.KA_AutoStalk = KA.AutoStalk
-        if KA.AutoStalk then W.KA_StartAutoStalk() else W.KA_StopAutoStalk() end
-    end
-
-    local KillAllTarget = nil
-    function W.KA_UpdateKillAll()
-        if not KA.AutoKillAll then KillAllTarget = nil; return end
-        if GetRole() ~= "Killer" then KillAllTarget = nil; return end
-        local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if not root then return end
-        local tChar = KillAllTarget and KillAllTarget.Character
-        if not KillAllTarget or not tChar or not tChar.Parent
-            or not tChar:FindFirstChild("Humanoid") or tChar.Humanoid.Health <= 35 then
-            KillAllTarget = W.KA_GetClosestSurvivor(math.huge, 30)
-            tChar = KillAllTarget and KillAllTarget.Character
-        end
-        if KillAllTarget and tChar then
-            local targetHRP = tChar:FindFirstChild("HumanoidRootPart")
-            if targetHRP then
-                local velocity  = targetHRP.AssemblyLinearVelocity
-                local predict   = velocity * 0.15
-                local targetPos = targetHRP.Position + predict
-                local behind    = targetHRP.CFrame.LookVector * -3
-                root.CFrame = CFrame.new(targetPos + behind, targetPos)
-            end
-            pcall(function()
-                local attacks = ReplicatedStorage:FindFirstChild("Remotes")
-                    and ReplicatedStorage.Remotes:FindFirstChild("Attacks")
-                local basic = attacks and attacks:FindFirstChild("BasicAttack")
-                if basic then basic:FireServer(false) end
-            end)
-        end
-    end
-
-    function W.KA_SetAutoKillAll(v)
-        KA.AutoKillAll = v and true or false
-        VD.KA_AutoKillAll = KA.AutoKillAll
-        if not KA.AutoKillAll then KillAllTarget = nil end
-    end
-
-    local lastDropAllPallet = 0
-    function W.KA_DropAllPallets()
-        if not KA.DropAllPallet then return end
-        if GetRole() ~= "Killer" then return end
-        local now = tick()
-        if now - lastDropAllPallet < 2 then return end
-        lastDropAllPallet = now
-        pcall(function()
-            local remotes = ReplicatedStorage:FindFirstChild("Remotes")
-            local palletFold = remotes and remotes:FindFirstChild("Pallet")
-            local dropEvent = palletFold and palletFold:FindFirstChild("PalletDropEvent")
-            if not dropEvent then return end
-            local map = workspace:FindFirstChild("Map")
-            if not map then return end
-            for _, obj in ipairs(map:GetDescendants()) do
-                if obj.Name == "Palletwrong" and (obj:IsA("Model") or obj:IsA("Folder")) then
-                    local target = obj:FindFirstChild("PalletPointSlide") or obj:FindFirstChild("PalletPoint")
-                    if target then pcall(function() dropEvent:FireServer(target) end) end
-                end
-            end
-        end)
-    end
-
-    function W.KA_SetDropAllPallet(v)
-        KA.DropAllPallet = v and true or false
-        VD.KA_DropAllPallet = KA.DropAllPallet
-    end
-
-    local lastBlockVault = 0
-    function W.KA_BlockAllVaults()
-        if not KA.BlockAllVault then return end
-        local VaultEvent = ReplicatedStorage:FindFirstChild("Remotes")
-            and ReplicatedStorage.Remotes:FindFirstChild("Window")
-            and ReplicatedStorage.Remotes.Window:FindFirstChild("VaultEvent")
-        if not VaultEvent then return end
-        local map = workspace:FindFirstChild("Map")
-        if not map then return end
-        for _, trigger in ipairs(map:GetDescendants()) do
-            if trigger.Name == "VaultTrigger" then
-                pcall(function() VaultEvent:FireServer(trigger, true) end)
-            end
-        end
-    end
-
-    function W.KA_SetBlockAllVault(v)
-        KA.BlockAllVault = v and true or false
-        VD.KA_BlockAllVault = KA.BlockAllVault
-    end
-
-    task.spawn(function()
-        while true do
-            task.wait(0.12)
-            if KA.AutoKillAll then pcall(W.KA_UpdateKillAll) end
-            if KA.DropAllPallet then pcall(W.KA_DropAllPallets) end
-            if KA.BlockAllVault then pcall(W.KA_BlockAllVaults) end
-            if VD.KILLER_DestroyPallets then pcall(W.MAWWW_DestroyAllPallets) end
-            pcall(VD_UpdateInfiniteLunge)
-        end
-    end)
-    LocalPlayer.CharacterAdded:Connect(function()
-        task.wait(1)
-        if KA.AutoStalk then pcall(W.KA_StartAutoStalk) end
-    end)
-
-    --====================================================--
-    -- AUTO HOOK (KILLER)
-    --====================================================--
-    do
-        local IsAutoHooking = false
-
-        local function GetMapCacheHooks()
-            local hooks = {}
-            local map = Workspace:FindFirstChild("Map")
-            if not map then return hooks end
-            for _, obj in ipairs(map:GetDescendants()) do
-                if obj:IsA("Model") and obj.Name == "Hook" then
-                    local hp = obj:FindFirstChild("HookPoint")
-                        or obj:FindFirstChild("HookHitbox")
-                        or obj:FindFirstChildWhichIsA("BasePart", true)
-                    if hp then table.insert(hooks, { model = obj, part = hp }) end
-                end
-            end
-            return hooks
-        end
-
-        local function IsPlayerOnHook(character, hooks)
-            local tr = character:FindFirstChild("HumanoidRootPart")
-            if not tr then return false end
-            for _, h in ipairs(hooks) do
-                if (h.part.Position - tr.Position).Magnitude < 6 then return true end
-            end
-            return false
-        end
-
-        local function IsPlayerCarried(character)
-            return character:GetAttribute("IsCarried") == true
-        end
-
-        local function FindDownedSurvivor(hooks)
-            local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if not myRoot then return nil, nil end
-            local closest, closestDist, closestChar = nil, math.huge, nil
-            for _, pl in ipairs(Players:GetPlayers()) do
-                if pl == LocalPlayer or not pl.Character then continue end
-                if not TeamIs(pl, "Survivor") then continue end
-                local tr = pl.Character:FindFirstChild("HumanoidRootPart")
-                local h = pl.Character:FindFirstChildOfClass("Humanoid")
-                if not tr or not h then continue end
-                local pct = h.MaxHealth > 0 and (h.Health / h.MaxHealth) or 0
-                if pct > 0.25 or pct <= 0 then continue end
-                if IsPlayerOnHook(pl.Character, hooks) then continue end
-                if IsPlayerCarried(pl.Character) then continue end
-                local d = (tr.Position - myRoot.Position).Magnitude
-                if d < closestDist then
-                    closestDist = d
-                    closest = tr
-                    closestChar = pl.Character
-                end
-            end
-            return closest, closestChar
-        end
-
-        local function FindNearestHook(targetPos, hooks)
-            local closest, closestDist = nil, math.huge
-            for _, h in ipairs(hooks) do
-                local d = (h.part.Position - targetPos).Magnitude
-                if d < closestDist then closestDist = d; closest = h end
-            end
-            return closest
-        end
-
-        local function DoAutoHook()
-            if not VD.KILLER_AutoHook then return end
-            if IsAutoHooking then return end
-            if GetRole() ~= "Killer" then return end
-            local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if not root then return end
-            local hooks = GetMapCacheHooks()
-            if #hooks == 0 then return end
-            local targetRoot, targetChar = FindDownedSurvivor(hooks)
-            if not targetRoot then return end
-            local nearestHook = FindNearestHook(targetRoot.Position, hooks)
-            if not nearestHook then return end
-
-            IsAutoHooking = true
-            task.spawn(function()
-                local CarryEvent, HookEvent, HookCommit
-                pcall(function()
-                    local carryFolder = ReplicatedStorage:FindFirstChild("Remotes"):FindFirstChild("Carry")
-                    CarryEvent = carryFolder:FindFirstChild("CarrySurvivorEvent")
-                    HookEvent  = carryFolder:FindFirstChild("HookEvent")
-                    HookCommit = carryFolder:FindFirstChild("HookCommit")
-                end)
-                pcall(function()
-                    root.CFrame = CFrame.new(targetRoot.Position + Vector3.new(0, 3, 0), targetRoot.Position)
-                end)
-                task.wait(0.2)
-                pcall(function() if CarryEvent then CarryEvent:FireServer(targetChar) end end)
-                task.wait(0.5)
-                local r2 = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                if not r2 then IsAutoHooking = false; return end
-                pcall(function()
-                    r2.CFrame = CFrame.new(nearestHook.part.Position + Vector3.new(0, 3, 0))
-                end)
-                task.wait(0.3)
-                pcall(function()
-                    local hookPoint = nearestHook.model:FindFirstChild("HookPoint")
-                        or nearestHook.model:FindFirstChild("HookHitbox")
-                        or nearestHook.part
-                    if HookEvent then HookEvent:FireServer(hookPoint) end
-                    if HookCommit then HookCommit:FireServer(hookPoint) end
-                end)
-                task.wait(1)
-                IsAutoHooking = false
-            end)
-        end
-
-        function W.KA_StartAutoHook()
-            if W._AutoHookThread then return end
-            W._AutoHookThread = task.spawn(function()
-                while VD.KILLER_AutoHook do
-                    if GetRole() == "Killer" then pcall(DoAutoHook) end
-                    task.wait(1)
-                end
-                W._AutoHookThread = nil
-            end)
-        end
-        function W.KA_StopAutoHook()
-            if W._AutoHookThread then
-                pcall(function() task.cancel(W._AutoHookThread) end)
-                W._AutoHookThread = nil
-            end
-        end
-        function W.KA_SetAutoHook(v)
-            VD.KILLER_AutoHook = v and true or false
-            if VD.KILLER_AutoHook then W.KA_StartAutoHook() else W.KA_StopAutoHook() end
-        end
-                                                        end--========================================================--
--- FAZZHUB v0.3.7
--- PART 13C/19 : KILLER PERKS DISPLAY (WHITE THEME)
+-- PART 13C/19 : KILLER PERKS DISPLAY
 --========================================================--
 
     --====================================================--
@@ -4738,7 +4546,7 @@ local function __FazzHub_Init_Main__()
             VD.KillerPerksDisplay = v and true or false
             if VD.KillerPerksDisplay then Start() else Stop() end
         end
-                                                            end--========================================================--
+                                                        end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 14A/19 : SPEED BOOST + CURSOR FEATURE
 --========================================================--
@@ -4871,7 +4679,7 @@ local function __FazzHub_Init_Main__()
             task.wait(1)
             if VD.CursorEnabled then W.Cursor_SetEnabled(true) end
         end)
-                                                                end--========================================================--
+                                                            end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 14B/19 : SILENT FLASK + SPEAR AIMBOT
 --========================================================--
@@ -5612,7 +5420,7 @@ local function __FazzHub_Init_Main__()
             end
         end
         W.SwiftVault_SetSpeed = function(v) VD.SURF_VaultSpeed = tonumber(v) or 13 end
-                                                                        end--========================================================--
+                                                                    end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 15A/19 : GRAPHICS SYSTEM
 --========================================================--
@@ -5893,7 +5701,7 @@ local function __FazzHub_Init_Main__()
             Graphics_Apply(true); Graphics_ApplyOptimization(true)
             Graphics_ApplyNoScreenEffects(); Graphics_ApplyZoom(); Graphics_ApplyFOV()
         end)
-                                                                            end--========================================================--
+                                                                        end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 15B/19 : PALLET REFLEX + FAKE PARRY V2
 --========================================================--
@@ -6225,9 +6033,9 @@ local function __FazzHub_Init_Main__()
             end
             return false
         end
-                                                                                end--========================================================--
+                                                                            end--========================================================--
 -- FAZZHUB v0.3.7
--- PART 15C/19 : CAMERA DBD + FLOATING BUTTON SYSTEM
+-- PART 15C/19 : CAMERA DBD + FLOATING BUTTON (BAR)
 --========================================================--
 
     --====================================================--
@@ -6314,182 +6122,220 @@ local function __FazzHub_Init_Main__()
     end
 
     --====================================================--
-    -- FLOATING BUTTON SYSTEM
+    -- FLOATING BUTTON SYSTEM (BAR KECIL)
     --====================================================--
     local function CreateFloatingButton(cfg)
         local state = cfg.state
         state.Connections = state.Connections or {}
+
+        local ACCENT_LOCAL  = _G.GLUTO_ACCENT or Color3.fromRGB(120, 120, 120)
+        local BG_OFF_LOCAL  = _G.GLUTO_BG_OFF or Color3.fromRGB(0, 0, 0)
+        local BORDER_LOCAL  = _G.GLUTO_STROKE_OFF or Color3.fromRGB(50, 50, 58)
+        local BG_ON_LOCAL   = Color3.fromRGB(20, 20, 24)
+
+        local BAR_W = 92
+        local BAR_H = 24
+
         local function ClearConns()
             for _, c in ipairs(state.Connections) do pcall(function() c:Disconnect() end) end
             state.Connections = {}
         end
+
         local function DestroyBtn()
             ClearConns()
             if state.Gui then pcall(function() state.Gui:Destroy() end); state.Gui = nil end
         end
+
         local function UpdateVisual()
             if not state.Gui then return end
-            local main = state.Gui:FindFirstChild("MainBtn", true)
-            if not main then return end
+            local bar = state.Gui:FindFirstChild("Bar", true)
+            if not bar then return end
+            local stroke = bar:FindFirstChild("BarStroke")
+            local symbol = bar:FindFirstChild("SymbolLbl")
+            local name = bar:FindFirstChild("NameLbl")
+            local status = bar:FindFirstChild("StatusLbl")
+            local indicator = bar:FindFirstChild("Indicator")
             local isOn = cfg.isOn()
-            local sp = main:FindFirstChild("StatusPill")
-            local st = sp and sp:FindFirstChild("StatusText")
-            local sd = sp and sp:FindFirstChild("StatusDot")
-            local str = main:FindFirstChild("MainStroke")
-            local ic = main:FindFirstChild("IconCircle")
-            local idot = ic and ic:FindFirstChild("IconDot")
             if isOn then
-                TweenService:Create(main, TweenInfo.new(0.25), { BackgroundColor3 = Color3.fromRGB(0, 0, 0) }):Play()
-                if ic then TweenService:Create(ic, TweenInfo.new(0.25), { BackgroundColor3 = _G.GLUTO_ACCENT, BackgroundTransparency = 0.15 }):Play() end
-                if idot then TweenService:Create(idot, TweenInfo.new(0.25), { BackgroundColor3 = Color3.fromRGB(0, 0, 0) }):Play() end
-                if sp then TweenService:Create(sp, TweenInfo.new(0.25), { BackgroundColor3 = Color3.fromRGB(0, 0, 0) }):Play() end
-                if st then st.Text = "ON"; TweenService:Create(st, TweenInfo.new(0.25), { TextColor3 = _G.GLUTO_ACCENT }):Play() end
-                if sd then TweenService:Create(sd, TweenInfo.new(0.25), { BackgroundColor3 = _G.GLUTO_ACCENT }):Play() end
-                if str then TweenService:Create(str, TweenInfo.new(0.25), { Color = Color3.fromRGB(255, 255, 255) }):Play() end
+                TweenService:Create(bar, TweenInfo.new(0.22), { BackgroundColor3 = BG_ON_LOCAL }):Play()
+                if stroke then TweenService:Create(stroke, TweenInfo.new(0.22), { Color = ACCENT_LOCAL, Transparency = 0.1, Thickness = 1.4 }):Play() end
+                if indicator then TweenService:Create(indicator, TweenInfo.new(0.22), { BackgroundColor3 = ACCENT_LOCAL, BackgroundTransparency = 0 }):Play() end
+                if symbol then TweenService:Create(symbol, TweenInfo.new(0.22), { TextColor3 = Color3.fromRGB(255,255,255) }):Play() end
+                if name then TweenService:Create(name, TweenInfo.new(0.22), { TextColor3 = Color3.fromRGB(255,255,255) }):Play() end
+                if status then status.Text = "ON"; TweenService:Create(status, TweenInfo.new(0.22), { TextColor3 = Color3.fromRGB(0,255,120) }):Play() end
             else
-                TweenService:Create(main, TweenInfo.new(0.25), { BackgroundColor3 = _G.GLUTO_BG_OFF }):Play()
-                if ic then TweenService:Create(ic, TweenInfo.new(0.25), { BackgroundColor3 = _G.GLUTO_NEUTRAL, BackgroundTransparency = 0.4 }):Play() end
-                if idot then TweenService:Create(idot, TweenInfo.new(0.25), { BackgroundColor3 = _G.GLUTO_BG_OFF }):Play() end
-                if sp then TweenService:Create(sp, TweenInfo.new(0.25), { BackgroundColor3 = Color3.fromRGB(0, 0, 0) }):Play() end
-                if st then st.Text = "OFF"; TweenService:Create(st, TweenInfo.new(0.25), { TextColor3 = Color3.fromRGB(120, 120, 120) }):Play() end
-                if sd then TweenService:Create(sd, TweenInfo.new(0.25), { BackgroundColor3 = _G.GLUTO_NEUTRAL }):Play() end
-                if str then TweenService:Create(str, TweenInfo.new(0.25), { Color = _G.GLUTO_STROKE_OFF }):Play() end
+                TweenService:Create(bar, TweenInfo.new(0.22), { BackgroundColor3 = BG_OFF_LOCAL }):Play()
+                if stroke then TweenService:Create(stroke, TweenInfo.new(0.22), { Color = BORDER_LOCAL, Transparency = 0.4, Thickness = 1 }):Play() end
+                if indicator then TweenService:Create(indicator, TweenInfo.new(0.22), { BackgroundColor3 = Color3.fromRGB(60,60,70), BackgroundTransparency = 0.4 }):Play() end
+                if symbol then TweenService:Create(symbol, TweenInfo.new(0.22), { TextColor3 = Color3.fromRGB(150,150,160) }):Play() end
+                if name then TweenService:Create(name, TweenInfo.new(0.22), { TextColor3 = Color3.fromRGB(160,160,170) }):Play() end
+                if status then status.Text = "OFF"; TweenService:Create(status, TweenInfo.new(0.22), { TextColor3 = Color3.fromRGB(110,110,120) }):Play() end
             end
         end
+
         local function ToggleBtn()
             local s = not cfg.isOn()
             cfg.onToggle(s)
             UpdateVisual()
             if s then VD_Notify(cfg.notifyTitle, "Enabled", 2) end
         end
+
+        local function UpdateLockVisual()
+            if not state.Gui then return end
+            local lockBtn = state.Gui:FindFirstChild("LockBtn", true)
+            if not lockBtn then return end
+            local lockIcon = lockBtn:FindFirstChild("LockIcon")
+            if state.DragLocked then
+                lockBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+                if lockIcon then lockIcon.Text = "🔒" end
+            else
+                lockBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+                if lockIcon then lockIcon.Text = "🔓" end
+            end
+        end
+
         local function CreateBtn()
             DestroyBtn()
             local parent = LocalPlayer:FindFirstChild("PlayerGui")
-            if gethui then local ok2, hui = pcall(gethui); if ok2 and hui then parent = hui end end
+            if gethui then
+                local ok2, hui = pcall(gethui)
+                if ok2 and hui then parent = hui end
+            end
             if not parent then return end
+
             local gui = Instance.new("ScreenGui")
-            gui.Name = "FazzHub" .. cfg.id .. "Btn"; gui.ResetOnSpawn = false
-            gui.IgnoreGuiInset = true; gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+            gui.Name = "FazzHubBar_" .. cfg.id
+            gui.ResetOnSpawn = false
+            gui.IgnoreGuiInset = true
+            gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+            gui.DisplayOrder = 100
             gui.Parent = parent
             state.Gui = gui
+
             local container = Instance.new("Frame")
             container.Name = "Container"
-            container.Size = UDim2.fromOffset(180, 40)
+            container.Size = UDim2.fromOffset(BAR_W + 6, BAR_H)
             container.Position = state.SavedPos
             container.BackgroundTransparency = 1
             container.Parent = gui
-            local main = Instance.new("Frame")
-            main.Name = "MainBtn"
-            main.Size = UDim2.fromOffset(132, 40)
-            main.BackgroundColor3 = _G.GLUTO_BG_OFF
-            main.BorderSizePixel = 0; main.ZIndex = 1; main.Parent = container
-            Instance.new("UICorner", main).CornerRadius = UDim.new(0, 12)
-            local mainStroke = Instance.new("UIStroke", main)
-            mainStroke.Name = "MainStroke"
-            mainStroke.Color = _G.GLUTO_STROKE_OFF
-            mainStroke.Thickness = 1.2; mainStroke.Transparency = 0.2
-            local ic = Instance.new("Frame")
-            ic.Name = "IconCircle"
-            ic.Size = UDim2.fromOffset(24, 24)
-            ic.Position = UDim2.new(0, 8, 0.5, -12)
-            ic.BackgroundColor3 = _G.GLUTO_NEUTRAL
-            ic.BackgroundTransparency = 0.4
-            ic.BorderSizePixel = 0; ic.ZIndex = 2; ic.Parent = main
-            Instance.new("UICorner", ic).CornerRadius = UDim.new(1, 0)
-            local idot = Instance.new("Frame")
-            idot.Name = "IconDot"
-            idot.Size = UDim2.fromOffset(10, 10)
-            idot.Position = UDim2.new(0.5, -5, 0.5, -5)
-            idot.BackgroundColor3 = _G.GLUTO_BG_OFF
-            idot.BorderSizePixel = 0; idot.ZIndex = 3
-            idot.Rotation = cfg.iconRotation or 0
-            idot.Parent = ic
-            Instance.new("UICorner", idot).CornerRadius = UDim.new(0, 2)
-            local ml = Instance.new("TextLabel")
-            ml.Name = "MainLabel"
-            ml.Size = UDim2.new(1, -70, 1, 0)
-            ml.Position = UDim2.new(0, 38, 0, 0)
-            ml.BackgroundTransparency = 1
-            ml.Font = Enum.Font.GothamBold
-            ml.Text = cfg.title
-            ml.TextColor3 = Color3.fromRGB(240, 240, 245)
-            ml.TextSize = 13
-            ml.TextXAlignment = Enum.TextXAlignment.Left
-            ml.ZIndex = 2; ml.Parent = main
-            local sp = Instance.new("Frame")
-            sp.Name = "StatusPill"
-            sp.AnchorPoint = Vector2.new(1, 0.5)
-            sp.Size = UDim2.fromOffset(42, 20)
-            sp.Position = UDim2.new(1, -8, 0.5, 0)
-            sp.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-            sp.BorderSizePixel = 0; sp.ZIndex = 2; sp.Parent = main
-            Instance.new("UICorner", sp).CornerRadius = UDim.new(1, 0)
-            local sd = Instance.new("Frame")
-            sd.Name = "StatusDot"
-            sd.Size = UDim2.fromOffset(6, 6)
-            sd.Position = UDim2.new(0, 7, 0.5, -3)
-            sd.BackgroundColor3 = _G.GLUTO_NEUTRAL
-            sd.BorderSizePixel = 0; sd.ZIndex = 3; sd.Parent = sp
-            Instance.new("UICorner", sd).CornerRadius = UDim.new(1, 0)
-            local st = Instance.new("TextLabel")
-            st.Name = "StatusText"
-            st.Size = UDim2.new(1, -18, 1, 0)
-            st.Position = UDim2.new(0, 16, 0, 0)
-            st.BackgroundTransparency = 1
-            st.Font = Enum.Font.GothamBold
-            st.Text = "OFF"
-            st.TextColor3 = Color3.fromRGB(140, 140, 152)
-            st.TextSize = 10
-            st.TextXAlignment = Enum.TextXAlignment.Center
-            st.ZIndex = 3; st.Parent = sp
-            local lock = Instance.new("TextButton")
-            lock.Name = "LockBtn"
-            lock.Size = UDim2.fromOffset(40, 40)
-            lock.Position = UDim2.new(1, -44, 0, 0)
-            lock.BackgroundColor3 = _G.GLUTO_BG_OFF
-            lock.BorderSizePixel = 0; lock.Text = ""
-            lock.AutoButtonColor = false; lock.ZIndex = 1; lock.Parent = container
-            Instance.new("UICorner", lock).CornerRadius = UDim.new(0, 12)
-            local ls = Instance.new("UIStroke", lock)
-            ls.Color = _G.GLUTO_STROKE_OFF
-            ls.Thickness = 1.2; ls.Transparency = 0.2
-            ls.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-            local li = Instance.new("TextLabel")
-            li.Name = "LockIcon"
-            li.Size = UDim2.fromScale(1, 1)
-            li.BackgroundTransparency = 1
-            li.Font = Enum.Font.GothamBold
-            li.Text = "🔓"
-            li.TextColor3 = Color3.fromRGB(180, 180, 190)
-            li.TextSize = 16; li.ZIndex = 2; li.Parent = lock
-            local function UpdateLockVisual()
-                if state.DragLocked then
-                    li.Text = "🔒"
-                    TweenService:Create(ls, TweenInfo.new(0.2), { Color = _G.GLUTO_ACCENT, Transparency = 0, Thickness = 1.5 }):Play()
-                    TweenService:Create(lock, TweenInfo.new(0.2), { BackgroundColor3 = _G.GLUTO_ACCENT_BG }):Play()
-                    TweenService:Create(li, TweenInfo.new(0.2), { TextColor3 = _G.GLUTO_ACCENT }):Play()
-                else
-                    li.Text = "🔓"
-                    TweenService:Create(ls, TweenInfo.new(0.2), { Color = _G.GLUTO_STROKE_OFF, Transparency = 0.2, Thickness = 1.2 }):Play()
-                    TweenService:Create(lock, TweenInfo.new(0.2), { BackgroundColor3 = _G.GLUTO_BG_OFF }):Play()
-                    TweenService:Create(li, TweenInfo.new(0.2), { TextColor3 = Color3.fromRGB(180, 180, 190) }):Play()
-                end
-            end
-            local cd = Instance.new("TextButton")
-            cd.Name = "ClickDetect"
-            cd.Size = UDim2.fromScale(1, 1)
-            cd.BackgroundTransparency = 1; cd.Text = ""
-            cd.AutoButtonColor = false; cd.ZIndex = 5; cd.Parent = main
+
+            -- BAR UTAMA
+            local bar = Instance.new("TextButton")
+            bar.Name = "Bar"
+            bar.Size = UDim2.fromOffset(BAR_W, BAR_H)
+            bar.Position = UDim2.new(0, 0, 0, 0)
+            bar.BackgroundColor3 = BG_OFF_LOCAL
+            bar.BorderSizePixel = 0
+            bar.Text = ""
+            bar.AutoButtonColor = false
+            bar.ZIndex = 3
+            bar.Parent = container
+            Instance.new("UICorner", bar).CornerRadius = UDim.new(0, 6)
+
+            local stroke = Instance.new("UIStroke", bar)
+            stroke.Name = "BarStroke"
+            stroke.Color = BORDER_LOCAL
+            stroke.Thickness = 1
+            stroke.Transparency = 0.4
+            stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+            -- INDICATOR
+            local indicator = Instance.new("Frame")
+            indicator.Name = "Indicator"
+            indicator.Size = UDim2.fromOffset(3, BAR_H - 8)
+            indicator.Position = UDim2.new(0, 5, 0.5, -(BAR_H - 8) / 2)
+            indicator.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+            indicator.BackgroundTransparency = 0.4
+            indicator.BorderSizePixel = 0
+            indicator.ZIndex = 4
+            indicator.Parent = bar
+            Instance.new("UICorner", indicator).CornerRadius = UDim.new(1, 0)
+
+            -- SYMBOL
+            local symbol = Instance.new("TextLabel")
+            symbol.Name = "SymbolLbl"
+            symbol.Size = UDim2.fromOffset(14, BAR_H)
+            symbol.Position = UDim2.new(0, 12, 0, 0)
+            symbol.BackgroundTransparency = 1
+            symbol.Font = Enum.Font.GothamBold
+            symbol.Text = cfg.symbol or "★"
+            symbol.TextColor3 = Color3.fromRGB(150, 150, 160)
+            symbol.TextSize = 12
+            symbol.TextXAlignment = Enum.TextXAlignment.Center
+            symbol.TextYAlignment = Enum.TextYAlignment.Center
+            symbol.ZIndex = 4
+            symbol.Parent = bar
+
+            -- NAME
+            local name = Instance.new("TextLabel")
+            name.Name = "NameLbl"
+            name.Size = UDim2.new(1, -56, 1, 0)
+            name.Position = UDim2.new(0, 28, 0, 0)
+            name.BackgroundTransparency = 1
+            name.Font = Enum.Font.GothamBold
+            name.Text = cfg.title
+            name.TextColor3 = Color3.fromRGB(160, 160, 170)
+            name.TextSize = 10
+            name.TextXAlignment = Enum.TextXAlignment.Left
+            name.TextYAlignment = Enum.TextYAlignment.Center
+            name.ZIndex = 4
+            name.Parent = bar
+
+            -- STATUS
+            local status = Instance.new("TextLabel")
+            status.Name = "StatusLbl"
+            status.Size = UDim2.fromOffset(24, BAR_H)
+            status.Position = UDim2.new(1, -28, 0, 0)
+            status.BackgroundTransparency = 1
+            status.Font = Enum.Font.GothamBold
+            status.Text = "OFF"
+            status.TextColor3 = Color3.fromRGB(110, 110, 120)
+            status.TextSize = 9
+            status.TextXAlignment = Enum.TextXAlignment.Right
+            status.TextYAlignment = Enum.TextYAlignment.Center
+            status.ZIndex = 4
+            status.Parent = bar
+
+            -- LOCK BUTTON (kanan, mini)
+            local lockBtn = Instance.new("TextButton")
+            lockBtn.Name = "LockBtn"
+            lockBtn.Size = UDim2.fromOffset(18, 18)
+            lockBtn.Position = UDim2.new(1, 0, 0.5, -9)
+            lockBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+            lockBtn.BorderSizePixel = 0
+            lockBtn.Text = ""
+            lockBtn.AutoButtonColor = true
+            lockBtn.ZIndex = 6
+            lockBtn.Parent = container
+            Instance.new("UICorner", lockBtn).CornerRadius = UDim.new(1, 0)
+            local lockStroke = Instance.new("UIStroke", lockBtn)
+            lockStroke.Color = Color3.fromRGB(80, 80, 95)
+            lockStroke.Thickness = 1
+            lockStroke.Transparency = 0.3
+
+            local lockIcon = Instance.new("TextLabel")
+            lockIcon.Name = "LockIcon"
+            lockIcon.Size = UDim2.fromScale(1, 1)
+            lockIcon.BackgroundTransparency = 1
+            lockIcon.Font = Enum.Font.GothamBold
+            lockIcon.Text = "🔓"
+            lockIcon.TextColor3 = Color3.fromRGB(200, 200, 210)
+            lockIcon.TextScaled = true
+            lockIcon.ZIndex = 7
+            lockIcon.Parent = lockBtn
+
+            -- DRAG + CLICK
             local drag = false
             local dStart, sPos
             local dDist = 0
-            table.insert(state.Connections, cd.InputBegan:Connect(function(inp)
+
+            table.insert(state.Connections, bar.InputBegan:Connect(function(inp)
                 if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
                     dStart = inp.Position; sPos = container.Position; dDist = 0
                     if not state.DragLocked then drag = true end
                 end
             end))
-            table.insert(state.Connections, cd.InputEnded:Connect(function(inp)
+            table.insert(state.Connections, bar.InputEnded:Connect(function(inp)
                 if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
                     if drag then drag = false; state.SavedPos = container.Position end
                     if dDist < 8 then ToggleBtn() end
@@ -6503,14 +6349,17 @@ local function __FazzHub_Init_Main__()
                     container.Position = UDim2.new(sPos.X.Scale, sPos.X.Offset + d.X, sPos.Y.Scale, sPos.Y.Offset + d.Y)
                 end
             end))
-            table.insert(state.Connections, lock.MouseButton1Click:Connect(function()
+            table.insert(state.Connections, lockBtn.MouseButton1Click:Connect(function()
                 state.DragLocked = not state.DragLocked
                 if state.DragLocked then drag = false end
                 UpdateLockVisual()
-                VD_Notify(cfg.notifyTitle .. " Button", state.DragLocked and "Locked" or "Unlocked", 1)
+                VD_Notify(cfg.notifyTitle .. " Bar", state.DragLocked and "Locked" or "Unlocked", 1)
             end))
-            UpdateVisual(); UpdateLockVisual()
+
+            UpdateVisual()
+            UpdateLockVisual()
         end
+
         state.Create = CreateBtn
         state.Destroy = DestroyBtn
         state.UpdateVisual = UpdateVisual
@@ -6522,7 +6371,7 @@ local function __FazzHub_Init_Main__()
     end
     W.CreateFloatingButton = CreateFloatingButton--========================================================--
 -- FAZZHUB v0.3.7
--- PART 15D/19 : SELF UNHOOK + FLOATING BUTTON INSTANCES
+-- PART 15D/19 : SELF UNHOOK + 9 FLOATING BAR
 --========================================================--
 
     --====================================================--
@@ -6612,7 +6461,7 @@ local function __FazzHub_Init_Main__()
             while tick() < fUntil and SU.Enabled do
                 if not W.SU_IsHooked() then
                     SU.Following = false; SU._activeThread = nil
-                    VD_Notify("Bypass Self Unhook", "Udah lepas hook - STOP", 2)
+                    VD_Notify("Self Unhook", "Udah lepas hook - STOP", 2)
                     return
                 end
                 local cc = LocalPlayer.Character
@@ -6667,87 +6516,89 @@ local function __FazzHub_Init_Main__()
     end
 
     --====================================================--
-    -- FLOATING BUTTON INSTANCES
+    -- 9 FLOATING BAR INSTANCES
     --====================================================--
+
+    -- 1. Heal
     local SelfHealBtnState = { Enabled=false, DragLocked=false, Gui=nil, SavedPos=UDim2.new(0.03,0,0.28,0), Connections={} }
     local SelfHealState = CreateFloatingButton({
-        id="SelfHeal", title="Heal", notifyTitle="Self Heal", state=SelfHealBtnState,
+        id="SelfHeal", title="Heal", symbol="✚", notifyTitle="Self Heal", state=SelfHealBtnState,
         isOn=function() return W.InstantHealSelf end,
         onToggle=function(v) W.setInstantHealSelf(v) end,
-        iconRotation=0,
     })
     getgenv().FazzHub_SHB_SetEnabled = function(en) SelfHealState.SetEnabled(en) end
     getgenv().FazzHub_SHB_UpdateVisual = function() SelfHealState.UpdateVisual() end
 
+    -- 2. Hook
     local SelfUnhookBtnState = { Enabled=false, DragLocked=false, Gui=nil, SavedPos=UDim2.new(0.03,0,0.35,0), Connections={} }
     local SelfUnhookState = CreateFloatingButton({
-        id="SelfUnhook", title="Hook", notifyTitle="Self Unhook", state=SelfUnhookBtnState,
+        id="SelfUnhook", title="Hook", symbol="🪝", notifyTitle="Self Unhook", state=SelfUnhookBtnState,
         isOn=function() return W.SelfUnhook.Enabled end,
         onToggle=function(v) W.SU_SetEnabled(v) end,
-        iconRotation=135,
     })
     getgenv().FazzHub_SUB_SetEnabled = function(en) SelfUnhookState.SetEnabled(en) end
     getgenv().FazzHub_SUB_UpdateVisual = function() SelfUnhookState.UpdateVisual() end
 
+    -- 3. Troll TP
     local TrollBtnState = { Enabled=false, DragLocked=false, Gui=nil, SavedPos=UDim2.new(0.03,0,0.42,0), Connections={} }
     local TrollState = CreateFloatingButton({
-        id="TrollTP", title="T_TP", notifyTitle="Troll Teleport", state=TrollBtnState,
+        id="TrollTP", title="Troll TP", symbol="⇄", notifyTitle="Troll Teleport", state=TrollBtnState,
         isOn=function() return W.TrollTeleport.Enabled end,
         onToggle=function(v) W.TrollTeleport_SetEnabled(v) end,
-        iconRotation=225,
     })
     getgenv().FazzHub_TTB_SetEnabled = function(en) TrollState.SetEnabled(en) end
     getgenv().FazzHub_TTB_UpdateVisual = function() TrollState.UpdateVisual() end
 
+    -- 4. Escape
     local EscapeBtnState = { Enabled=false, DragLocked=false, Gui=nil, SavedPos=UDim2.new(0.03,0,0.49,0), Connections={} }
     local EscapeState = CreateFloatingButton({
-        id="Escape", title="Escape", notifyTitle="Instant Escape", state=EscapeBtnState,
+        id="Escape", title="Escape", symbol="⏏", notifyTitle="Instant Escape", state=EscapeBtnState,
         isOn=function() return W.Escape.Enabled end,
         onToggle=function(v) W.Escape.Enabled = v; if v then W.Escape_Teleport() end end,
-        iconRotation=45,
     })
     getgenv().FazzHub_Escape_SetEnabled = function(en) EscapeState.SetEnabled(en) end
     getgenv().FazzHub_Escape_UpdateVisual = function() EscapeState.UpdateVisual() end
 
+    -- 5. Parry
     local ParryBtnState = { Enabled=false, DragLocked=false, Gui=nil, SavedPos=UDim2.new(0.03,0,0.56,0), Connections={} }
     local ParryStateBtn = CreateFloatingButton({
-        id="Parry", title="Parry", notifyTitle="Parry", state=ParryBtnState,
+        id="Parry", title="Parry", symbol="⚔", notifyTitle="Parry", state=ParryBtnState,
         isOn=function() return VD.PARRY_Enabled end,
         onToggle=function(v)
             VD.PARRY_Enabled = v
             if not v then ParryState.ActiveAttackers = {} end
         end,
-        iconRotation=45,
     })
     getgenv().FazzHub_ParryBtn_SetEnabled = function(en) ParryStateBtn.SetEnabled(en) end
     getgenv().FazzHub_ParryBtn_UpdateVisual = function() ParryStateBtn.UpdateVisual() end
 
+    -- 6. Invis
     local InvisBtnState = { Enabled=false, DragLocked=false, Gui=nil, SavedPos=UDim2.new(0.03,0,0.63,0), Connections={} }
     local InvisStateBtn = CreateFloatingButton({
-        id="Invisible", title="Invis", notifyTitle="Invisibilty", state=InvisBtnState,
+        id="Invisible", title="Invis", symbol="👁", notifyTitle="Invisibilty", state=InvisBtnState,
         isOn=function()
             local MV = getgenv().FazzHubInvis
             return MV and MV.Enabled or false
         end,
         onToggle=function(v) W.Invisible_SetState(v, true) end,
-        iconRotation=180,
     })
     getgenv().FazzHub_InvisBtn_SetEnabled   = function(en) InvisStateBtn.SetEnabled(en) end
     getgenv().FazzHub_InvisBtn_UpdateVisual = function() InvisStateBtn.UpdateVisual() end
 
+    -- 7. Grab
     local MyersGrabBtnState = { Enabled=false, DragLocked=false, Gui=nil, SavedPos=UDim2.new(0.03,0,0.70,0), Connections={} }
     local MyersGrabBtn = CreateFloatingButton({
-        id="MyersGrab", title="Grab", notifyTitle="Myers Grab", state=MyersGrabBtnState,
+        id="MyersGrab", title="Grab", symbol="✋", notifyTitle="Myers Grab", state=MyersGrabBtnState,
         isOn=function() return W.MyersGrabData.Enabled end,
         onToggle=function(v) W.setMyersGrab(v) end,
-        iconRotation=90,
     })
     getgenv().FazzHub_MGrabBtn_SetEnabled   = function(en) MyersGrabBtn.SetEnabled(en) end
     getgenv().FazzHub_MGrabBtn_UpdateVisual = function() MyersGrabBtn.UpdateVisual() end
 
+    -- 8. Veil
     local VeilBtnState = { Enabled=false, DragLocked=false, Gui=nil, SavedPos=UDim2.new(0.03,0,0.77,0), Connections={} }
     local VeilBtn = CreateFloatingButton({
-        id="SilentVeil", title="Veil", notifyTitle="Silent Veil", state=VeilBtnState,
+        id="SilentVeil", title="Veil", symbol="🎯", notifyTitle="Silent Veil", state=VeilBtnState,
         isOn=function() return VD.VeilEnabled end,
         onToggle=function(v)
             VD.VeilEnabled = v
@@ -6755,7 +6606,6 @@ local function __FazzHub_Init_Main__()
             else VD_Notify("Silent Veil", "Enabled", 2) end
             if getgenv().FazzHub_VeilBtn_UpdateVisual then getgenv().FazzHub_VeilBtn_UpdateVisual() end
         end,
-        iconRotation=0,
     })
     getgenv().FazzHub_VeilBtn_SetEnabled   = function(en) VeilBtn.SetEnabled(en) end
     getgenv().FazzHub_VeilBtn_UpdateVisual = function() VeilBtn.UpdateVisual() end--========================================================--
@@ -7033,28 +6883,29 @@ local function __FazzHub_Init_Main__()
     W.LockPOV = LockPOV
     W.LockPOV_SetEnabled = LockPOV_SetEnabled--========================================================--
 -- FAZZHUB v0.3.7
--- PART 16B/19 : SILENT VEIL V2 (W424)
+-- PART 16B/19 : SILENT VEIL V2
 --========================================================--
 
     --====================================================--
-    -- W424 SILENT VEIL (SPEAR) — V2
+    -- SILENT VEIL V2
     --====================================================--
     do
         local Config = {}
         local Camera = Workspace.CurrentCamera
 
-        local AimConfig = AimConfig or {}
-        AimConfig.Aim_SilentVeil = false
-        AimConfig.Aim_SilentVeilV2 = false
-        AimConfig.Veil_ShowFOV = true
-        AimConfig.SpearSmart_enable = false
-        AimConfig.Veil_FOV = 150
-        AimConfig.SPEAR_Speed = 165
-        AimConfig.SPEAR_Gravity = workspace.Gravity * 0.5
-        AimConfig.SPEAR_MaxDist = 200
-        AimConfig.Veil_LeadMultiplier = 1.4
-        AimConfig.AIM_Auto = false
-        AimConfig.AIM_TargetPart = "Torso"
+        local Veil2 = Veil2 or {}
+        Veil2.Aim_SilentVeil = false
+        Veil2.Aim_SilentVeilV2 = false
+        Veil2.Veil_ShowFOV = true
+        Veil2.SpearSmart_enable = false
+        Veil2.Veil_FOV = 150
+        Veil2.SPEAR_Speed = 165
+        Veil2.SPEAR_Gravity = workspace.Gravity * 0.5
+        Veil2.SPEAR_MaxDist = 200
+        Veil2.Veil_LeadMultiplier = 1.4
+        Veil2.AIM_Auto = false
+        Veil2.AIM_TargetPart = "Torso"
+        W.Veil2 = Veil2
 
         local isChargingSpear = false
         local isAttackCooldown = false
@@ -7062,13 +6913,13 @@ local function __FazzHub_Init_Main__()
         local currentTouchInput = nil
 
         local function IsVeilSilentOn()
-            return AimConfig.Aim_SilentVeil or AimConfig.Aim_SilentVeilV2
+            return Veil2.Aim_SilentVeil or Veil2.Aim_SilentVeilV2
         end
 
         function getTargetPartObject(char)
-            if AimConfig.AIM_TargetPart == "Head" then 
+            if Veil2.AIM_TargetPart == "Head" then 
                 return char:FindFirstChild("Head")
-            elseif AimConfig.AIM_TargetPart == "Root" or AimConfig.AIM_TargetPart == "HumanoidRootPart" then 
+            elseif Veil2.AIM_TargetPart == "Root" or Veil2.AIM_TargetPart == "HumanoidRootPart" then 
                 return char:FindFirstChild("HumanoidRootPart")
             else 
                 return char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso") or char:FindFirstChild("HumanoidRootPart") 
@@ -7079,7 +6930,7 @@ local function __FazzHub_Init_Main__()
             local myChar = LocalPlayer.Character
             local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
             if not myRoot then return nil end
-            local closestFovDist = AimConfig.Veil_FOV
+            local closestFovDist = Veil2.Veil_FOV
             local closestTarget = nil
             local cam = workspace.CurrentCamera
             local centerScreen = Vector2.new(cam.ViewportSize.X / 2, cam.ViewportSize.Y / 2)
@@ -7091,7 +6942,7 @@ local function __FazzHub_Init_Main__()
                     local targetPart = getTargetPartObject(char)
                     if hum and hum.Health > 0 and targetPart then
                         local dist3D = (targetPart.Position - myRoot.Position).Magnitude
-                        if dist3D <= AimConfig.SPEAR_MaxDist then
+                        if dist3D <= Veil2.SPEAR_MaxDist then
                             local screenPos, onScreen = cam:WorldToViewportPoint(targetPart.Position)
                             if onScreen then
                                 local targetPos2D = Vector2.new(screenPos.X, screenPos.Y)
@@ -7109,7 +6960,7 @@ local function __FazzHub_Init_Main__()
         end
 
         local veilTargetHighlight = Instance.new("Highlight")
-        veilTargetHighlight.Name = "FazzHub_VeilTarget"
+        veilTargetHighlight.Name = "FazzHub_Veil2Target"
         veilTargetHighlight.FillColor = Color3.fromRGB(150, 150, 150)
         veilTargetHighlight.OutlineColor = Color3.fromRGB(255, 255, 255)
         veilTargetHighlight.FillTransparency = 0.5
@@ -7120,9 +6971,9 @@ local function __FazzHub_Init_Main__()
         local currentVeilBillboard = nil
 
         local function setupVeilTrackerGui()
-            if CoreGui:FindFirstChild("FazzHubVeilTrackerGui") then return end
+            if CoreGui:FindFirstChild("FazzHubVeil2TrackerGui") then return end
             local sg = Instance.new("ScreenGui")
-            sg.Name = "FazzHubVeilTrackerGui"
+            sg.Name = "FazzHubVeil2TrackerGui"
             sg.IgnoreGuiInset = true
             sg.ResetOnSpawn = false
             sg.Parent = CoreGui
@@ -7141,9 +6992,9 @@ local function __FazzHub_Init_Main__()
         setupVeilTrackerGui()
 
         local VeilFOVFrame = nil
-        if not CoreGui:FindFirstChild("FazzHubFOVCircleGui") then
+        if not CoreGui:FindFirstChild("FazzHubVeil2FOVCircleGui") then
             local FOVGui = Instance.new("ScreenGui")
-            FOVGui.Name = "FazzHubFOVCircleGui"
+            FOVGui.Name = "FazzHubVeil2FOVCircleGui"
             FOVGui.Parent = CoreGui
             FOVGui.ResetOnSpawn = false
             FOVGui.IgnoreGuiInset = true
@@ -7180,22 +7031,22 @@ local function __FazzHub_Init_Main__()
             mt.__namecall = newcclosure(function(self, ...)
                 local method = getnamecallmethod()
                 if method == "FireServer" and not checkcaller() and typeof(self) == "Instance" and self.ClassName == "RemoteEvent" and self.Name == "Spearthrow" then
-                    if AimConfig.Aim_SilentVeil and not AimConfig.Aim_SilentVeilV2 then
+                    if Veil2.Aim_SilentVeil and not Veil2.Aim_SilentVeilV2 then
                         return nil
                     end
-                    if AimConfig.Aim_SilentVeilV2 and not isFiringSpear then
+                    if Veil2.Aim_SilentVeilV2 and not isFiringSpear then
                         local lookVec, speed, originPos = ...
-                        speed = speed or AimConfig.SPEAR_Speed or 165
+                        speed = speed or Veil2.SPEAR_Speed or 165
                         local myChar = LocalPlayer.Character
                         local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
                         local startPart = myChar and (myChar:FindFirstChild("Head") or myHRP)
                         local isSpecial = myChar and myChar:GetAttribute("special") == true
-                        if Config.SpearSmart_enable then
+                        if Veil2.SpearSmart_enable then
                             speed = isSpecial and 165 or 142.5
                         else
-                            speed = AimConfig.SPEAR_Speed or 165
+                            speed = Veil2.SPEAR_Speed or 165
                         end
-                        originPos = originPos or (Config.SpearSmart_enable and myHRP and myHRP.Position) or (startPart and startPart.Position)
+                        originPos = originPos or (Veil2.SpearSmart_enable and myHRP and myHRP.Position) or (startPart and startPart.Position)
 
                         local bestDir = lookVec
                         local targetPart = getClosestSurvivor()
@@ -7212,8 +7063,8 @@ local function __FazzHub_Init_Main__()
                             targetVel = Vector3.new(targetVel.X, 0, targetVel.Z)
                             local distance = (targetPos - originPos).Magnitude
                             local timeToHit = distance / math.max(speed, 1)
-                            if Config.SpearSmart_enable then
-                                local leadMultiplier = AimConfig.Veil_LeadMultiplier or 1.4
+                            if Veil2.SpearSmart_enable then
+                                local leadMultiplier = Veil2.Veil_LeadMultiplier or 1.4
                                 local predictedPos = targetPos + (targetVel * (timeToHit * leadMultiplier))
                                 local spearGravity = workspace.Gravity * 0.5
                                 local drop = 0.5 * spearGravity * (timeToHit * timeToHit)
@@ -7224,7 +7075,7 @@ local function __FazzHub_Init_Main__()
                                 local predictedPos = targetPos + (targetVel * (timeToHit * dynamicPrediction))
                                 local distanceMultiplier = math.clamp(distance / 100, 1, 2.5)
                                 local autoGravity = math.max(0, distance - 8)
-                                local gravity = AimConfig.AIM_Auto and autoGravity or (AimConfig.SPEAR_Gravity or workspace.Gravity * 0.5)
+                                local gravity = Veil2.AIM_Auto and autoGravity or (Veil2.SPEAR_Gravity or workspace.Gravity * 0.5)
                                 local drop = 0.5 * gravity * (timeToHit * timeToHit) * distanceMultiplier
                                 local finalAimPos = predictedPos + Vector3.new(0, drop, 0)
                                 bestDir = (finalAimPos - originPos).Unit
@@ -7298,8 +7149,8 @@ local function __FazzHub_Init_Main__()
                 local startPart = myChar and (myChar:FindFirstChild("Head") or myHRP)
                 if startPart and myHRP then
                     local isSpecial = myChar:GetAttribute("special") == true
-                    local startPos = Config.SpearSmart_enable and myHRP.Position or startPart.Position
-                    local currentSpearSpeed = Config.SpearSmart_enable and (isSpecial and 165 or 142.5) or AimConfig.SPEAR_Speed
+                    local startPos = Veil2.SpearSmart_enable and myHRP.Position or startPart.Position
+                    local currentSpearSpeed = Veil2.SpearSmart_enable and (isSpecial and 165 or 142.5) or Veil2.SPEAR_Speed
                     local targetPart = getClosestSurvivor()
                     local aimDirection
                     if targetPart then
@@ -7315,8 +7166,8 @@ local function __FazzHub_Init_Main__()
                         targetVel = Vector3.new(targetVel.X, 0, targetVel.Z)
                         local distance = (targetPos - startPos).Magnitude
                         local timeToHit = distance / currentSpearSpeed
-                        if Config.SpearSmart_enable then
-                            local leadMultiplier = AimConfig.Veil_LeadMultiplier or 1.4
+                        if Veil2.SpearSmart_enable then
+                            local leadMultiplier = Veil2.Veil_LeadMultiplier or 1.4
                             local predictedPos = targetPos + (targetVel * (timeToHit * leadMultiplier))
                             local spearGravity = workspace.Gravity * 0.5
                             local dropCompensation = 0.5 * spearGravity * (timeToHit ^ 2)
@@ -7327,7 +7178,7 @@ local function __FazzHub_Init_Main__()
                             local predictedPos = targetPos + (targetVel * (timeToHit * dynamicPrediction))
                             local distanceMultiplier = math.clamp(distance / 100, 1, 2.5)
                             local autoGravity = math.max(0, distance - 8)
-                            local gravity = AimConfig.AIM_Auto and autoGravity or AimConfig.SPEAR_Gravity
+                            local gravity = Veil2.AIM_Auto and autoGravity or Veil2.SPEAR_Gravity
                             local dropCompensation = 0.5 * gravity * (timeToHit ^ 2) * distanceMultiplier
                             local finalAimPos = predictedPos + Vector3.new(0, dropCompensation, 0)
                             aimDirection = (finalAimPos - startPos).Unit
@@ -7335,7 +7186,7 @@ local function __FazzHub_Init_Main__()
                     else
                         aimDirection = Camera.CFrame.LookVector
                     end
-                    if AimConfig.Aim_SilentVeil then
+                    if Veil2.Aim_SilentVeil then
                         pcall(function()
                             ReplicatedStorage.Remotes.Killers.Veil.Spearthrow:FireServer(aimDirection, currentSpearSpeed, startPos)
                         end)
@@ -7350,9 +7201,9 @@ local function __FazzHub_Init_Main__()
             local cam = workspace.CurrentCamera
 
             if VeilFOVFrame then
-                if IsVeilSilentOn() and AimConfig.Veil_ShowFOV and isSpearMode then
+                if IsVeilSilentOn() and Veil2.Veil_ShowFOV and isSpearMode then
                     VeilFOVFrame.Visible = true
-                    VeilFOVFrame.Size = UDim2.new(0, AimConfig.Veil_FOV * 2, 0, AimConfig.Veil_FOV * 2)
+                    VeilFOVFrame.Size = UDim2.new(0, Veil2.Veil_FOV * 2, 0, Veil2.Veil_FOV * 2)
                 else
                     VeilFOVFrame.Visible = false
                 end
@@ -7367,7 +7218,7 @@ local function __FazzHub_Init_Main__()
                         if not currentVeilBillboard or currentVeilBillboard.Parent ~= targetPart then
                             if currentVeilBillboard then currentVeilBillboard:Destroy() end
                             local bb = Instance.new("BillboardGui")
-                            bb.Name = "FazzHubVeilTrackerBillboard"
+                            bb.Name = "FazzHubVeil2TrackerBillboard"
                             bb.Size = UDim2.fromOffset(14, 14)
                             bb.AlwaysOnTop = true
                             bb.LightInfluence = 0
@@ -7429,14 +7280,13 @@ local function __FazzHub_Init_Main__()
             end
         end)
 
-        W.W424Veil_API = {
-            AimConfig = AimConfig,
-            Config = Config,
+        W.Veil2_API = {
+            Config = Veil2,
             getClosestSurvivor = getClosestSurvivor,
             IsVeilSilentOn = IsVeilSilentOn,
             setTracker = function(v) VeilTrackerEnabled = v end,
         }
-                                                                                        end--========================================================--
+    end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 16C/19 : SILENT FLASHLIGHT
 --========================================================--
@@ -7613,9 +7463,9 @@ local function __FazzHub_Init_Main__()
                 end)
             end)
         end)
-                                                                                            end--========================================================--
+                                                                                        end--========================================================--
 -- FAZZHUB v0.3.7
--- PART 17A/19 : TOF V1 (TWIST OF FATE)
+-- PART 17A/19 : TOF V1 (BAGIAN 1)
 --========================================================--
 
     --====================================================--
@@ -7823,14 +7673,11 @@ local function __FazzHub_Init_Main__()
         local fd = tp - op
         if fd.Magnitude < 0.1 then return end
         pcall(function() e:FireServer(g, fd.Unit) end)
-                                                                                                end--========================================================--
+                                                                                            end--========================================================--
 -- FAZZHUB v0.3.7
--- PART 17B/19 : TOF V1 UI + PLAYER UTILITY
+-- PART 17B/19 : TOF V1 (BAGIAN 2) + PLAYER UTILITY
 --========================================================--
 
-    --====================================================--
-    -- TOF V1 - UI & FINALIZATION
-    --====================================================--
     local ToF_ModeButtons = {}
     local ToF_BgColor = Color3.fromRGB(18, 18, 22)
     local ToF_HoverColor = Color3.fromRGB(38, 38, 46)
@@ -8170,7 +8017,7 @@ local function __FazzHub_Init_Main__()
     end
     task.spawn(PU_SetupNoCutsceneHook)--========================================================--
 -- FAZZHUB v0.3.7
--- PART 17C/19 : PLAYER UTILITY (LANJUTAN)
+-- PART 17C/19 : PLAYER UTILITY (LANJUTAN) + EMOTE + JERK OFF
 --========================================================--
 
     local function PU_ApplyHideSurvivorIcon()
@@ -8515,9 +8362,9 @@ local function __FazzHub_Init_Main__()
             task.wait(1)
             if JerkTool.Enabled then jerkRunning = true; W.JerkOff_Create() end
         end)
-                                                                                                    end--========================================================--
+                                                                                                end--========================================================--
 -- FAZZHUB v0.3.7
--- PART 18/19 : NO FALL DAMAGE + NEXT MAP PREDICT + GENERATORS
+-- PART 18A/19 : NO FALL DAMAGE + NEXT MAP PREDICT
 --========================================================--
 
     --====================================================--
@@ -8720,7 +8567,10 @@ local function __FazzHub_Init_Main__()
             VD.NextMapPredict = v and true or false
             if VD.NextMapPredict then Start() else Stop() end
         end
-    end
+                                                                                                    end--========================================================--
+-- FAZZHUB v0.3.7
+-- PART 18B/19 : MANUAL/AUTO GENERATOR + GEN BYPASS
+--========================================================--
 
     --====================================================--
     -- MANUAL & AUTO GENERATOR
@@ -8968,7 +8818,407 @@ local function __FazzHub_Init_Main__()
             if VD.ManualGen then StartManualThread() end
             if VD.AutoGen then StartAutoThread() end
         end)
-                                                                                                        end--========================================================--
+    end
+
+    --====================================================--
+    -- GEN BYPASS (Klik Tombol = Repair Langsung)
+    --====================================================--
+    W.GenBypass = W.GenBypass or {
+        Enabled=false, Button=nil, UI=nil, Cache={}, CacheTimer=0,
+        Processed={}, HotkeyCode=Enum.KeyCode.B, TriggerRange=8
+    }
+    local GenBypass = W.GenBypass
+
+    local RepairEventBypass = nil
+    pcall(function()
+        RepairEventBypass = ReplicatedStorage.Remotes.Generator.RepairEvent
+    end)
+
+    function W.GB_GetAllGeneratorsCached()
+        local now = tick()
+        if now - GenBypass.CacheTimer < 5 then return GenBypass.Cache end
+        GenBypass.Cache = {}; GenBypass.CacheTimer = now
+        local mf = Workspace:FindFirstChild("Map")
+        if not mf then return GenBypass.Cache end
+        pcall(function()
+            for _, v in pairs(mf:GetDescendants()) do
+                if not v:IsA("Model") then continue end
+                if v.Name ~= "Generator" then continue end
+                local real = v:GetAttribute("RepairProgress") ~= nil
+                          or v:GetAttribute("kickcount") ~= nil
+                          or v:GetAttribute("ProgressRepair") ~= nil
+                if real then table.insert(GenBypass.Cache, v) end
+            end
+        end)
+        return GenBypass.Cache
+    end
+
+    function W.GB_WaitRepairing(pt, t)
+        local s = tick()
+        while tick() - s < (t or 1) do
+            if pt:GetAttribute("IsRepairing") == true then return true end
+            task.wait(0.05)
+        end
+        return false
+    end
+
+    function W.GB_DoRepair(tp)
+        local gm = tp.Parent
+        if GenBypass.Processed[gm] then return end
+        GenBypass.Processed[gm] = true
+        local c = LocalPlayer.Character
+        local hrp = c and c:FindFirstChild("HumanoidRootPart")
+        if not hrp then GenBypass.Processed[gm] = nil; return end
+        local re = ReplicatedStorage:FindFirstChild("Remotes")
+            and ReplicatedStorage.Remotes:FindFirstChild("Generator")
+            and ReplicatedStorage.Remotes.Generator:FindFirstChild("RepairEvent")
+        local og = hrp.CFrame
+        pcall(function()
+            for _, p in pairs(W.GB_GetPoints(gm)) do
+                if p ~= tp and p.Parent then
+                    hrp.Anchored = true
+                    hrp.CFrame = p.CFrame
+                    task.wait(0.15)
+                    pcall(function() if re then re:FireServer(p, true) end end)
+                    if not W.GB_WaitRepairing(p, 0.8) then
+                        pcall(function() if re then re:FireServer(p, false) end end)
+                        task.wait(0.1)
+                        hrp.CFrame = p.CFrame
+                        task.wait(0.15)
+                        pcall(function() if re then re:FireServer(p, true) end end)
+                        W.GB_WaitRepairing(p, 0.5)
+                    end
+                    hrp.Anchored = false
+                    task.wait(0.05)
+                end
+            end
+        end)
+        pcall(function()
+            if hrp and hrp.Parent then hrp.Anchored = false; hrp.CFrame = og end
+        end)
+        task.wait(0.1)
+        pcall(function() if re then re:FireServer(tp, false) end end)
+    end
+
+    function W.GB_GetNearestPoint()
+        local c = LocalPlayer.Character
+        local hrp = c and c:FindFirstChild("HumanoidRootPart")
+        if not hrp then return nil end
+        local best, bd = nil, math.huge
+        for _, g in pairs(W.GB_GetAllGeneratorsCached()) do
+            for _, p in pairs(W.GB_GetPoints(g)) do
+                local d = (hrp.Position - p.Position).Magnitude
+                if d < bd then bd = d; best = p end
+            end
+        end
+        return best, bd
+    end
+
+    function W.GB_IsPromptVisible()
+        local ok2, fr = pcall(function() return LocalPlayer.PlayerGui.pcprompts.Frame.GeneratorRepair end)
+        return ok2 and fr and fr.Visible
+    end
+
+    function W.GB_UpdateButton()
+        if GenBypass.Enabled then
+            if not GenBypass._Wrap or not GenBypass.UI or not GenBypass.UI.Parent then
+                W.GB_CreateButton(); task.wait(0.05)
+            end
+            if GenBypass._ShowCard then GenBypass._ShowCard() end
+        else
+            if GenBypass._HideCard then GenBypass._HideCard() end
+        end
+    end
+
+    function W.GB_CreateButton()
+        local pg = LocalPlayer:FindFirstChild("PlayerGui")
+        if not pg then return end
+        local old = pg:FindFirstChild("FazzHubGenBypassUI"); if old then old:Destroy() end
+        if GenBypass._StopAnim then pcall(GenBypass._StopAnim); GenBypass._StopAnim = nil end
+        GenBypass.UI = Instance.new("ScreenGui")
+        GenBypass.UI.Name = "FazzHubGenBypassUI"
+        GenBypass.UI.ResetOnSpawn = false
+        GenBypass.UI.IgnoreGuiInset = true
+        GenBypass.UI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+        GenBypass.UI.DisplayOrder = 100
+        GenBypass.UI.Parent = pg
+
+        local wrap = Instance.new("Frame")
+        wrap.Name = "Wrap"; wrap.AnchorPoint = Vector2.new(1, 0)
+        wrap.Position = UDim2.new(1, -20, 0.48, 0)
+        wrap.Size = UDim2.fromOffset(110, 110)
+        wrap.BackgroundTransparency = 1; wrap.Active = true
+        wrap.ZIndex = 2; wrap.Parent = GenBypass.UI
+
+        local glow = Instance.new("Frame")
+        glow.Name = "Glow"; glow.AnchorPoint = Vector2.new(0.5, 0.5)
+        glow.Position = UDim2.new(0.5, 0, 0.5, 0)
+        glow.Size = UDim2.fromOffset(88, 88)
+        glow.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+        glow.BackgroundTransparency = 0.85; glow.BorderSizePixel = 0
+        glow.ZIndex = 1; glow.Parent = wrap
+        Instance.new("UICorner", glow).CornerRadius = UDim.new(1, 0)
+
+        local mainCircle = Instance.new("Frame")
+        mainCircle.Name = "MainCircle"; mainCircle.AnchorPoint = Vector2.new(0.5, 0.5)
+        mainCircle.Position = UDim2.new(0.5, 0, 0.5, 0)
+        mainCircle.Size = UDim2.fromOffset(64, 64)
+        mainCircle.BackgroundColor3 = Color3.fromRGB(12, 12, 15)
+        mainCircle.BackgroundTransparency = 0.05; mainCircle.BorderSizePixel = 0
+        mainCircle.ZIndex = 4; mainCircle.Parent = wrap
+        Instance.new("UICorner", mainCircle).CornerRadius = UDim.new(1, 0)
+
+        local mainGrad = Instance.new("UIGradient")
+        mainGrad.Rotation = 135
+        mainGrad.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(30, 30, 36)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 8, 10)),
+        })
+        mainGrad.Parent = mainCircle
+
+        local mainStroke = Instance.new("UIStroke", mainCircle)
+        mainStroke.Name = "MainStroke"; mainStroke.Color = Color3.fromRGB(255, 255, 255)
+        mainStroke.Thickness = 1.6; mainStroke.Transparency = 0.15
+        mainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+        local genText = Instance.new("TextLabel")
+        genText.Name = "GenText"; genText.AnchorPoint = Vector2.new(0.5, 0.5)
+        genText.Position = UDim2.new(0.5, 0, 0.5, 0)
+        genText.Size = UDim2.fromOffset(60, 30)
+        genText.BackgroundTransparency = 1; genText.Font = Enum.Font.GothamBlack
+        genText.Text = "GEN"; genText.TextColor3 = Color3.fromRGB(255, 255, 255)
+        genText.TextSize = 20; genText.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        genText.TextStrokeTransparency = 0.5
+        genText.ZIndex = 7; genText.Parent = wrap
+
+        local actionBtn = Instance.new("TextButton")
+        actionBtn.Name = "ActionBtn"; actionBtn.Size = UDim2.fromScale(1, 1)
+        actionBtn.BackgroundTransparency = 1; actionBtn.Text = ""
+        actionBtn.AutoButtonColor = false; actionBtn.ZIndex = 10; actionBtn.Parent = wrap
+
+        mainCircle.Size = UDim2.fromOffset(0, 0)
+        glow.Size = UDim2.fromOffset(0, 0)
+        genText.TextTransparency = 1; genText.TextStrokeTransparency = 1
+
+        GenBypass._Wrap = wrap; GenBypass._Glow = glow
+        GenBypass._MainCircle = mainCircle; GenBypass._MainStroke = mainStroke
+        GenBypass._GenText = genText; GenBypass._ActionBtn = actionBtn
+
+        local function ShowCard()
+            wrap.Visible = true
+            TweenService:Create(glow, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                Size = UDim2.fromOffset(88, 88), BackgroundTransparency = 0.85,
+            }):Play()
+            TweenService:Create(mainCircle, TweenInfo.new(0.55, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                Size = UDim2.fromOffset(64, 64), BackgroundTransparency = 0.05,
+            }):Play()
+            TweenService:Create(genText, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                TextTransparency = 0, TextStrokeTransparency = 0.5,
+            }):Play()
+        end
+
+        local function HideCard()
+            TweenService:Create(glow, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+                Size = UDim2.fromOffset(0, 0), BackgroundTransparency = 1,
+            }):Play()
+            TweenService:Create(mainCircle, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+                Size = UDim2.fromOffset(0, 0), BackgroundTransparency = 1,
+            }):Play()
+            TweenService:Create(genText, TweenInfo.new(0.2), {
+                TextTransparency = 1, TextStrokeTransparency = 1,
+            }):Play()
+            task.delay(0.3, function()
+                if GenBypass._StopAnim then pcall(GenBypass._StopAnim); GenBypass._StopAnim = nil end
+                if GenBypass.UI then pcall(function() GenBypass.UI:Destroy() end); GenBypass.UI = nil end
+                GenBypass._Wrap = nil; GenBypass._ShowCard = nil
+                GenBypass._HideCard = nil; GenBypass._SetStatus = nil
+                GenBypass._Card = nil
+            end)
+        end
+
+        GenBypass._ShowCard = ShowCard; GenBypass._HideCard = HideCard
+
+        local animActive = true
+        GenBypass._StopAnim = function() animActive = false end
+        task.spawn(function()
+            local t = 0
+            while animActive and wrap.Parent do
+                t = t + 0.035
+                if GenBypass.Enabled then
+                    local pulse = (math.sin(t * 3) + 1) * 0.5
+                    mainStroke.Transparency = 0.35 - pulse * 0.2
+                    mainStroke.Thickness = 1.6 + pulse * 0.4
+                    glow.BackgroundTransparency = 0.85 - pulse * 0.12
+                    glow.Size = UDim2.fromOffset(88 + pulse * 5, 88 + pulse * 5)
+                    genText.Rotation = math.sin(t * 1.2) * 1.5
+                end
+                task.wait(0.03)
+            end
+        end)
+
+        local function SetStatus(mode)
+            if mode == "ready" then
+                mainStroke.Color = Color3.fromRGB(120, 255, 160)
+                genText.TextColor3 = Color3.fromRGB(120, 255, 160)
+                glow.BackgroundColor3 = Color3.fromRGB(120, 255, 160)
+            elseif mode == "busy" then
+                mainStroke.Color = Color3.fromRGB(255, 200, 100)
+                genText.TextColor3 = Color3.fromRGB(255, 200, 100)
+                glow.BackgroundColor3 = Color3.fromRGB(255, 200, 100)
+            elseif mode == "searching" then
+                mainStroke.Color = Color3.fromRGB(150, 200, 255)
+                genText.TextColor3 = Color3.fromRGB(150, 200, 255)
+                glow.BackgroundColor3 = Color3.fromRGB(150, 200, 255)
+            else
+                mainStroke.Color = Color3.fromRGB(255, 255, 255)
+                genText.TextColor3 = Color3.fromRGB(255, 255, 255)
+                glow.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            end
+        end
+        GenBypass._SetStatus = SetStatus
+
+        local drag = false
+        local dStart, sPos
+        local dragDist = 0
+        wrap.InputBegan:Connect(function(inp)
+            if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+                drag = true; dStart = inp.Position; sPos = wrap.Position; dragDist = 0
+            end
+        end)
+        UserInputService.InputChanged:Connect(function(inp)
+            if not drag then return end
+            if inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch then
+                local d = inp.Position - dStart
+                dragDist = math.abs(d.X) + math.abs(d.Y)
+                wrap.Position = UDim2.new(sPos.X.Scale, sPos.X.Offset + d.X, sPos.Y.Scale, sPos.Y.Offset + d.Y)
+            end
+        end)
+        UserInputService.InputEnded:Connect(function(inp)
+            if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+                drag = false
+            end
+        end)
+
+        -- KLIK TOMBOL GEN → LANGSUNG REPAIR (TANPA RANGE LIMIT)
+        actionBtn.MouseButton1Up:Connect(function()
+            if not GenBypass.Enabled then return end
+            if dragDist > 6 then return end
+
+            -- Anim klik
+            TweenService:Create(mainCircle, TweenInfo.new(0.08), { Size = UDim2.fromOffset(54, 54) }):Play()
+            task.delay(0.1, function()
+                TweenService:Create(mainCircle, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Size = UDim2.fromOffset(64, 64) }):Play()
+            end)
+
+            -- Ripple
+            local ripple = Instance.new("Frame")
+            ripple.AnchorPoint = Vector2.new(0.5, 0.5)
+            ripple.Position = UDim2.new(0.5, 0, 0.5, 0)
+            ripple.Size = UDim2.fromOffset(64, 64)
+            ripple.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            ripple.BackgroundTransparency = 0.55; ripple.BorderSizePixel = 0
+            ripple.ZIndex = 3; ripple.Parent = wrap
+            Instance.new("UICorner", ripple).CornerRadius = UDim.new(1, 0)
+            TweenService:Create(ripple, TweenInfo.new(0.6), { Size = UDim2.fromOffset(160, 160), BackgroundTransparency = 1 }):Play()
+            task.delay(0.6, function() if ripple then ripple:Destroy() end end)
+
+            SetStatus("searching")
+
+            -- AMBIL POINT GENERATOR TERDEKAT (TANPA RANGE LIMIT)
+            local myChar = LocalPlayer.Character
+            local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
+            if not myRoot then SetStatus("standby"); return end
+
+            local bestPt, bestDist = nil, math.huge
+            for _, gen in ipairs(W.GB_GetAllGenerators()) do
+                local progress = gen:GetAttribute("RepairProgress")
+                    or gen:GetAttribute("ProgressRepair") or 0
+                if progress < 100 then
+                    for _, pt in ipairs(W.GB_GetPoints(gen)) do
+                        if pt and pt.Parent then
+                            local d = (pt.Position - myRoot.Position).Magnitude
+                            if d < bestDist then
+                                bestDist = d
+                                bestPt = pt
+                            end
+                        end
+                    end
+                end
+            end
+
+            if not bestPt then
+                SetStatus("standby")
+                ForceNotify("Bypass Gen", "Generator tidak ditemukan", 2)
+                return
+            end
+
+            -- LANGSUNG REPAIR
+            SetStatus("busy")
+            task.spawn(function()
+                -- Teleport ke generator (jika jauh)
+                if bestDist > 6 then
+                    pcall(function()
+                        myRoot.CFrame = bestPt.CFrame + Vector3.new(0, 3, 0)
+                    end)
+                    task.wait(0.15)
+                end
+
+                -- Repair
+                if RepairEventBypass then
+                    pcall(function() RepairEventBypass:FireServer(bestPt, true) end)
+                    task.wait(0.3)
+                    pcall(function() RepairEventBypass:FireServer(bestPt, false) end)
+                    task.wait(0.15)
+                    pcall(function() RepairEventBypass:FireServer(bestPt, true) end)
+                end
+
+                task.wait(0.5)
+                SetStatus("ready")
+                ForceNotify("Bypass Gen", "Repair: " .. string.format("%.0f studs", bestDist), 2)
+            end)
+        end)
+
+        task.spawn(function()
+            task.wait(0.1)
+            if GenBypass.Enabled then ShowCard() end
+        end)
+    end
+
+    W.GB_CreateButton()
+    LocalPlayer.CharacterAdded:Connect(function()
+        task.wait(0.5); W.GB_CreateButton(); W.GB_UpdateButton()
+    end)
+
+    UserInputService.InputBegan:Connect(function(input, gp)
+        if gp or isMobile then return end
+        if input.KeyCode == GenBypass.HotkeyCode and GenBypass.Enabled then
+            if not W.GB_IsPromptVisible() then return end
+            local bp, bd = W.GB_GetNearestPoint()
+            if not bp or bd > GenBypass.TriggerRange then return end
+            if GenBypass.Processed[bp.Parent] then return end
+            W.GB_DoRepair(bp)
+        end
+    end)
+
+    task.spawn(function()
+        while true do
+            task.wait(2)
+            local c = LocalPlayer.Character
+            local hrp = c and c:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                for gm in pairs(GenBypass.Processed) do
+                    if not gm or not gm.Parent then GenBypass.Processed[gm] = nil; continue end
+                    local near = false
+                    for _, p in pairs(W.GB_GetPoints(gm)) do
+                        if p.Parent and (hrp.Position - p.Position).Magnitude <= 10 then near = true; break end
+                    end
+                    if not near then GenBypass.Processed[gm] = nil end
+                end
+            end
+        end
+    end)
+
+    function W.setGenBypass(v) GenBypass.Enabled = v; W.GB_UpdateButton() end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 19A/19 : UI BUILD — SURVIVOR TAB
 --========================================================--
@@ -9145,7 +9395,10 @@ local function __FazzHub_Init_Main__()
         skillSection:AddToggle({ Title = "Enable Auto Skill Check", Default = false, Callback = function(v)
             W.SkillCheck_SetEnabled(v); if v then VD_Notify("Auto Skill Check", "Enabled", 2) end end })
         skillSection:AddDropdown({ Title = "Mode", Options = {"Legit", "Instant"}, Default = "Legit",
-            Callback = function(v) W.SkillCheck.Mode = v end })
+            Callback = function(v) W.SkillCheck.Mode = v end })--========================================================--
+-- FAZZHUB v0.3.7
+-- PART 19B/19 : SURVIVOR TAB (LANJUTAN)
+--========================================================--
 
         local genSection = MakeSection(SurvivorTab, "Bypass Generator")
         genSection:AddToggle({ Title = "Enable Bypass Generator", Default = false, Callback = function(v)
@@ -9237,10 +9490,7 @@ local function __FazzHub_Init_Main__()
                 GodModeEnabled = state
                 if state then StartGodMode(); VD_Notify("God Mode", "Enabled", 2)
                 else StopGodMode(); VD_Notify("God Mode", "Disabled", 2) end
-            end })--========================================================--
--- FAZZHUB v0.3.7
--- PART 19B/19 : SURVIVOR TAB (LANJUTAN)
---========================================================--
+            end })
 
         local AutoRunSection = MakeSection(SurvivorTab, "Auto Run")
         local AutoRunPCEnabled = false
@@ -9397,28 +9647,28 @@ local function __FazzHub_Init_Main__()
         end })
         parrySection:AddToggle({ Title = "Silent Parry (Legit)", Default = VD.PARRY_SilentParry, Callback = function(v) VD.PARRY_SilentParry = v end })
 
-        local wisnuParrySection = MakeSection(SurvivorTab, "Auto Parry V2")
-        wisnuParrySection:AddToggle({
+        local ap2Section = MakeSection(SurvivorTab, "Auto Parry V2")
+        ap2Section:AddToggle({
             Title = "Enable Auto Parry V2",
             Content = "Auto parry cepet",
-            Default = VD.Wisnu_AutoParry,
+            Default = VD.AP2_AutoParry,
             Callback = function(v)
-                VD.Wisnu_AutoParry = v and true or false
-                if v then VD_Notify("Wisnu Auto Parry", "Enabled", 2)
-                else VD_Notify("Wisnu Auto Parry", "Disabled", 2) end
+                VD.AP2_AutoParry = v and true or false
+                if v then VD_Notify("Auto Parry V2", "Enabled", 2)
+                else VD_Notify("Auto Parry V2", "Disabled", 2) end
             end
         })
-        wisnuParrySection:AddToggle({ Title = "Aggressive Mode", Content = "Parry tanpa cek arah hadap killer",
-            Default = VD.Wisnu_ParryAggressive, Callback = function(v) VD.Wisnu_ParryAggressive = v and true or false end })
-        wisnuParrySection:AddToggle({ Title = "Safety Parry", Content = "Skip parry kalau lagi vault/repair/heal",
-            Default = VD.Wisnu_ParrySafety, Callback = function(v) VD.Wisnu_ParrySafety = v and true or false end })
-        wisnuParrySection:AddSlider({ Title = "Parry Distance", Min = 4, Max = 25, Default = VD.Wisnu_ParryDistance, Increment = 1, Suffix = " studs",
-            Callback = function(v) VD.Wisnu_ParryDistance = v end })
-        wisnuParrySection:AddSlider({ Title = "Face Sensitivity Killer", Min = -1, Max = 1, Default = VD.Wisnu_ParryFace, Increment = 0.05,
-            Callback = function(v) VD.Wisnu_ParryFace = v end })
-        wisnuParrySection:AddToggle({ Title = "Wisnu Show Range Circle", Default = VD.Wisnu_ParryCircle,
-            Callback = function(v) VD.Wisnu_ParryCircle = v and true or false end })
-        wisnuParrySection:AddDropdown({ Title = "Ignore Skills", Options = { "Hidden S1", "Abyssal S1" }, Multi = true, Default = {},
+        ap2Section:AddToggle({ Title = "Aggressive Mode", Content = "Parry tanpa cek arah hadap killer",
+            Default = VD.AP2_ParryAggressive, Callback = function(v) VD.AP2_ParryAggressive = v and true or false end })
+        ap2Section:AddToggle({ Title = "Safety Parry", Content = "Skip parry kalau lagi vault/repair/heal",
+            Default = VD.AP2_ParrySafety, Callback = function(v) VD.AP2_ParrySafety = v and true or false end })
+        ap2Section:AddSlider({ Title = "Parry Distance", Min = 4, Max = 25, Default = VD.AP2_ParryDistance, Increment = 1, Suffix = " studs",
+            Callback = function(v) VD.AP2_ParryDistance = v end })
+        ap2Section:AddSlider({ Title = "Face Sensitivity Killer", Min = -1, Max = 1, Default = VD.AP2_ParryFace, Increment = 0.05,
+            Callback = function(v) VD.AP2_ParryFace = v end })
+        ap2Section:AddToggle({ Title = "Show Range Circle", Default = VD.AP2_ParryCircle,
+            Callback = function(v) VD.AP2_ParryCircle = v and true or false end })
+        ap2Section:AddDropdown({ Title = "Ignore Skills", Options = { "Hidden S1", "Abyssal S1" }, Multi = true, Default = {},
             Callback = function(sel)
                 local parsed = {}
                 if type(sel) == "table" then
@@ -9427,7 +9677,7 @@ local function __FazzHub_Init_Main__()
                         elseif type(v) == "string" then parsed[v] = true end
                     end
                 elseif type(sel) == "string" then parsed[sel] = true end
-                VD.Wisnu_IgnoredSkills = parsed
+                VD.AP2_IgnoredSkills = parsed
             end })
 
         local fallSection = MakeSection(SurvivorTab, "Anti Fall Damage")
@@ -9464,11 +9714,11 @@ local function __FazzHub_Init_Main__()
                 else VD_Notify("Auto Gen", "Disabled", 2) end
             end })
 
-        local unhookSection = MakeSection(SurvivorTab, "Bypass Self Unhook")
-        unhookSection:AddToggle({ Title = "Enable Bypass Self Unhook", Default = false, Callback = function(v)
+        local unhookSection = MakeSection(SurvivorTab, "Self Unhook")
+        unhookSection:AddToggle({ Title = "Enable Self Unhook", Default = false, Callback = function(v)
             W.SU_SetEnabled(v)
             if getgenv().FazzHub_SUB_UpdateVisual then getgenv().FazzHub_SUB_UpdateVisual() end
-            if v then VD_Notify("Bypass Self Unhook", "Enabled", 2) end
+            if v then VD_Notify("Self Unhook", "Enabled", 2) end
         end })
         unhookSection:AddToggle({ Title = "Show Self Unhook Button", Default = false, Callback = function(v)
             if getgenv().FazzHub_SUB_SetEnabled then getgenv().FazzHub_SUB_SetEnabled(v) end
@@ -9551,25 +9801,13 @@ local function __FazzHub_Init_Main__()
         local function setMoonwalk(state)
             moonwalkEnabled = state
             if state then startMoonwalk() else stopMoonwalk() end
-            if getgenv().FazzHub_MoonwalkBtn_UpdateVisual then pcall(getgenv().FazzHub_MoonwalkBtn_UpdateVisual) end
         end
-        local MoonwalkBtnState = { Enabled=false, DragLocked=false, Gui=nil, SavedPos=UDim2.new(0.03,0,0.84,0), Connections={} }
-        local MoonwalkFloatingState = CreateFloatingButton({
-            id = "Moonwalk", title = "Moonwalk", notifyTitle = "Moonwalk", state = MoonwalkBtnState,
-            isOn = function() return moonwalkEnabled end,
-            onToggle = function(v) setMoonwalk(v) end, iconRotation = 0,
-        })
-        getgenv().FazzHub_MoonwalkBtn_SetEnabled   = function(en) MoonwalkFloatingState.SetEnabled(en) end
-        getgenv().FazzHub_MoonwalkBtn_UpdateVisual = function() MoonwalkFloatingState.UpdateVisual() end
         MoonwalkSection:AddToggle({ Title = "Moonwalk", Content = "Jalan mundur + geser kiri-kanan.",
             Default = false, Keybind = true,
             Callback = function(v) setMoonwalk(v); VD_Notify("Moonwalk", v and "Enabled" or "Disabled", 2) end })
         MoonwalkSection:AddSlider({ Title = "Side Speed", Min = 0.1, Max = 3, Default = 0.9, Increment = 0.1, Callback = function(v) MOONWALK_SIDE_SPEED = v end })
         MoonwalkSection:AddSlider({ Title = "Back Speed", Min = 0.1, Max = 3, Default = 1.2, Increment = 0.1, Callback = function(v) MOONWALK_BACK_SPEED = v end })
         MoonwalkSection:AddSlider({ Title = "Switch Interval", Min = 0.02, Max = 0.5, Default = 0.07, Increment = 0.01, Callback = function(v) MOONWALK_INTERVAL = v end })
-        MoonwalkSection:AddToggle({ Title = "Show Moonwalk Floating Button", Default = false, Callback = function(v)
-            if getgenv().FazzHub_MoonwalkBtn_SetEnabled then getgenv().FazzHub_MoonwalkBtn_SetEnabled(v) end
-        end })
         UserInputService.InputBegan:Connect(function(input, gp)
             if gp then return end
             if input.KeyCode == Enum.KeyCode.F8 then setMoonwalk(not moonwalkEnabled) end
@@ -9582,7 +9820,7 @@ local function __FazzHub_Init_Main__()
         local perksDisplaySection = MakeSection(SurvivorTab, "Killer Perks Display")
         perksDisplaySection:AddToggle({
             Title = "Enable Killer Perks Display",
-            Content = "Floating white-themed GUI showing killer perks",
+            Content = "Floating GUI showing killer perks",
             Default = false,
             Callback = function(v)
                 if W.KillerPerksDisplay_SetEnabled then W.KillerPerksDisplay_SetEnabled(v) end
@@ -9591,7 +9829,7 @@ local function __FazzHub_Init_Main__()
             end
         })--========================================================--
 -- FAZZHUB v0.3.7
--- PART 19C/19 : VISUALS TAB
+-- PART 19C/19 : VISUALS TAB + KILLER TAB (BAGIAN 1)
 --========================================================--
 
         --====================================================--
@@ -9966,28 +10204,28 @@ local function __FazzHub_Init_Main__()
         VeilSection:AddSlider({ Title = "Spear Gravity", Min = 10, Max = 300, Default = VD.VeilGravity, Increment = 1, Callback = function(v) VD.VeilGravity = v end })
         VeilSection:AddSlider({ Title = "Lead Multiplier", Min = 0.1, Max = 5, Default = VD.VeilLeadMultiplier, Increment = 0.1, Callback = function(v) VD.VeilLeadMultiplier = v end })
 
-        local veilW424Group = MakeSection(KillerTab, "Silent Spear Veil V2")
-        veilW424Group:AddToggle({ Title = "Silent Veil V1", Default = false, Keybind = true,
-            Callback = function(Value) W.W424Veil_API.AimConfig.Aim_SilentVeil = Value end })
-        veilW424Group:AddToggle({ Title = "Silent Veil V2", Default = false, Keybind = true,
+        local veil2Group = MakeSection(KillerTab, "Silent Spear Veil V2")
+        veil2Group:AddToggle({ Title = "Silent Veil V1", Default = false, Keybind = true,
+            Callback = function(Value) Veil2.Aim_SilentVeil = Value end })
+        veil2Group:AddToggle({ Title = "Silent Veil V2", Default = false, Keybind = true,
             Callback = function(Value)
-                W.W424Veil_API.AimConfig.Aim_SilentVeilV2 = Value
+                Veil2.Aim_SilentVeilV2 = Value
                 VD_Notify("Silent Veil V2", Value and "ON" or "OFF", 2)
             end })
-        veilW424Group:AddToggle({ Title = "Auto Predict", Default = false,
-            Callback = function(Value) W.W424Veil_API.Config.SpearSmart_enable = Value end })
-        veilW424Group:AddSlider({ Title = "Lead Multiplier", Min = 0.5, Max = 5, Default = 1.4,
-            Callback = function(Value) W.W424Veil_API.AimConfig.Veil_LeadMultiplier = Value end })
-        veilW424Group:AddSlider({ Title = "Spear Speed", Min = 50, Max = 200, Default = 165,
-            Callback = function(Value) W.W424Veil_API.AimConfig.SPEAR_Speed = Value end })
-        veilW424Group:AddSlider({ Title = "Spear Gravity", Min = 0, Max = 200, Default = 103,
-            Callback = function(Value) W.W424Veil_API.AimConfig.SPEAR_Gravity = Value end })
-        veilW424Group:AddToggle({ Title = "ESP Tracker Target", Default = false,
-            Callback = function(Value) W.W424Veil_API.setTracker(Value) end })
-        veilW424Group:AddToggle({ Title = "Show Veil FOV", Default = true,
-            Callback = function(Value) W.W424Veil_API.AimConfig.Veil_ShowFOV = Value end })
-        veilW424Group:AddSlider({ Title = "Veil FOV Radius", Min = 50, Max = 500, Default = 150,
-            Callback = function(Value) W.W424Veil_API.AimConfig.Veil_FOV = Value end })
+        veil2Group:AddToggle({ Title = "Auto Predict", Default = false,
+            Callback = function(Value) Veil2.SpearSmart_enable = Value end })
+        veil2Group:AddSlider({ Title = "Lead Multiplier", Min = 0.5, Max = 5, Default = 1.4,
+            Callback = function(Value) Veil2.Veil_LeadMultiplier = Value end })
+        veil2Group:AddSlider({ Title = "Spear Speed", Min = 50, Max = 200, Default = 165,
+            Callback = function(Value) Veil2.SPEAR_Speed = Value end })
+        veil2Group:AddSlider({ Title = "Spear Gravity", Min = 0, Max = 200, Default = 103,
+            Callback = function(Value) Veil2.SPEAR_Gravity = Value end })
+        veil2Group:AddToggle({ Title = "ESP Tracker Target", Default = false,
+            Callback = function(Value) if W.Veil2_API then W.Veil2_API.setTracker(Value) end end })
+        veil2Group:AddToggle({ Title = "Show Veil FOV", Default = true,
+            Callback = function(Value) Veil2.Veil_ShowFOV = Value end })
+        veil2Group:AddSlider({ Title = "Veil FOV Radius", Min = 50, Max = 500, Default = 150,
+            Callback = function(Value) Veil2.Veil_FOV = Value end })
 
         local bypassSection = MakeSection(KillerTab, "Bypass No Cooldown")
         bypassSection:AddToggle({ Title = "Hidden - Leap Bypass", Default = false,
@@ -10018,8 +10256,8 @@ local function __FazzHub_Init_Main__()
         end })
 
         local UnlockSkillSection = MakeSection(KillerTab, "Unlock Skill While Carrying")
-        if not W.W424_CarryConfig then W.W424_CarryConfig = { Enabled = false, Hooked = false } end
-        local CarryCfg = W.W424_CarryConfig
+        if not W.CarryConfig then W.CarryConfig = { Enabled = false, Hooked = false } end
+        local CarryCfg = W.CarryConfig
         local function SetupCarryHook()
             if CarryCfg.Hooked then return end
             if typeof(getrawmetatable) ~= "function" then return end
@@ -10403,20 +10641,13 @@ local function __FazzHub_Init_Main__()
             end)
         end
         FakeAvatarSection:AddDropdown({ Title = "Fake Avatar Preset",
-            Options = { "Self Avatar", "Random 1", "Random 2", "Random 3", "Random 4", "Random 5", "Random 6", "Random 7",
-                "WoozyNate", "Nicholas", "yvlyf", "traevp", "J0LLY", "LucashDev", "CEOofIsaac", "Stealthy", "Wildes", "Talon",
-                "Relukt", "Sammy", "Diesel", "S4ans03", "Aura", "iJava", "White Guy", "Purple King", "Kachaaaa Gay", "Mpruyyy" },
+            Options = { "Self Avatar", "Random 1", "Random 2", "Random 3", "Random 4", "Random 5", "Random 6", "Random 7" },
             Default = "Self Avatar",
             Callback = function(option)
                 local ids = {
                     ["Self Avatar"] = LocalPlayer.UserId, ["Random 1"] = 2888298851, ["Random 2"] = 10074747755,
                     ["Random 3"] = 5209567453, ["Random 4"] = 8991982843, ["Random 5"] = 5796319029, ["Random 6"] = 9744452117,
-                    ["Random 7"] = 8476755006, ["WoozyNate"] = 146089324, ["Nicholas"] = 909635, ["yvlyf"] = 181751703,
-                    ["traevp"] = 471607078, ["J0LLY"] = 1073847038, ["LucashDev"] = 2525651744, ["CEOofIsaac"] = 63238912,
-                    ["Stealthy"] = 56602747, ["Wildes"] = 40397833, ["Talon"] = 75974130, ["Relukt"] = 65042011,
-                    ["Sammy"] = 2678001507, ["Diesel"] = 9123921576, ["S4ans03"] = 35439794, ["Aura"] = 2275806428,
-                    ["iJava"] = 276557820, ["White Guy"] = 8843268357, ["Purple King"] = 9070758608,
-                    ["Kachaaaa Gay"] = 8956318334, ["Mpruyyy"] = 8340163775
+                    ["Random 7"] = 8476755006
                 }
                 SelectedFakeAva = ids[option] or LocalPlayer.UserId
                 if FakeAvatarEnabled then ApplyFakeAvatar() end
@@ -10708,11 +10939,11 @@ local function __FazzHub_Init_Main__()
             end
         end })--========================================================--
 -- FAZZHUB v0.3.7
--- PART 19F/19 : BOMBAX TAB + CONFIG TAB + BACKGROUND + CLOSING
+-- PART 19F/19 : BOMBAX TAB + CONFIG TAB + CLOSING
 --========================================================--
 
         --====================================================--
-        -- BOMBAX TAB (MUSIC PLAYER)
+        -- BOMBAX TAB
         --====================================================--
         local musicSection = MakeSection(BombaxTab, "Music Player")
 
@@ -10763,6 +10994,7 @@ local function __FazzHub_Init_Main__()
         playlistSection:AddButton({ Title = "⏸ Pause", Callback = function() W.Bombax_Pause() end })
         playlistSection:AddButton({ Title = "▶ Resume", Callback = function() W.Bombax_Resume() end })
         playlistSection:AddButton({ Title = "⏹ Stop", Callback = function() W.Bombax_Stop() end })
+        playlistSection:AddButton({ Title = "⏭ Next Track", Callback = function() W.Bombax_Next() end })
         playlistSection:AddButton({
             Title = "Play Next Random",
             Content = "Putar lagu random dari library",
@@ -10802,6 +11034,11 @@ local function __FazzHub_Init_Main__()
             Title = "Looped (Putar Ulang)",
             Default = false,
             Callback = function(v) W.Bombax_SetLooped(v) end
+        })
+        soundSection:AddToggle({
+            Title = "Auto Next (saat lagu habis)",
+            Default = true,
+            Callback = function(v) Bombax.AutoNext = v and true or false end
         })
         soundSection:AddToggle({
             Title = "Show Mini GUI",
@@ -10974,7 +11211,7 @@ local function __FazzHub_Init_Main__()
     if not uiOK then warn("[FAZZHUB] Gagal membuat UI:", uiErr) end
 
     --====================================================--
-    -- INJECT BACKGROUND IMAGE KE WINDOW
+    -- INJECT BACKGROUND IMAGE
     --====================================================--
     task.spawn(function()
         task.wait(0.8)
@@ -11016,10 +11253,7 @@ local function __FazzHub_Init_Main__()
                 end
             end
         end
-        if not targetGui then
-            warn("[FAZZHUB] ScreenGui tidak ditemukan untuk background")
-            return
-        end
+        if not targetGui then return end
 
         local mainFrame
         for _, d in ipairs(targetGui:GetDescendants()) do
@@ -11029,10 +11263,7 @@ local function __FazzHub_Init_Main__()
                 end
             end
         end
-        if not mainFrame then
-            warn("[FAZZHUB] Main frame tidak ditemukan")
-            return
-        end
+        if not mainFrame then return end
 
         local oldBg = mainFrame:FindFirstChild("FAZZHUB_BgImage")
         if oldBg then oldBg:Destroy() end
@@ -11134,90 +11365,4 @@ local function __FazzHub_Init_Main__()
 
 end
 
-__FazzHub_Init_Main__()--========================================================--
--- FAZZHUB v0.3.7
--- PART 2/19 : VARIABLE DEFAULTS
---========================================================--
-
-    --====================================================--
-    -- VARIABLE DEFAULTS
-    --====================================================--
-    local VD = W.FAZZHUB
-    VD.PARRY_Enabled        = VD.PARRY_Enabled or false
-    VD.PARRY_Aggressive     = VD.PARRY_Aggressive or false
-    VD.PARRY_Distance       = VD.PARRY_Distance or 10
-    VD.PARRY_ShowCircle     = VD.PARRY_ShowCircle or false
-    VD.PARRY_SilentParry    = VD.PARRY_SilentParry or false
-    VD.PARRY_ShowFloatBtn   = VD.PARRY_ShowFloatBtn or false
-    VD.AutoCrouch           = VD.AutoCrouch or false
-    VD.KILLER_AutoAttack         = VD.KILLER_AutoAttack or false
-    VD.KILLER_AutoAttackRange    = VD.KILLER_AutoAttackRange or 12
-    VD.KILLER_AutoAttackCooldown = VD.KILLER_AutoAttackCooldown or 0.15
-    VD.SURV_AutoFlee        = VD.SURV_AutoFlee or false
-    VD.SURV_AutoFleeDist    = VD.SURV_AutoFleeDist or 40
-    VD.SURV_AutoFleeCooldown= VD.SURV_AutoFleeCooldown or 1.5
-    VD.VeilEnabled          = VD.VeilEnabled or false
-    VD.VeilShowFOV          = VD.VeilShowFOV ~= false
-    VD.VeilShowTracker      = VD.VeilShowTracker or false
-    VD.VeilAutoPredict      = VD.VeilAutoPredict ~= false
-    VD.VeilFOV              = VD.VeilFOV or 150
-    VD.VeilMaxDist          = VD.VeilMaxDist or 280
-    VD.VeilSpearSpeed       = VD.VeilSpearSpeed or 165
-    VD.VeilGravity          = VD.VeilGravity or 103
-    VD.VeilAuraSpearSpeed   = VD.VeilAuraSpearSpeed or 165
-    VD.VeilAuraSpearGravity = VD.VeilAuraSpearGravity or 96
-    VD.VeilLeadMultiplier   = VD.VeilLeadMultiplier or 1.4
-    VD.TOF_SilentAim    = VD.TOF_SilentAim    or false
-    VD.TOF_TargetMode   = VD.TOF_TargetMode   or "Killer"
-    VD.TOF_Key          = VD.TOF_Key          or "Q"
-    VD.TOF_Laser        = VD.TOF_Laser        ~= false
-    VD.TOF_WallCheck    = VD.TOF_WallCheck    ~= false
-    VD.TOF_BlockKnocked = VD.TOF_BlockKnocked ~= false
-    VD.Invis_Enabled       = VD.Invis_Enabled       or false
-    VD.Invis_ShowFloatBtn  = VD.Invis_ShowFloatBtn  or false
-    VD.Invis_Hotkey        = VD.Invis_Hotkey        or "G"
-    VD.KILLER_BypassLeap     = VD.KILLER_BypassLeap     or false
-    VD.KILLER_InfGrab        = VD.KILLER_InfGrab        or false
-    VD.KILLER_InfLakeMist    = VD.KILLER_InfLakeMist    or false
-    VD.KILLER_InfPursuit     = VD.KILLER_InfPursuit     or false
-    VD.KILLER_BypassCooldown = VD.KILLER_BypassCooldown or false
-    VD.KILLER_InfFrenzy      = VD.KILLER_InfFrenzy      or false
-    VD.KILLER_AntiBlind      = VD.KILLER_AntiBlind      or false
-    VD.KILLER_DestroyPallets = VD.KILLER_DestroyPallets or false
-    VD.KILLER_InfLunge       = VD.KILLER_InfLunge       or false
-    VD.KILLER_AutoHook       = VD.KILLER_AutoHook       or false
-    VD.KA_AutoStalk       = VD.KA_AutoStalk       or false
-    VD.KA_AutoStalkRange  = VD.KA_AutoStalkRange  or 150
-    VD.KA_AutoKillAll     = VD.KA_AutoKillAll     or false
-    VD.KA_DropAllPallet   = VD.KA_DropAllPallet   or false
-    VD.KA_BlockAllVault   = VD.KA_BlockAllVault   or false
-    VD.SURV_FakeParry           = VD.SURV_FakeParry           or false
-    VD.SURV_FakeParryAnim       = VD.SURV_FakeParryAnim       or "Enten"
-    VD.SURV_FakeParryCooldown   = VD.SURV_FakeParryCooldown   or 0.4
-    VD.SURV_FakeParryKey        = VD.SURV_FakeParryKey        or "V"
-    VD.SURV_FakeParryShowBtn    = VD.SURV_FakeParryShowBtn    or false
-    VD.SURV_FakeParryLocked     = VD.SURV_FakeParryLocked     or false
-    VD.NoFallDamage         = VD.NoFallDamage or false
-    VD.NextMapPredict       = VD.NextMapPredict or false
-    VD.ManualGen            = VD.ManualGen or false
-    VD.AutoGen              = VD.AutoGen or false
-    VD.KillerEscapeDist     = VD.KillerEscapeDist or 30
-    VD.Wisnu_AutoParry       = VD.Wisnu_AutoParry       or false
-    VD.Wisnu_ParryAggressive = VD.Wisnu_ParryAggressive or false
-    VD.Wisnu_ParrySafety     = VD.Wisnu_ParrySafety     or false
-    VD.Wisnu_ParryDistance   = VD.Wisnu_ParryDistance   or 6
-    VD.Wisnu_ParryFace       = VD.Wisnu_ParryFace       or 0.7
-    VD.Wisnu_ParryCircle     = VD.Wisnu_ParryCircle     or true
-    VD.Wisnu_IgnoredSkills   = VD.Wisnu_IgnoredSkills   or {}
-    VD.KillerPerksDisplay   = VD.KillerPerksDisplay   or false
-    VD.SpeedBoostEnabled    = VD.SpeedBoostEnabled    or false
-    VD.SpeedBoostValue      = VD.SpeedBoostValue      or 30
-    VD.CursorEnabled        = VD.CursorEnabled        or false
-    W.InstantHealSelf = W.InstantHealSelf or false
-    W.AutoHealAll     = W.AutoHealAll or false
-
-    _G.GLUTO_ACCENT     = Color3.fromRGB(120, 120, 120)
-    _G.GLUTO_ACCENT_BG  = Color3.fromRGB(0, 0, 0)
-    _G.GLUTO_NEUTRAL    = Color3.fromRGB(90, 90, 90)
-    _G.GLUTO_STROKE_OFF = Color3.fromRGB(25, 25, 25)
-    _G.GLUTO_BG_OFF     = Color3.fromRGB(0, 0, 0)
+__FazzHub_Init_Main__()
