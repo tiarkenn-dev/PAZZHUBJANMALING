@@ -68,10 +68,10 @@ local function __FazzHub_Init_Main__()
     end
 
     --====================================================--
-    -- NOTIFY SYSTEM (DEFAULT OFF)
+    -- NOTIFY SYSTEM
     --====================================================--
     local NotifyColor = Color3.fromRGB(255, 255, 255)
-    W.NotifyEnabled = false
+    W.NotifyEnabled = W.NotifyEnabled ~= false
     local ICON_ID = "72845574620852"
 
     local function ShowNotify(title, message, duration)
@@ -232,18 +232,6 @@ local function __FazzHub_Init_Main__()
     VD.SpeedBoostEnabled    = VD.SpeedBoostEnabled    or false
     VD.SpeedBoostValue      = VD.SpeedBoostValue      or 30
     VD.CursorEnabled        = VD.CursorEnabled        or false
-    -- TP TO GATE
-    VD.GateTP_Name         = VD.GateTP_Name         or "Gate"
-    VD.GateTP_OffsetY      = VD.GateTP_OffsetY      or 5
-    -- AUTO SKILL CHECK (BARU)
-    W.SkillCheck = W.SkillCheck or {
-        Enabled = false,
-        Mode = "Legit",
-        Busy = false,
-        Connection = nil,
-        CheckDelay = 0.2,
-        FireDelay = 0.05,
-    }
     W.InstantHealSelf = W.InstantHealSelf or false
     W.AutoHealAll     = W.AutoHealAll or false
 
@@ -269,6 +257,7 @@ local function __FazzHub_Init_Main__()
 
     -- SONG LIBRARY (32 lagu)
     local Songs = {
+        -- Bombax Original
         {id="101985596918228", judul="One"},
         {id="78520199502339",  judul="Two"},
         {id="78253224480952",  judul="Three"},
@@ -341,6 +330,7 @@ local function __FazzHub_Init_Main__()
         if W.Bombax_MiniUpdate then pcall(W.Bombax_MiniUpdate) end
     end
 
+    -- AUTO NEXT saat lagu habis
     local function Bombax_SetupAutoNext()
         if Bombax._AutoNextConn then return end
         Bombax._AutoNextConn = RunService.Heartbeat:Connect(function()
@@ -414,6 +404,7 @@ local function __FazzHub_Init_Main__()
         W.Bombax_Play("rbxassetid://" .. cleanId, "Custom: " .. cleanId)
     end
 
+    -- Play Next (manual)
     function W.Bombax_Next()
         local list = {}
         for name, id in pairs(MUSIC_LIBRARY) do
@@ -478,6 +469,7 @@ local function __FazzHub_Init_Main__()
             stroke.Transparency = 0.2
             MiniState.Frame = frame
 
+            -- HEADER
             local header = Instance.new("Frame", frame)
             header.Name = "Header"
             header.Size = UDim2.new(1, 0, 0, 26)
@@ -509,6 +501,7 @@ local function __FazzHub_Init_Main__()
             minBtn.Parent = header
             Instance.new("UICorner", minBtn).CornerRadius = UDim.new(0, 6)
 
+            -- BODY
             local body = Instance.new("Frame", frame)
             body.Name = "Body"
             body.Size = UDim2.new(1, -16, 1, -36)
@@ -517,6 +510,7 @@ local function __FazzHub_Init_Main__()
             body.Parent = frame
             MiniState.Body = body
 
+            -- TRACK LABEL
             local trackLbl = Instance.new("TextLabel", body)
             trackLbl.Name = "TrackLbl"
             trackLbl.Size = UDim2.new(1, 0, 0, 18)
@@ -529,6 +523,7 @@ local function __FazzHub_Init_Main__()
             trackLbl.TextTruncate = Enum.TextTruncate.AtEnd
             MiniState.TrackLbl = trackLbl
 
+            -- PROGRESS BAR BG
             local progressBg = Instance.new("Frame", body)
             progressBg.Name = "ProgressBg"
             progressBg.Size = UDim2.new(1, 0, 0, 8)
@@ -537,6 +532,7 @@ local function __FazzHub_Init_Main__()
             progressBg.BorderSizePixel = 0
             Instance.new("UICorner", progressBg).CornerRadius = UDim.new(1, 0)
 
+            -- PROGRESS FILL
             local progressFill = Instance.new("Frame", progressBg)
             progressFill.Name = "ProgressFill"
             progressFill.Size = UDim2.new(0, 0, 1, 0)
@@ -545,6 +541,7 @@ local function __FazzHub_Init_Main__()
             Instance.new("UICorner", progressFill).CornerRadius = UDim.new(1, 0)
             MiniState.ProgressFill = progressFill
 
+            -- TIME LABEL
             local progressLbl = Instance.new("TextLabel", body)
             progressLbl.Name = "ProgressLbl"
             progressLbl.Size = UDim2.new(1, 0, 0, 12)
@@ -557,6 +554,7 @@ local function __FazzHub_Init_Main__()
             progressLbl.TextXAlignment = Enum.TextXAlignment.Right
             MiniState.ProgressLbl = progressLbl
 
+            -- BUTTON ROW
             local btnRow = Instance.new("Frame", body)
             btnRow.Size = UDim2.new(1, 0, 0, 30)
             btnRow.Position = UDim2.new(0, 0, 0, 50)
@@ -594,6 +592,7 @@ local function __FazzHub_Init_Main__()
             makeBtn("PauseBtn", "⏸", 60, function() W.Bombax_Pause() end)
             makeBtn("StopBtn", "⏹", 120, function() W.Bombax_Stop() end)
 
+            -- NEXT BUTTON (kanan)
             local nextBtn = Instance.new("TextButton", btnRow)
             nextBtn.Name = "NextBtn"
             nextBtn.Size = UDim2.fromOffset(26, 26)
@@ -609,8 +608,11 @@ local function __FazzHub_Init_Main__()
             nbStroke.Color = Color3.fromRGB(255, 255, 255)
             nbStroke.Thickness = 1
             nbStroke.Transparency = 0.5
-            nextBtn.MouseButton1Click:Connect(function() W.Bombax_Next() end)
+            nextBtn.MouseButton1Click:Connect(function()
+                W.Bombax_Next()
+            end)
 
+            -- VOLUME
             local volLbl = Instance.new("TextLabel", body)
             volLbl.Name = "VolLbl"
             volLbl.Size = UDim2.new(1, 0, 0, 14)
@@ -639,6 +641,7 @@ local function __FazzHub_Init_Main__()
             Instance.new("UICorner", volFill).CornerRadius = UDim.new(1, 0)
             MiniState.VolFill = volFill
 
+            -- DRAG (dari header)
             local dragging, dragStart, startPos = false, nil, nil
             header.InputBegan:Connect(function(inp)
                 if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
@@ -659,6 +662,7 @@ local function __FazzHub_Init_Main__()
                 end
             end)
 
+            -- MIN/MAX TOGGLE
             local expanded = true
             minBtn.MouseButton1Click:Connect(function()
                 expanded = not expanded
@@ -673,6 +677,7 @@ local function __FazzHub_Init_Main__()
                 end
             end)
 
+            -- UPDATE VISUAL
             W.Bombax_MiniUpdate = function()
                 if not MiniState.Gui then return end
                 local trackTxt = Bombax.CurrentTrack or "No track"
@@ -684,6 +689,7 @@ local function __FazzHub_Init_Main__()
                 end
             end
 
+            -- PROGRESS LOOP
             task.spawn(function()
                 while MiniState.Gui and MiniState.Gui.Parent do
                     if Bombax.CurrentSound then
@@ -726,6 +732,7 @@ local function __FazzHub_Init_Main__()
             end
         end
 
+        -- Auto build
         task.spawn(function()
             task.wait(1)
             BuildMini()
@@ -1916,8 +1923,6 @@ local function __FazzHub_Init_Main__()
     W.FP = W.FP or {
         ActiveBuffs = {}, Conns = {}, LastBuffEnd = 0, CooldownTime = 5, HB = nil,
         FlowstateOn = false, QuickRecOn = false, PerfLandOn = false, AdrenalineOn = false,
-        PerPerkCooldown = { Flowstate = 3, QuickRecovery = 3, PerfectLanding = 3, AdrenalineRush = 5 },
-        LastBuffEndByName = {}, UsePerPerk = true,
     }
     local FP = W.FP
 
@@ -2145,19 +2150,10 @@ local function __FazzHub_Init_Main__()
         end)
     end
 
-    -- FP_TryBuff: per-perk cooldown
     local function FP_TryBuff(name, amt, dur)
         if FP.ActiveBuffs[name] then return end
-        local now = tick()
-        if FP.UsePerPerk ~= false then
-            local lastEnd = FP.LastBuffEndByName[name] or 0
-            local cd = FP.PerPerkCooldown[name] or FP.CooldownTime or 5
-            if now - lastEnd < cd then return end
-        else
-            if now - FP.LastBuffEnd < FP.CooldownTime and next(FP.ActiveBuffs) == nil then return end
-        end
-        FP.ActiveBuffs[name] = {amt=amt, endTime=now+dur, duration=dur, startTime=now}
-        FP.LastBuffEndByName[name] = now
+        if tick()-FP.LastBuffEnd < FP.CooldownTime and next(FP.ActiveBuffs)==nil then return end
+        FP.ActiveBuffs[name] = {amt=amt, endTime=tick()+dur, duration=dur, startTime=tick()}
         FP_Apply(); FP_EnsureHB()
         VD_Notify("Fake Perks", "["..name.."] Aktif! +"..amt.." Speed ("..dur.."s)", 3)
     end
@@ -2273,122 +2269,6 @@ local function __FazzHub_Init_Main__()
             FP.ActiveBuffs["AdrenalineRush"] = nil
         end
                     end--========================================================--
--- FAZZHUB v0.3.7
--- PART 8C/19 : AUTO SKILL CHECK (VERSI BARU)
---========================================================--
-
-    --====================================================--
-    -- AUTO SKILL CHECK
-    --====================================================--
-    W.SkillCheck = W.SkillCheck or {
-        Enabled = false,
-        Mode = "Legit",         -- "Legit" / "Instant"
-        Busy = false,
-        Connection = nil,
-        CheckDelay = 0.2,       -- delay setelah tekan
-        FireDelay = 0.05,       -- delay tiap fire
-    }
-
-    local SC = W.SkillCheck
-    local SC_TouchID = 8822
-    local SC_ActionPath = "Survivor-mob.Controls.action.check"
-
-    local function SC_PressSpace()
-        if not VirtualInputManager then return end
-        pcall(function()
-            VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
-            task.wait(SC.FireDelay)
-            VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
-        end)
-    end
-
-    local function SC_GetActionTarget()
-        local pGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
-        if not pGui then return nil end
-        local current = pGui
-        for seg in string.gmatch(SC_ActionPath, "[^%.]+") do
-            current = current and current:FindFirstChild(seg)
-        end
-        return current
-    end
-
-    local function SC_TriggerMobileButton()
-        local b = SC_GetActionTarget()
-        if b and b:IsA("GuiObject") then
-            local p, s = b.AbsolutePosition, b.AbsoluteSize
-            local i = GuiService:GetGuiInset()
-            local cx, cy = p.X + (s.X / 2) + i.X, p.Y + (s.Y / 2) + i.Y
-            pcall(function()
-                VirtualInputManager:SendTouchEvent(SC_TouchID, 0, cx, cy)
-                task.wait(0.01)
-                VirtualInputManager:SendTouchEvent(SC_TouchID, 2, cx, cy)
-            end)
-        end
-    end
-
-    function W.SkillCheck_Start()
-        if SC.Connection then SC.Connection:Disconnect(); SC.Connection = nil end
-        SC.Connection = RunService.RenderStepped:Connect(function()
-            if not SC.Enabled or SC.Busy then return end
-            local pGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
-            if not pGui then return end
-            local prompt = pGui:FindFirstChild("SkillCheckPromptGui")
-            if not prompt then return end
-            local check = prompt:FindFirstChild("Check")
-            if not check or not check.Visible then return end
-            local line = check:FindFirstChild("Line")
-            local goal = check:FindFirstChild("Goal")
-            if not line or not goal then return end
-
-            if SC.Mode == "Instant" then
-                line.Rotation = goal.Rotation + 109
-                SC.Busy = true
-                task.spawn(function()
-                    if UserInputService.TouchEnabled then SC_TriggerMobileButton()
-                    else SC_PressSpace() end
-                    task.wait(SC.CheckDelay)
-                    SC.Busy = false
-                end)
-            else -- Legit
-                local lr = line.Rotation % 360
-                local gr = goal.Rotation % 360
-                local sR = (gr + 102) % 360
-                local eR = (gr + 116) % 360
-                local success = (sR > eR and (lr >= sR or lr <= eR)) or (lr >= sR and lr <= eR)
-                if success then
-                    SC.Busy = true
-                    task.spawn(function()
-                        if UserInputService.TouchEnabled then SC_TriggerMobileButton()
-                        else SC_PressSpace() end
-                        task.wait(SC.FireDelay)
-                        SC.Busy = false
-                    end)
-                end
-            end
-        end)
-    end
-
-    function W.SkillCheck_Stop()
-        if SC.Connection then SC.Connection:Disconnect(); SC.Connection = nil end
-        SC.Busy = false
-    end
-
-    function W.SkillCheck_SetEnabled(v)
-        SC.Enabled = v and true or false
-        if SC.Enabled then W.SkillCheck_Start() else W.SkillCheck_Stop() end
-    end
-
-    function W.SkillCheck_SetMode(m)
-        if m == "Legit" or m == "Instant" then SC.Mode = m end
-    end
-
-    function W.SkillCheck_SetCheckDelay(v)
-        SC.CheckDelay = math.clamp(tonumber(v) or 0.2, 0.01, 2)
-    end
-
-    function W.SkillCheck_SetFireDelay(v)
-        SC.FireDelay = math.clamp(tonumber(v) or 0.05, 0.01, 1)
-                        end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 9A/19 : STUN INDICATOR
 --========================================================--
@@ -2685,9 +2565,9 @@ local function __FazzHub_Init_Main__()
             end
             SInd.Cache = {}
         end
-                            end--========================================================--
+                        end--========================================================--
 -- FAZZHUB v0.3.7
--- PART 9B/19 : TROLL TP + ESCAPE + TP TO GATE + MASKED
+-- PART 9B/19 : TROLL TP + ESCAPE + MASKED
 --========================================================--
 
     --====================================================--
@@ -2771,30 +2651,6 @@ local function __FazzHub_Init_Main__()
     end
 
     --====================================================--
-    -- TP TO GATE
-    --====================================================--
-    W.GateTP_Name = W.GateTP_Name or "Gate"
-    W.GateTP_OffsetY = W.GateTP_OffsetY or 5
-    W.GateTP_Count = W.GateTP_Count or 0
-
-    function W.GateTP_Teleport()
-        local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if not root then ForceNotify("TP to Gate", "Character not found", 2); return false end
-        local targetName = string.lower(W.GateTP_Name or "Gate")
-        local found = nil
-        for _, obj in ipairs(Workspace:GetDescendants()) do
-            if obj:IsA("BasePart") and string.lower(obj.Name):find(targetName, 1, true) then
-                found = obj; break
-            end
-        end
-        if not found then ForceNotify("TP to Gate", "Gate tidak ditemukan: " .. tostring(W.GateTP_Name), 2); return false end
-        pcall(function() root.CFrame = found.CFrame + Vector3.new(0, W.GateTP_OffsetY or 5, 0) end)
-        W.GateTP_Count = W.GateTP_Count + 1
-        VD_Notify("TP to Gate", "Teleported ke: " .. found.Name .. " (#" .. W.GateTP_Count .. ")", 2)
-        return true
-    end
-
-    --====================================================--
     -- SELECT MASKED
     --====================================================--
     W.Masked = W.Masked or { CurrentPower = "Cobra", Powers = {"Cobra", "Richter", "Brandon", "Rabbit", "Alex", "Tony"} }
@@ -2820,7 +2676,7 @@ local function __FazzHub_Init_Main__()
             pcall(function() ev:FireServer() end)
             VD_Notify("Select Masked", "Deactivated", 2)
         else ForceNotify("Select Masked", "Deactivatepower remote not found", 2) end
-                                end--========================================================--
+                            end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 10A/19 : FULL ESP (BAGIAN 1)
 --========================================================--
@@ -2833,11 +2689,10 @@ local function __FazzHub_Init_Main__()
         Generator = false, Pallet = false, Window = false, SCP = false,
         Distance = 500,
     }
-    -- ESP Status: SIMPLE (Cuma Name + Distance + Radius)
     W.FullESPStatus = W.FullESPStatus or {
         Enabled = false,
         ShowName = true, ShowDistance = true, ShowHealth = false,
-        ShowAvatar = false, ShowAction = false, Radius = 500,
+        ShowAvatar = true, ShowAction = true, Radius = 500,
     }
     W.FullESPColors = W.FullESPColors or {
         Survivor  = Color3.fromRGB(0, 190, 255), Killer    = Color3.fromRGB(255, 0, 0),
@@ -2944,7 +2799,7 @@ local function __FazzHub_Init_Main__()
                 if speed > 2 then return "MOVE", Color3.fromRGB(200, 200, 220) end
             end
             return "IDLE", Color3.fromRGB(150, 150, 150)
-                                        end--========================================================--
+                                    end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 10B/19 : FULL ESP (BAGIAN 2)
 --========================================================--
@@ -3034,19 +2889,81 @@ local function __FazzHub_Init_Main__()
                 layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
                 local pad = Instance.new("UIPadding", pill)
-                pad.PaddingLeft = UDim.new(0, 8)
+                pad.PaddingLeft = UDim.new(0, 6)
                 pad.PaddingRight = UDim.new(0, 8)
+
+                local avatarHolder = Instance.new("Frame")
+                avatarHolder.Name = "AvatarHolder"
+                avatarHolder.Size = UDim2.fromOffset(18, 18)
+                avatarHolder.BackgroundColor3 = Color3.fromRGB(30, 30, 36)
+                avatarHolder.BorderSizePixel = 0
+                avatarHolder.LayoutOrder = 1
+                avatarHolder.ClipsDescendants = true
+                avatarHolder.Parent = pill
+                Instance.new("UICorner", avatarHolder).CornerRadius = UDim.new(1, 0)
+
+                local avatarStroke = Instance.new("UIStroke", avatarHolder)
+                avatarStroke.Name = "AvatarStroke"
+                avatarStroke.Color = accentColor
+                avatarStroke.Thickness = 1.2
+                avatarStroke.Transparency = 0.3
+                avatarStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+                local avatarImg = Instance.new("ImageLabel")
+                avatarImg.Name = "AvatarImg"
+                avatarImg.Size = UDim2.fromScale(1, 1)
+                avatarImg.BackgroundTransparency = 1
+                avatarImg.Image = "rbxthumb://type=AvatarHeadShot&id=" .. plr.UserId .. "&w=150&h=150"
+                avatarImg.Parent = avatarHolder
+
+                local dot = Instance.new("Frame")
+                dot.Name = "Dot"
+                dot.Size = UDim2.fromOffset(7, 7)
+                dot.BackgroundColor3 = accentColor
+                dot.BorderSizePixel = 0
+                dot.LayoutOrder = 1
+                dot.Visible = false
+                dot.Parent = pill
+                Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
 
                 local distLbl = Instance.new("TextLabel")
                 distLbl.Name = "DistLbl"
                 distLbl.BackgroundTransparency = 1
-                distLbl.Size = UDim2.fromOffset(40, 14)
+                distLbl.Size = UDim2.fromOffset(32, 14)
                 distLbl.Font = Enum.Font.GothamBold
                 distLbl.TextSize = 11
                 distLbl.TextColor3 = Color3.fromRGB(220, 220, 230)
                 distLbl.Text = "0m"
-                distLbl.LayoutOrder = 1
+                distLbl.LayoutOrder = 2
                 distLbl.Parent = pill
+
+                local actionLbl = Instance.new("TextLabel")
+                actionLbl.Name = "ActionLbl"
+                actionLbl.BackgroundTransparency = 1
+                actionLbl.Size = UDim2.fromOffset(50, 14)
+                actionLbl.Font = Enum.Font.GothamBold
+                actionLbl.TextSize = 10
+                actionLbl.TextColor3 = actionColor
+                actionLbl.Text = "IDLE"
+                actionLbl.LayoutOrder = 3
+                actionLbl.Parent = pill
+
+                local hpBarBg = Instance.new("Frame")
+                hpBarBg.Name = "HPBarBg"
+                hpBarBg.Size = UDim2.fromOffset(38, 4)
+                hpBarBg.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+                hpBarBg.BorderSizePixel = 0
+                hpBarBg.LayoutOrder = 4
+                hpBarBg.Parent = pill
+                Instance.new("UICorner", hpBarBg).CornerRadius = UDim.new(1, 0)
+
+                local hpBarFill = Instance.new("Frame")
+                hpBarFill.Name = "HPBarFill"
+                hpBarFill.Size = UDim2.new(1, 0, 1, 0)
+                hpBarFill.BackgroundColor3 = hpColor
+                hpBarFill.BorderSizePixel = 0
+                hpBarFill.Parent = hpBarBg
+                Instance.new("UICorner", hpBarFill).CornerRadius = UDim.new(1, 0)
 
                 local downPill = Instance.new("Frame")
                 downPill.Name = "DownPill"
@@ -3055,7 +2972,7 @@ local function __FazzHub_Init_Main__()
                 downPill.BackgroundTransparency = 0.1
                 downPill.BorderSizePixel = 0
                 downPill.Visible = false
-                downPill.LayoutOrder = 2
+                downPill.LayoutOrder = 5
                 downPill.Parent = pill
                 Instance.new("UICorner", downPill).CornerRadius = UDim.new(1, 0)
 
@@ -3076,13 +2993,31 @@ local function __FazzHub_Init_Main__()
             local pill = bb:FindFirstChild("Pill")
             if not pill then return end
             local pillStroke = pill:FindFirstChild("PillStroke")
+            local avatarHolder = pill:FindFirstChild("AvatarHolder")
+            local avatarImg = avatarHolder and avatarHolder:FindFirstChild("AvatarImg")
+            local avatarStroke = avatarHolder and avatarHolder:FindFirstChild("AvatarStroke")
+            local dot = pill:FindFirstChild("Dot")
             local distLbl = pill:FindFirstChild("DistLbl")
+            local actionLbl = pill:FindFirstChild("ActionLbl")
+            local hpBarBg = pill:FindFirstChild("HPBarBg")
+            local hpBarFill = hpBarBg and hpBarBg:FindFirstChild("HPBarFill")
             local downPill = pill:FindFirstChild("DownPill")
             local distScale = bb:FindFirstChild("DistScale")
 
             if pillStroke then
                 pillStroke.Color = accentColor
                 pillStroke.Transparency = isDown and 0.2 or 0.5
+            end
+            if avatarHolder then
+                avatarHolder.Visible = FESPS.ShowAvatar == true
+                if avatarStroke then avatarStroke.Color = accentColor end
+                if avatarImg and avatarImg.Image == "" then
+                    avatarImg.Image = "rbxthumb://type=AvatarHeadShot&id=" .. plr.UserId .. "&w=150&h=150"
+                end
+            end
+            if dot then
+                dot.Visible = (FESPS.ShowAvatar ~= true)
+                dot.BackgroundColor3 = accentColor
             end
             if nameLbl then
                 nameLbl.Text = plr.Name
@@ -3093,16 +3028,36 @@ local function __FazzHub_Init_Main__()
                 distLbl.Text = string.format("%.0fm", dist)
                 distLbl.Visible = FESPS.ShowDistance
             end
+            if actionLbl then
+                actionLbl.Text = actionText
+                actionLbl.TextColor3 = actionColor
+                actionLbl.Visible = FESPS.ShowAction == true
+                if actionText == "IDLE" then
+                    actionLbl.TextColor3 = Color3.fromRGB(150, 150, 150)
+                end
+            end
+            if hpBarBg and hpBarFill then
+                hpBarFill.Size = UDim2.new(hpPct, 0, 1, 0)
+                hpBarFill.BackgroundColor3 = hpColor
+                hpBarBg.Visible = FESPS.ShowHealth
+            end
             if downPill then downPill.Visible = isDown end
 
-            -- Pill size: cuma 2 elemen (distance + maybe down)
-            local totalW = 16
-            if FESPS.ShowDistance then totalW = totalW + 40 end
-            if isDown then totalW = totalW + 42 end
+            local totalW = 14
+            local count = 0
+            if FESPS.ShowAvatar then totalW = totalW + 18; count = count + 1
+            else totalW = totalW + 7; count = count + 1 end
+            if FESPS.ShowDistance then totalW = totalW + 32; count = count + 1 end
+            if FESPS.ShowAction then totalW = totalW + 50; count = count + 1 end
+            if FESPS.ShowHealth then totalW = totalW + 38; count = count + 1 end
+            if isDown then totalW = totalW + 36; count = count + 1 end
+            totalW = totalW + math.max(count - 1, 0) * 5
             if totalW < 50 then totalW = 50 end
+            if totalW > 240 then totalW = 240 end
             pill.Size = UDim2.fromOffset(totalW, 22)
 
-            local showPill = FESPS.ShowDistance or isDown
+            local showPill = FESPS.ShowDistance or FESPS.ShowHealth or isDown
+                or FESPS.ShowAction or FESPS.ShowAvatar
             pill.Visible = showPill
 
             local h = 16 + (showPill and 24 or 0)
@@ -3113,7 +3068,7 @@ local function __FazzHub_Init_Main__()
                 scaleVal = math.clamp(scaleVal, 0.5, 1.05)
                 distScale.Scale = scaleVal
             end
-                                            end--========================================================--
+                                        end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 10C/19 : FULL ESP (BAGIAN 3)
 --========================================================--
@@ -3378,7 +3333,7 @@ local function __FazzHub_Init_Main__()
                 end
             end
         end)
-                                            end--========================================================--
+                                        end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 11/19 : INVISIBLE
 --========================================================--
@@ -3584,7 +3539,7 @@ local function __FazzHub_Init_Main__()
             if MV.Enabled then return "ON" end
             return "READY"
         end
-                                                end--========================================================--
+                                            end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 12A/19 : BYPASS (LEAP, GRAB, SLASHER, ABYSS)
 --========================================================--
@@ -3844,7 +3799,7 @@ local function __FazzHub_Init_Main__()
         VD.KILLER_BypassCooldown = v and true or false
         if VD.KILLER_BypassCooldown then W.MAWWW_StartAbyssCooldownBypass()
         else W.MAWWW_StopAbyssCooldownBypass() end
-                                                    end--========================================================--
+                                                end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 12B/19 : BYPASS (JEFF, ANTIBLIND, DESTROYPALLET, INFLUNGE)
 --========================================================--
@@ -4246,7 +4201,7 @@ local function __FazzHub_Init_Main__()
 
         W.GunAim_Start = GA_Start
         W.GunAim_Cfg = GunAim
-                                                        end--========================================================--
+                                                    end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 13B/19 : KILLER ABILITIES + AUTO HOOK
 --========================================================--
@@ -4540,7 +4495,7 @@ local function __FazzHub_Init_Main__()
             VD.KILLER_AutoHook = v and true or false
             if VD.KILLER_AutoHook then W.KA_StartAutoHook() else W.KA_StopAutoHook() end
         end
-                                                            end--========================================================--
+                                                        end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 13C/19 : KILLER PERKS DISPLAY
 --========================================================--
@@ -4884,7 +4839,7 @@ local function __FazzHub_Init_Main__()
             VD.KillerPerksDisplay = v and true or false
             if VD.KillerPerksDisplay then Start() else Stop() end
         end
-                                                                end--========================================================--
+                                                            end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 14A/19 : SPEED BOOST + CURSOR FEATURE
 --========================================================--
@@ -5017,7 +4972,7 @@ local function __FazzHub_Init_Main__()
             task.wait(1)
             if VD.CursorEnabled then W.Cursor_SetEnabled(true) end
         end)
-                                                                    end--========================================================--
+                                                                end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 14B/19 : SILENT FLASK + SPEAR AIMBOT
 --========================================================--
@@ -5525,7 +5480,7 @@ local function __FazzHub_Init_Main__()
         W.SpearAimbot_SetGravity = function(v) VD.SPEAR_Gravity = tonumber(v) or 50 end
         W.SpearAimbot_SetSpeed   = function(v) VD.SPEAR_Speed   = tonumber(v) or 100 end
         W.SpearAimbot_CycleTarget = Spear_CycleTarget
-                                                                        end--========================================================--
+                                                                    end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 14C/19 : DASH LOCK + SWIFT VAULT
 --========================================================--
@@ -5758,7 +5713,7 @@ local function __FazzHub_Init_Main__()
             end
         end
         W.SwiftVault_SetSpeed = function(v) VD.SURF_VaultSpeed = tonumber(v) or 13 end
-                                                                            end--========================================================--
+                                                                        end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 15A/19 : GRAPHICS SYSTEM
 --========================================================--
@@ -6039,7 +5994,7 @@ local function __FazzHub_Init_Main__()
             Graphics_Apply(true); Graphics_ApplyOptimization(true)
             Graphics_ApplyNoScreenEffects(); Graphics_ApplyZoom(); Graphics_ApplyFOV()
         end)
-                                                                                end--========================================================--
+                                                                            end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 15B/19 : PALLET REFLEX + FAKE PARRY V2
 --========================================================--
@@ -6371,7 +6326,7 @@ local function __FazzHub_Init_Main__()
             end
             return false
         end
-                                                                                    end--========================================================--
+                                                                                end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 15C/19 : CAMERA DBD + FLOATING BUTTON (BAR)
 --========================================================--
@@ -6557,6 +6512,7 @@ local function __FazzHub_Init_Main__()
             container.BackgroundTransparency = 1
             container.Parent = gui
 
+            -- BAR UTAMA
             local bar = Instance.new("TextButton")
             bar.Name = "Bar"
             bar.Size = UDim2.fromOffset(BAR_W, BAR_H)
@@ -6576,6 +6532,7 @@ local function __FazzHub_Init_Main__()
             stroke.Transparency = 0.4
             stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
+            -- INDICATOR
             local indicator = Instance.new("Frame")
             indicator.Name = "Indicator"
             indicator.Size = UDim2.fromOffset(3, BAR_H - 8)
@@ -6587,6 +6544,7 @@ local function __FazzHub_Init_Main__()
             indicator.Parent = bar
             Instance.new("UICorner", indicator).CornerRadius = UDim.new(1, 0)
 
+            -- SYMBOL
             local symbol = Instance.new("TextLabel")
             symbol.Name = "SymbolLbl"
             symbol.Size = UDim2.fromOffset(14, BAR_H)
@@ -6601,6 +6559,7 @@ local function __FazzHub_Init_Main__()
             symbol.ZIndex = 4
             symbol.Parent = bar
 
+            -- NAME
             local name = Instance.new("TextLabel")
             name.Name = "NameLbl"
             name.Size = UDim2.new(1, -56, 1, 0)
@@ -6615,6 +6574,7 @@ local function __FazzHub_Init_Main__()
             name.ZIndex = 4
             name.Parent = bar
 
+            -- STATUS
             local status = Instance.new("TextLabel")
             status.Name = "StatusLbl"
             status.Size = UDim2.fromOffset(24, BAR_H)
@@ -6629,6 +6589,7 @@ local function __FazzHub_Init_Main__()
             status.ZIndex = 4
             status.Parent = bar
 
+            -- LOCK BUTTON (kanan, mini)
             local lockBtn = Instance.new("TextButton")
             lockBtn.Name = "LockBtn"
             lockBtn.Size = UDim2.fromOffset(18, 18)
@@ -6656,6 +6617,7 @@ local function __FazzHub_Init_Main__()
             lockIcon.ZIndex = 7
             lockIcon.Parent = lockBtn
 
+            -- DRAG + CLICK
             local drag = false
             local dStart, sPos
             local dDist = 0
@@ -7234,6 +7196,7 @@ local function __FazzHub_Init_Main__()
     -- SILENT VEIL V2
     --====================================================--
     do
+        local Config = {}
         local Camera = Workspace.CurrentCamera
 
         local Veil2 = Veil2 or {}
@@ -7355,9 +7318,12 @@ local function __FazzHub_Init_Main__()
         end
 
         local SpearInterceptorHooked = false
-        local function setupSpearInterceptor()
+        function setupSpearInterceptor()
             if SpearInterceptorHooked then return end
-            if not getrawmetatable or not setreadonly then return end
+            if not getrawmetatable or not setreadonly then
+                warn("[SpearInterceptor]: Executor tidak support.")
+                return
+            end
 
             local Spearthrow = nil
             pcall(function()
@@ -7626,7 +7592,7 @@ local function __FazzHub_Init_Main__()
             IsVeilSilentOn = IsVeilSilentOn,
             setTracker = function(v) VeilTrackerEnabled = v end,
         }
-                                                                                            end--========================================================--
+                                                                                        end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 16C/19 : SILENT FLASHLIGHT
 --========================================================--
@@ -7803,7 +7769,7 @@ local function __FazzHub_Init_Main__()
                 end)
             end)
         end)
-                                                                                                end--========================================================--
+                                                                                            end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 17A/19 : TOF V1 (BAGIAN 1)
 --========================================================--
@@ -8013,7 +7979,7 @@ local function __FazzHub_Init_Main__()
         local fd = tp - op
         if fd.Magnitude < 0.1 then return end
         pcall(function() e:FireServer(g, fd.Unit) end)
-                                                                                                    end--========================================================--
+                                                                                                end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 17B/19 : TOF V1 (BAGIAN 2) + PLAYER UTILITY
 --========================================================--
@@ -8702,7 +8668,7 @@ local function __FazzHub_Init_Main__()
             task.wait(1)
             if JerkTool.Enabled then jerkRunning = true; W.JerkOff_Create() end
         end)
-                                                                                                        end--========================================================--
+                                                                                                    end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 18A/19 : NO FALL DAMAGE + NEXT MAP PREDICT
 --========================================================--
@@ -8907,7 +8873,7 @@ local function __FazzHub_Init_Main__()
             VD.NextMapPredict = v and true or false
             if VD.NextMapPredict then Start() else Stop() end
         end
-                                                                                                            end--========================================================--
+                                                                                                        end--========================================================--
 -- FAZZHUB v0.3.7
 -- PART 18B/19 : MANUAL/AUTO GENERATOR + GEN BYPASS
 --========================================================--
@@ -9596,39 +9562,6 @@ local function __FazzHub_Init_Main__()
         end })
         escSection:AddButton({ Title = "Teleport Now", Callback = function() W.Escape_Teleport() end })
 
-        --====================================================--
-        -- TP TO GATE SECTION
-        --====================================================--
-        local gateTPSection = MakeSection(SurvivorTab, "TP To Gate")
-        gateTPSection:AddButton({
-            Title = "TP to Gate Now",
-            SubTitle = "▶",
-            Callback = function()
-                if W.GateTP_Teleport then W.GateTP_Teleport() end
-            end
-        })
-        gateTPSection:AddInput({
-            Title = "Gate Object Name",
-            Default = "Gate",
-            Placeholder = "Gate / ExitGate / EscapeDoor",
-            Callback = function(input)
-                input = tostring(input or ""):gsub("%s+", "")
-                if input ~= "" then
-                    W.GateTP_Name = input
-                    VD_Notify("TP to Gate", "Name: " .. input, 2)
-                end
-            end
-        })
-        gateTPSection:AddInput({
-            Title = "Offset Y (Height)",
-            Default = "5",
-            Placeholder = "5 (default)",
-            Callback = function(input)
-                local n = tonumber(input)
-                if n then W.GateTP_OffsetY = n end
-            end
-        })
-
         local healSection = MakeSection(SurvivorTab, "Self Heal")
         healSection:AddToggle({ Title = "Self Heal Progress", Default = false, Callback = function(v)
             W.setInstantHealSelf(v)
@@ -9746,27 +9679,10 @@ local function __FazzHub_Init_Main__()
             W.FP_SetupPerfectLanding(v); if v then VD_Notify("Fake Perks", "Perfect Landing Enabled", 2) end end })
         fpSection:AddToggle({ Title = "Adrenaline Rush (Buff on Low HP)", Default = false, Callback = function(v)
             W.FP_SetupAdrenalineRush(v); if v then VD_Notify("Fake Perks", "Adrenaline Rush Enabled", 2) end end })
-
-        fpSection:AddToggle({ Title = "Use Per-Perk Cooldown", Content = "ON = tiap perk cooldown sendiri, OFF = global",
-            Default = true, Callback = function(v)
-                W.FP.UsePerPerk = v and true or false
-                VD_Notify("Fake Perks", v and "Per-Perk Cooldown" or "Global Cooldown", 2)
-            end })
-
-        fpSection:AddSlider({ Title = "Flowstate Cooldown", Min = 0.1, Max = 30, Default = 3, Increment = 0.1, Suffix = "s",
-            Callback = function(v) W.FP.PerPerkCooldown.Flowstate = math.clamp(tonumber(v) or 3, 0.1, 60) end })
-        fpSection:AddSlider({ Title = "QuickRecovery Cooldown", Min = 0.1, Max = 30, Default = 3, Increment = 0.1, Suffix = "s",
-            Callback = function(v) W.FP.PerPerkCooldown.QuickRecovery = math.clamp(tonumber(v) or 3, 0.1, 60) end })
-        fpSection:AddSlider({ Title = "PerfectLanding Cooldown", Min = 0.1, Max = 30, Default = 3, Increment = 0.1, Suffix = "s",
-            Callback = function(v) W.FP.PerPerkCooldown.PerfectLanding = math.clamp(tonumber(v) or 3, 0.1, 60) end })
-        fpSection:AddSlider({ Title = "AdrenalineRush Cooldown", Min = 0.1, Max = 30, Default = 5, Increment = 0.1, Suffix = "s",
-            Callback = function(v) W.FP.PerPerkCooldown.AdrenalineRush = math.clamp(tonumber(v) or 5, 0.1, 60) end })
-        fpSection:AddSlider({ Title = "Global Cooldown (fallback)", Min = 0.1, Max = 30, Default = 5, Increment = 0.1, Suffix = "s",
-            Callback = function(v) W.FP.CooldownTime = math.clamp(tonumber(v) or 5, 0.1, 60) end })
-
+        fpSection:AddSlider({ Title = "Perk Cooldown", Min = 0, Max = 30, Default = 5, Increment = 1, Suffix = "s",
+            Callback = function(v) W.FP.CooldownTime = v end })
         fpSection:AddButton({ Title = "Clear All Active Buffs", Callback = function()
             for k in pairs(W.FP.ActiveBuffs) do W.FP.ActiveBuffs[k] = nil end
-            for k in pairs(W.FP.LastBuffEndByName) do W.FP.LastBuffEndByName[k] = nil end
             local c = LocalPlayer.Character
             if c then c:SetAttribute("speedboost", 1) end
             local h = c and c:FindFirstChildOfClass("Humanoid")
@@ -9774,23 +9690,11 @@ local function __FazzHub_Init_Main__()
             ForceNotify("Fake Perks", "Buffs cleared", 2)
         end })
 
-        --====================================================--
-        -- AUTO SKILL CHECK (VERSI BARU)
-        --====================================================--
         local skillSection = MakeSection(SurvivorTab, "Auto Skill Check")
         skillSection:AddToggle({ Title = "Enable Auto Skill Check", Default = false, Callback = function(v)
-            W.SkillCheck_SetEnabled(v)
-            if v then VD_Notify("Auto Skill Check", "Enabled (" .. (W.SkillCheck.Mode or "Legit") .. ")", 2) end
-        end })
+            W.SkillCheck_SetEnabled(v); if v then VD_Notify("Auto Skill Check", "Enabled", 2) end end })
         skillSection:AddDropdown({ Title = "Mode", Options = {"Legit", "Instant"}, Default = "Legit",
-            Callback = function(v) local val = type(v) == "table" and v[1] or v; W.SkillCheck_SetMode(val) end })
-        skillSection:AddSlider({ Title = "Check Delay", Min = 0.05, Max = 1, Default = 0.2, Increment = 0.05, Suffix = "s",
-            Callback = function(v) W.SkillCheck_SetCheckDelay(v) end })
-        skillSection:AddSlider({ Title = "Fire Delay", Min = 0.01, Max = 0.5, Default = 0.05, Increment = 0.01, Suffix = "s",
-            Callback = function(v) W.SkillCheck_SetFireDelay(v) end })--========================================================--
--- FAZZHUB v0.3.7
--- PART 19B/19 : SURVIVOR TAB (LANJUTAN)
---========================================================--
+            Callback = function(v) W.SkillCheck.Mode = v end })
 
         local genSection = MakeSection(SurvivorTab, "Bypass Generator")
         genSection:AddToggle({ Title = "Enable Bypass Generator", Default = false, Callback = function(v)
@@ -9846,7 +9750,7 @@ local function __FazzHub_Init_Main__()
             AntiSlowVaultEnabled = false
             if AntiSlowVaultConn then AntiSlowVaultConn:Disconnect(); AntiSlowVaultConn = nil end
         end
-        AntiSlowVaultSection:AddToggle({ Title = "Anti Slow Vault", Content = "Remove 'SlowVault' tag — vault selalu full speed",
+        AntiSlowVaultSection:AddToggle({ Title = "Anti Slow Vault", Content = "Remove 'SlowVault' tag",
             Default = false, Keybind = true,
             Callback = function(state)
                 if state then EnableAntiSlowVault() else DisableAntiSlowVault() end
@@ -9882,7 +9786,10 @@ local function __FazzHub_Init_Main__()
                 GodModeEnabled = state
                 if state then StartGodMode(); VD_Notify("God Mode", "Enabled", 2)
                 else StopGodMode(); VD_Notify("God Mode", "Disabled", 2) end
-            end })
+            end })--========================================================--
+-- FAZZHUB v0.3.7
+-- PART 19B/19 : SURVIVOR TAB (LANJUTAN)
+--========================================================--
 
         local AutoRunSection = MakeSection(SurvivorTab, "Auto Run")
         local AutoRunPCEnabled = false
@@ -10251,11 +10158,13 @@ local function __FazzHub_Init_Main__()
         ESPBox:AddColorPicker({ Title = "SCP Color", Default = FESPC.SCP, Save = false, Callback = function(c) FESPC.SCP = c end })
         ESPBox:AddSlider({ Title = "ESP Radius", Min = 10, Max = 1000, Default = 500, Increment = 10, Callback = function(v) FESP.Distance = v end })
 
-        -- ESP Status: SIMPLE (Cuma Name + Distance + Radius)
         local ESPStatusBox = MakeSection(VisualsTab, "ESP Status")
         ESPStatusBox:AddToggle({ Title = "Enable Status ESP", Default = false, Callback = function(v) FESPS.Enabled = v end })
         ESPStatusBox:AddToggle({ Title = "Show Name", Default = true, Callback = function(v) FESPS.ShowName = v end })
         ESPStatusBox:AddToggle({ Title = "Show Distance", Default = true, Callback = function(v) FESPS.ShowDistance = v end })
+        ESPStatusBox:AddToggle({ Title = "Show Avatar", Default = true, Callback = function(v) FESPS.ShowAvatar = v end })
+        ESPStatusBox:AddToggle({ Title = "Show Action", Default = true, Callback = function(v) FESPS.ShowAction = v end })
+        ESPStatusBox:AddToggle({ Title = "Show Health Bar", Default = false, Callback = function(v) FESPS.ShowHealth = v end })
         ESPStatusBox:AddSlider({ Title = "Status Radius", Min = 20, Max = 1000, Default = 500, Increment = 10, Callback = function(v) FESPS.Radius = v end })
 
         local graphicsSection = MakeSection(VisualsTab, "Graphics")
@@ -10776,7 +10685,7 @@ local function __FazzHub_Init_Main__()
 --========================================================--
 
         local settingsSection = MakeSection(MiscTab, "Settings")
-        settingsSection:AddToggle({ Title = "Enable Notifications", Default = false, Callback = function(v)
+        settingsSection:AddToggle({ Title = "Enable Notifications", Default = true, Callback = function(v)
             W.NotifyEnabled = v
             if v then ForceNotify("Settings", "Notifications Enabled") end
         end })
@@ -11754,24 +11663,9 @@ local function __FazzHub_Init_Main__()
     end)
     RunService.RenderStepped:Connect(function() pcall(Veil_UpdateAimbot) end)
 
-    --====================================================--
-    -- PRINT LOADED (bypass notif OFF)
-    --====================================================--
     print("[FAZZHUB v0.3.7] Loaded!")
     print("  - All features loaded with Bombax Music Player")
-    pcall(function()
-        if UILib and UILib.MakeNotify then
-            UILib:MakeNotify({
-                Title = "FAZZHUB v0.3.7",
-                Description = "Info",
-                Content = "Loaded!",
-                Color = NotifyColor,
-                Time = 0.4,
-                Delay = 4,
-                Icon = ICON_ID
-            })
-        end
-    end)
+    ForceNotify("FAZZHUB v0.3.7 Loaded", "All features ready", 6)
 
 end
 
