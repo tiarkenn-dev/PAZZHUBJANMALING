@@ -1,5 +1,5 @@
 --========================================================--
--- FAZZHUB v0.3.9 - FULL SCRIPT
+-- FAZZHUB v0.4.0 - FULL SCRIPT
 -- Image: rbxassetid://72845574620852
 -- PART 1/19 : HEADER + INIT + NOTIFY + HELPER
 --========================================================--
@@ -154,7 +154,7 @@ local function __FazzHub_Init_Main__()
         end
         return pts
     end--========================================================--
--- FAZZHUB v0.3.9
+-- FAZZHUB v0.4.0
 -- PART 2/19 : VARIABLE DEFAULTS
 --========================================================--
 
@@ -240,9 +240,9 @@ local function __FazzHub_Init_Main__()
     _G.GLUTO_NEUTRAL    = Color3.fromRGB(90, 90, 90)
     _G.GLUTO_STROKE_OFF = Color3.fromRGB(25, 25, 25)
     _G.GLUTO_BG_OFF     = Color3.fromRGB(0, 0, 0)--========================================================--
--- FAZZHUB v0.3.9
+-- FAZZHUB v0.4.0
 -- PART 3/19 : BOMBAX SONG LIBRARY + MUSIC + AUTO NEXT
--- PATCH: AttachSoundGroup untuk audio boost
+-- PATCH: +6 lagu baru (32 → 38 lagu)
 --========================================================--
 
     --====================================================--
@@ -253,10 +253,10 @@ local function __FazzHub_Init_Main__()
         Volume = 2, Looped = false, CurrentTrack = nil, History = {},
         CurrentSoundId = nil, TrackLength = 0, TrackPosition = 0,
         _AutoNextConn = nil, AutoNext = true,
-        MaxVolume = 15,
     }
     local Bombax = W.Bombax
 
+    -- SONG LIBRARY (38 lagu)
     local Songs = {
         {id="101985596918228", judul="One"},
         {id="78520199502339",  judul="Two"},
@@ -290,6 +290,13 @@ local function __FazzHub_Init_Main__()
         {id="101280279977761", judul="Kini Kita Pe Kisah"},
         {id="117080961502380", judul="DJ Music Dubstep x Bangun Tidur Selfie"},
         {id="110337096446518", judul="DJ Onia"},
+        -- [PATCH v0.4.0] 6 lagu baru
+        {id="91630275902282",  judul="Uwir Uwir"},
+        {id="81803213206369",  judul="Kaka Pun Manis"},
+        {id="130363203409553", judul="Satu Malam"},
+        {id="92768059443544",  judul="Habibi"},
+        {id="111485011584825", judul="Teh Hijau"},
+        {id="93423022448185",  judul="Ip Kupi"},
     }
 
     local MUSIC_LIBRARY = {}
@@ -307,7 +314,6 @@ local function __FazzHub_Init_Main__()
         snd.Looped = Bombax.Looped
         snd.Parent = SoundService
         Bombax.CurrentSound = snd
-        if W.Bombax_AttachSoundGroup then pcall(function() W.Bombax_AttachSoundGroup(snd) end) end
         return snd
     end
 
@@ -319,8 +325,6 @@ local function __FazzHub_Init_Main__()
         end
         snd.Volume = Bombax.Volume
         snd.Looped = Bombax.Looped
-        -- [PATCH] Attach sound group untuk audio boost
-        if W.Bombax_AttachSoundGroup then pcall(function() W.Bombax_AttachSoundGroup(snd) end) end
         snd:Play()
         Bombax.IsPlaying = true
         Bombax.IsPaused = false
@@ -329,8 +333,8 @@ local function __FazzHub_Init_Main__()
         Bombax.TrackLength = snd.TimeLength or 0
         Bombax.TrackPosition = 0
         table.insert(Bombax.History, { name = trackName, id = soundId, time = tick() })
+        -- [PATCH] Notif ganti lagu DIHAPUS biar gak spam
         if W.Bombax_MiniUpdate then pcall(W.Bombax_MiniUpdate) end
-        if W.Bombax_UpdateOnOff then pcall(W.Bombax_UpdateOnOff) end
     end
 
     local function Bombax_SetupAutoNext()
@@ -369,7 +373,6 @@ local function __FazzHub_Init_Main__()
         Bombax.IsPaused = false
         ForceNotify("Bombax ⏹", "Music stopped", 2)
         if W.Bombax_MiniUpdate then pcall(W.Bombax_MiniUpdate) end
-        if W.Bombax_UpdateOnOff then pcall(W.Bombax_UpdateOnOff) end
     end
 
     function W.Bombax_Pause()
@@ -378,7 +381,6 @@ local function __FazzHub_Init_Main__()
             Bombax.IsPaused = true
             ForceNotify("Bombax ⏸", "Music paused", 2)
             if W.Bombax_MiniUpdate then pcall(W.Bombax_MiniUpdate) end
-            if W.Bombax_UpdateOnOff then pcall(W.Bombax_UpdateOnOff) end
         end
     end
 
@@ -388,12 +390,11 @@ local function __FazzHub_Init_Main__()
             Bombax.IsPaused = false
             ForceNotify("Bombax ▶", "Music resumed", 2)
             if W.Bombax_MiniUpdate then pcall(W.Bombax_MiniUpdate) end
-            if W.Bombax_UpdateOnOff then pcall(W.Bombax_UpdateOnOff) end
         end
     end
 
     function W.Bombax_SetVolume(v)
-        Bombax.Volume = math.clamp(tonumber(v) or 2, 0, Bombax.MaxVolume or 15)
+        Bombax.Volume = tonumber(v) or 2
         if Bombax.CurrentSound then Bombax.CurrentSound.Volume = Bombax.Volume end
     end
 
@@ -422,88 +423,14 @@ local function __FazzHub_Init_Main__()
         end
         end--========================================================--
 -- FAZZHUB v0.3.9
--- PART 4A/19 : BOMBAX MINI GUI (UPGRADE) — BAGIAN 1
--- Efek: Shine sweep, border pulse, ripple, ON/OFF button
--- Audio: Boost + Bass/Treble, max 15x
+-- PART 4/19 : BOMBAX MINI GUI + PROGRESS BAR
+-- PATCH: Background pakai image ID FAZZHUB + transparan
 --========================================================--
 
     --====================================================--
-    -- BOMBAX AUDIO BOOST SETUP
+    -- BOMBAX MINI GUI (Bar + Progress)
     --====================================================--
     do
-        local Bombax = W.Bombax
-
-        if Bombax.SoundGroup then
-            pcall(function() Bombax.SoundGroup:Destroy() end)
-        end
-        if Bombax.BassBoost then
-            pcall(function() Bombax.BassBoost:Destroy() end)
-        end
-        if Bombax.TrebleBoost then
-            pcall(function() Bombax.TrebleBoost:Destroy() end)
-        end
-
-        local sg = Instance.new("SoundGroup")
-        sg.Name = "FazzHub_BombaxGroup"
-        sg.Volume = 1
-        sg.Parent = SoundService
-        Bombax.SoundGroup = sg
-
-        local eqBass = Instance.new("EqualizerSoundEffect")
-        eqBass.Name = "FazzHub_BombaxBass"
-        eqBass.LowGain = 6
-        eqBass.MidGain = 1
-        eqBass.HighGain = 2
-        eqBass.Priority = 10
-        eqBass.Enabled = true
-        eqBass.Parent = sg
-        Bombax.BassBoost = eqBass
-
-        local eqTreble = Instance.new("EqualizerSoundEffect")
-        eqTreble.Name = "FazzHub_BombaxTreble"
-        eqTreble.LowGain = 1
-        eqTreble.MidGain = 2
-        eqTreble.HighGain = 4
-        eqTreble.Priority = 5
-        eqTreble.Enabled = true
-        eqTreble.Parent = sg
-        Bombax.TrebleBoost = eqTreble
-
-        local compressor = Instance.new("CompressorSoundEffect")
-        compressor.Name = "FazzHub_BombaxComp"
-        compressor.Threshold = -20
-        compressor.Ratio = 4
-        compressor.Attack = 0.01
-        compressor.Release = 0.15
-        compressor.GainMakeup = 6
-        compressor.SideChain = nil
-        compressor.Priority = 0
-        compressor.Enabled = true
-        compressor.Parent = sg
-        Bombax.Compressor = compressor
-
-        W.Bombax_AttachSoundGroup = function(sound)
-            if sound then
-                pcall(function() sound.SoundGroup = sg end)
-            end
-        end
-
-        W.Bombax_SetBassBoost = function(v)
-            if Bombax.BassBoost then Bombax.BassBoost.Enabled = v and true or false end
-        end
-        W.Bombax_SetTrebleBoost = function(v)
-            if Bombax.TrebleBoost then Bombax.TrebleBoost.Enabled = v and true or false end
-        end
-        W.Bombax_SetVolumeMax = function(v)
-            Bombax.MaxVolume = math.clamp(tonumber(v) or 15, 1, 30)
-        end
-    end
-
-    --====================================================--
-    -- BOMBAX MINI GUI (UPGRADE)
-    --====================================================--
-    do
-        local Bombax = W.Bombax
         local MiniState = {
             Gui = nil,
             SavedPos = UDim2.new(0, 20, 0.5, -100),
@@ -511,60 +438,9 @@ local function __FazzHub_Init_Main__()
             Frame = nil, Body = nil,
             TrackLbl = nil, VolLbl = nil, VolFill = nil,
             ProgressFill = nil, ProgressLbl = nil,
-            OnOffBtn = nil, OnOffIcon = nil, OnOffLabel = nil,
-            Shine = nil,
         }
 
         local BG_IMAGE_ID = "rbxassetid://72845574620852"
-        local ACCENT = Color3.fromRGB(255, 255, 255)
-        local ACCENT_GLOW = Color3.fromRGB(180, 200, 255)
-
-        if not Bombax.MaxVolume then
-            Bombax.MaxVolume = 15
-        end
-
-        local function PlayShineSweep(target)
-            if not target then return end
-            local shine = Instance.new("Frame")
-            shine.Name = "FazzHubShineSweep"
-            shine.Size = UDim2.new(0.4, 0, 1.4, 0)
-            shine.Position = UDim2.new(-0.6, 0, -0.2, 0)
-            shine.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-            shine.BackgroundTransparency = 0.6
-            shine.BorderSizePixel = 0
-            shine.Rotation = 20
-            shine.ZIndex = 30
-            shine.Parent = target
-            local grad = Instance.new("UIGradient", shine)
-            grad.Transparency = NumberSequence.new({
-                NumberSequenceKeypoint.new(0, 1),
-                NumberSequenceKeypoint.new(0.4, 0.3),
-                NumberSequenceKeypoint.new(0.6, 0.3),
-                NumberSequenceKeypoint.new(1, 1),
-            })
-            TweenService:Create(shine, TweenInfo.new(0.85, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
-                Position = UDim2.new(1.2, 0, -0.2, 0),
-            }):Play()
-            task.delay(0.9, function() pcall(function() shine:Destroy() end) end)
-        end
-
-        local function CreateRipple(parent, color)
-            local ripple = Instance.new("Frame")
-            ripple.AnchorPoint = Vector2.new(0.5, 0.5)
-            ripple.Position = UDim2.fromScale(0.5, 0.5)
-            ripple.Size = UDim2.fromOffset(0, 0)
-            ripple.BackgroundColor3 = color or Color3.fromRGB(255, 255, 255)
-            ripple.BackgroundTransparency = 0.4
-            ripple.BorderSizePixel = 0
-            ripple.ZIndex = 20
-            ripple.Parent = parent
-            Instance.new("UICorner", ripple).CornerRadius = UDim.new(1, 0)
-            TweenService:Create(ripple, TweenInfo.new(0.6, Enum.EasingStyle.Quint), {
-                Size = UDim2.fromOffset(200, 200),
-                BackgroundTransparency = 1,
-            }):Play()
-            task.delay(0.65, function() pcall(function() ripple:Destroy() end) end)
-        end
 
         local function BuildMini()
             if MiniState.Gui then pcall(function() MiniState.Gui:Destroy() end) end
@@ -586,7 +462,7 @@ local function __FazzHub_Init_Main__()
 
             local frame = Instance.new("Frame")
             frame.Name = "MiniFrame"
-            frame.Size = UDim2.fromOffset(230, 200)
+            frame.Size = UDim2.fromOffset(230, 168)
             frame.Position = MiniState.SavedPos
             frame.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
             frame.BackgroundTransparency = 1
@@ -594,8 +470,7 @@ local function __FazzHub_Init_Main__()
             frame.Active = true
             frame.ClipsDescendants = true
             frame.Parent = gui
-            Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
-            MiniState.Frame = frame
+            Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
 
             local bgImage = Instance.new("ImageLabel")
             bgImage.Name = "BgImage"
@@ -603,147 +478,73 @@ local function __FazzHub_Init_Main__()
             bgImage.Position = UDim2.fromScale(0, 0)
             bgImage.BackgroundTransparency = 1
             bgImage.Image = BG_IMAGE_ID
-            bgImage.ImageTransparency = 0.6
+            bgImage.ImageTransparency = 0.35
             bgImage.ScaleType = Enum.ScaleType.Crop
             bgImage.ZIndex = 0
             bgImage.Parent = frame
-            Instance.new("UICorner", bgImage).CornerRadius = UDim.new(0, 12)
+            Instance.new("UICorner", bgImage).CornerRadius = UDim.new(0, 10)
 
             local overlay = Instance.new("Frame")
             overlay.Name = "BgOverlay"
             overlay.Size = UDim2.fromScale(1, 1)
             overlay.Position = UDim2.fromScale(0, 0)
             overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-            overlay.BackgroundTransparency = 0.5
+            overlay.BackgroundTransparency = 0.55
             overlay.BorderSizePixel = 0
             overlay.ZIndex = 1
             overlay.Parent = frame
-            Instance.new("UICorner", overlay).CornerRadius = UDim.new(0, 12)
+            Instance.new("UICorner", overlay).CornerRadius = UDim.new(0, 10)
 
             local stroke = Instance.new("UIStroke", frame)
-            stroke.Name = "MainStroke"
-            stroke.Color = ACCENT
-            stroke.Thickness = 1.4
-            stroke.Transparency = 0.25
-            stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+            stroke.Color = Color3.fromRGB(255, 255, 255)
+            stroke.Thickness = 1.2
+            stroke.Transparency = 0.2
             stroke.ZIndex = 20
+            MiniState.Frame = frame
 
             local header = Instance.new("Frame", frame)
             header.Name = "Header"
-            header.Size = UDim2.new(1, 0, 0, 32)
+            header.Size = UDim2.new(1, 0, 0, 26)
             header.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
-            header.BackgroundTransparency = 0.3
+            header.BackgroundTransparency = 0.35
             header.BorderSizePixel = 0
             header.ZIndex = 3
-            Instance.new("UICorner", header).CornerRadius = UDim.new(0, 12)
+            Instance.new("UICorner", header).CornerRadius = UDim.new(0, 10)
 
             local title = Instance.new("TextLabel", header)
-            title.Size = UDim2.new(1, -110, 1, 0)
-            title.Position = UDim2.new(0, 12, 0, 0)
+            title.Size = UDim2.new(1, -60, 1, 0)
+            title.Position = UDim2.new(0, 10, 0, 0)
             title.BackgroundTransparency = 1
             title.Font = Enum.Font.GothamBold
             title.Text = "🎵 BOMBAX"
             title.TextColor3 = Color3.fromRGB(255, 255, 255)
             title.TextSize = 12
             title.TextXAlignment = Enum.TextXAlignment.Left
-            title.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-            title.TextStrokeTransparency = 0.4
-            title.ZIndex = 5
-
-            local onOffBtn = Instance.new("TextButton", header)
-            onOffBtn.Name = "OnOffBtn"
-            onOffBtn.Size = UDim2.fromOffset(58, 22)
-            onOffBtn.Position = UDim2.new(1, -108, 0.5, -11)
-            onOffBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
-            onOffBtn.BorderSizePixel = 0
-            onOffBtn.Text = ""
-            onOffBtn.AutoButtonColor = false
-            onOffBtn.ZIndex = 8
-            onOffBtn.Parent = header
-            Instance.new("UICorner", onOffBtn).CornerRadius = UDim.new(1, 0)
-            local onOffStroke = Instance.new("UIStroke", onOffBtn)
-            onOffStroke.Color = Color3.fromRGB(100, 100, 115)
-            onOffStroke.Thickness = 1
-            onOffStroke.Transparency = 0.3
-            MiniState.OnOffBtn = onOffBtn
-
-            local onOffIcon = Instance.new("TextLabel", onOffBtn)
-            onOffIcon.Size = UDim2.fromOffset(16, 16)
-            onOffIcon.Position = UDim2.new(0, 6, 0.5, -8)
-            onOffIcon.BackgroundTransparency = 1
-            onOffIcon.Font = Enum.Font.GothamBold
-            onOffIcon.Text = "⭕"
-            onOffIcon.TextColor3 = Color3.fromRGB(200, 200, 210)
-            onOffIcon.TextSize = 11
-            onOffIcon.ZIndex = 9
-            MiniState.OnOffIcon = onOffIcon
-
-            local onOffLabel = Instance.new("TextLabel", onOffBtn)
-            onOffLabel.Size = UDim2.new(1, -22, 1, 0)
-            onOffLabel.Position = UDim2.new(0, 20, 0, 0)
-            onOffLabel.BackgroundTransparency = 1
-            onOffLabel.Font = Enum.Font.GothamBold
-            onOffLabel.Text = "OFF"
-            onOffLabel.TextColor3 = Color3.fromRGB(200, 200, 210)
-            onOffLabel.TextSize = 9
-            onOffLabel.TextXAlignment = Enum.TextXAlignment.Left
-            onOffLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-            onOffLabel.TextStrokeTransparency = 0.5
-            onOffLabel.ZIndex = 9
-            MiniState.OnOffLabel = onOffLabel
+            title.ZIndex = 4
 
             local minBtn = Instance.new("TextButton", header)
             minBtn.Name = "MinBtn"
             minBtn.Size = UDim2.fromOffset(22, 22)
-            minBtn.Position = UDim2.new(1, -46, 0.5, -11)
+            minBtn.Position = UDim2.new(1, -26, 0.5, -11)
             minBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
             minBtn.BorderSizePixel = 0
             minBtn.Text = "−"
             minBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
             minBtn.Font = Enum.Font.GothamBold
             minBtn.TextSize = 14
-            minBtn.AutoButtonColor = false
-            minBtn.ZIndex = 8
+            minBtn.ZIndex = 5
             minBtn.Parent = header
             Instance.new("UICorner", minBtn).CornerRadius = UDim.new(0, 6)
 
-            local closeBtn = Instance.new("TextButton", header)
-            closeBtn.Name = "CloseBtn"
-            closeBtn.Size = UDim2.fromOffset(22, 22)
-            closeBtn.Position = UDim2.new(1, -22, 0.5, -11)
-            closeBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-            closeBtn.BorderSizePixel = 0
-            closeBtn.Text = "×"
-            closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-            closeBtn.Font = Enum.Font.GothamBold
-            closeBtn.TextSize = 14
-            closeBtn.AutoButtonColor = false
-            closeBtn.ZIndex = 8
-            closeBtn.Parent = header
-            Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 6)
-            closeBtn.MouseEnter:Connect(function()
-                TweenService:Create(closeBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(200, 50, 60) }):Play()
-            end)
-            closeBtn.MouseLeave:Connect(function()
-                TweenService:Create(closeBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(40, 40, 50) }):Play()
-            end)
-
-            -- [LANJUT PART 4B — Body GUI + Progress + Volume + On/Off Logic]--========================================================--
--- FAZZHUB v0.3.9
--- PART 4B/19 : BOMBAX MINI GUI (UPGRADE) — BAGIAN 2
---========================================================--
-
-            -- Body
             local body = Instance.new("Frame", frame)
             body.Name = "Body"
-            body.Size = UDim2.new(1, -16, 1, -40)
-            body.Position = UDim2.new(0, 8, 0, 34)
+            body.Size = UDim2.new(1, -16, 1, -36)
+            body.Position = UDim2.new(0, 8, 0, 30)
             body.BackgroundTransparency = 1
             body.ZIndex = 3
             body.Parent = frame
             MiniState.Body = body
 
-            -- Track Label
             local trackLbl = Instance.new("TextLabel", body)
             trackLbl.Name = "TrackLbl"
             trackLbl.Size = UDim2.new(1, 0, 0, 18)
@@ -754,12 +555,9 @@ local function __FazzHub_Init_Main__()
             trackLbl.TextSize = 10
             trackLbl.TextXAlignment = Enum.TextXAlignment.Left
             trackLbl.TextTruncate = Enum.TextTruncate.AtEnd
-            trackLbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-            trackLbl.TextStrokeTransparency = 0.5
             trackLbl.ZIndex = 4
             MiniState.TrackLbl = trackLbl
 
-            -- Progress Bar
             local progressBg = Instance.new("Frame", body)
             progressBg.Name = "ProgressBg"
             progressBg.Size = UDim2.new(1, 0, 0, 8)
@@ -789,22 +587,19 @@ local function __FazzHub_Init_Main__()
             progressLbl.TextColor3 = Color3.fromRGB(180, 180, 200)
             progressLbl.TextSize = 9
             progressLbl.TextXAlignment = Enum.TextXAlignment.Right
-            progressLbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-            progressLbl.TextStrokeTransparency = 0.6
             progressLbl.ZIndex = 4
             MiniState.ProgressLbl = progressLbl
 
-            -- Button Row
             local btnRow = Instance.new("Frame", body)
-            btnRow.Size = UDim2.new(1, 0, 0, 32)
+            btnRow.Size = UDim2.new(1, 0, 0, 30)
             btnRow.Position = UDim2.new(0, 0, 0, 50)
             btnRow.BackgroundTransparency = 1
             btnRow.ZIndex = 4
 
-            local function makeBtn(name, text, xPos, callback, size)
+            local function makeBtn(name, text, xPos, callback)
                 local b = Instance.new("TextButton", btnRow)
                 b.Name = name
-                b.Size = UDim2.fromOffset(size or 56, 26)
+                b.Size = UDim2.fromOffset(56, 26)
                 b.Position = UDim2.fromOffset(xPos, 0)
                 b.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
                 b.BackgroundTransparency = 0.2
@@ -813,29 +608,13 @@ local function __FazzHub_Init_Main__()
                 b.TextColor3 = Color3.fromRGB(255, 255, 255)
                 b.Font = Enum.Font.GothamBold
                 b.TextSize = 11
-                b.AutoButtonColor = false
                 b.ZIndex = 5
                 Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
                 local s = Instance.new("UIStroke", b)
                 s.Color = Color3.fromRGB(255, 255, 255)
                 s.Thickness = 1
                 s.Transparency = 0.5
-                b.MouseEnter:Connect(function()
-                    TweenService:Create(b, TweenInfo.new(0.15), {
-                        BackgroundColor3 = Color3.fromRGB(60, 60, 75),
-                        BackgroundTransparency = 0,
-                    }):Play()
-                end)
-                b.MouseLeave:Connect(function()
-                    TweenService:Create(b, TweenInfo.new(0.15), {
-                        BackgroundColor3 = Color3.fromRGB(30, 30, 40),
-                        BackgroundTransparency = 0.2,
-                    }):Play()
-                end)
-                b.MouseButton1Click:Connect(function()
-                    CreateRipple(b, Color3.fromRGB(200, 220, 255))
-                    callback()
-                end)
+                b.MouseButton1Click:Connect(callback)
                 return b
             end
 
@@ -853,8 +632,8 @@ local function __FazzHub_Init_Main__()
 
             local nextBtn = Instance.new("TextButton", btnRow)
             nextBtn.Name = "NextBtn"
-            nextBtn.Size = UDim2.fromOffset(28, 26)
-            nextBtn.Position = UDim2.new(1, -28, 0, 0)
+            nextBtn.Size = UDim2.fromOffset(26, 26)
+            nextBtn.Position = UDim2.new(1, -26, 0, 0)
             nextBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
             nextBtn.BackgroundTransparency = 0.2
             nextBtn.BorderSizePixel = 0
@@ -862,45 +641,33 @@ local function __FazzHub_Init_Main__()
             nextBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
             nextBtn.Font = Enum.Font.GothamBold
             nextBtn.TextSize = 12
-            nextBtn.AutoButtonColor = false
             nextBtn.ZIndex = 5
             Instance.new("UICorner", nextBtn).CornerRadius = UDim.new(0, 6)
             local nbStroke = Instance.new("UIStroke", nextBtn)
             nbStroke.Color = Color3.fromRGB(255, 255, 255)
             nbStroke.Thickness = 1
             nbStroke.Transparency = 0.5
-            nextBtn.MouseEnter:Connect(function()
-                TweenService:Create(nextBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(60, 60, 75) }):Play()
-            end)
-            nextBtn.MouseLeave:Connect(function()
-                TweenService:Create(nextBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(30, 30, 40) }):Play()
-            end)
             nextBtn.MouseButton1Click:Connect(function()
-                CreateRipple(nextBtn, Color3.fromRGB(200, 220, 255))
                 W.Bombax_Next()
             end)
 
-            -- Volume Label
             local volLbl = Instance.new("TextLabel", body)
             volLbl.Name = "VolLbl"
             volLbl.Size = UDim2.new(1, 0, 0, 14)
-            volLbl.Position = UDim2.new(0, 0, 0, 88)
+            volLbl.Position = UDim2.new(0, 0, 0, 84)
             volLbl.BackgroundTransparency = 1
             volLbl.Font = Enum.Font.GothamBold
             volLbl.Text = "🔊 Volume: 2.0x"
             volLbl.TextColor3 = Color3.fromRGB(180, 180, 200)
             volLbl.TextSize = 9
             volLbl.TextXAlignment = Enum.TextXAlignment.Left
-            volLbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-            volLbl.TextStrokeTransparency = 0.6
             volLbl.ZIndex = 4
             MiniState.VolLbl = volLbl
 
-            -- Volume Bar
             local volBar = Instance.new("Frame", body)
             volBar.Name = "VolBar"
-            volBar.Size = UDim2.new(1, 0, 0, 8)
-            volBar.Position = UDim2.new(0, 0, 0, 105)
+            volBar.Size = UDim2.new(1, 0, 0, 6)
+            volBar.Position = UDim2.new(0, 0, 0, 100)
             volBar.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
             volBar.BackgroundTransparency = 0.2
             volBar.BorderSizePixel = 0
@@ -909,116 +676,13 @@ local function __FazzHub_Init_Main__()
 
             local volFill = Instance.new("Frame", volBar)
             volFill.Name = "VolFill"
-            volFill.Size = UDim2.new(0.13, 0, 1, 0)
-            volFill.BackgroundColor3 = Color3.fromRGB(180, 220, 255)
+            volFill.Size = UDim2.new(0.2, 0, 1, 0)
+            volFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             volFill.BorderSizePixel = 0
             volFill.ZIndex = 5
             Instance.new("UICorner", volFill).CornerRadius = UDim.new(1, 0)
             MiniState.VolFill = volFill
 
-            local volKnob = Instance.new("Frame", volBar)
-            volKnob.Name = "VolKnob"
-            volKnob.AnchorPoint = Vector2.new(0.5, 0.5)
-            volKnob.Size = UDim2.fromOffset(12, 12)
-            volKnob.Position = UDim2.new(0.13, 0, 0.5, 0)
-            volKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-            volKnob.BorderSizePixel = 0
-            volKnob.ZIndex = 6
-            volKnob.Parent = volBar
-            Instance.new("UICorner", volKnob).CornerRadius = UDim.new(1, 0)
-            local vkStroke = Instance.new("UIStroke", volKnob)
-            vkStroke.Color = Color3.fromRGB(150, 180, 220)
-            vkStroke.Thickness = 1.5
-
-            local volHitbox = Instance.new("TextButton", volBar)
-            volHitbox.Size = UDim2.new(1, 0, 3, 0)
-            volHitbox.Position = UDim2.new(0, 0, -1, 0)
-            volHitbox.BackgroundTransparency = 1
-            volHitbox.Text = ""
-            volHitbox.ZIndex = 10
-            volHitbox.Parent = volBar
-
-            local volDragging = false
-            local maxVol = Bombax.MaxVolume or 15
-            local function updateVolumeFromX(x)
-                local absX = volBar.AbsolutePosition.X
-                local absW = volBar.AbsoluteSize.X
-                local ratio = math.clamp((x - absX) / absW, 0, 1)
-                local newVol = ratio * maxVol
-                Bombax.Volume = newVol
-                if Bombax.CurrentSound then Bombax.CurrentSound.Volume = newVol end
-                volFill.Size = UDim2.new(ratio, 0, 1, 0)
-                volKnob.Position = UDim2.new(ratio, 0, 0.5, 0)
-                if MiniState.VolLbl then
-                    MiniState.VolLbl.Text = string.format("🔊 Volume: %.1fx", newVol)
-                end
-            end
-            volHitbox.InputBegan:Connect(function(inp)
-                if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
-                    volDragging = true
-                    updateVolumeFromX(inp.Position.X)
-                end
-            end)
-            UserInputService.InputChanged:Connect(function(inp)
-                if not volDragging then return end
-                if inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch then
-                    updateVolumeFromX(inp.Position.X)
-                end
-            end)
-            UserInputService.InputEnded:Connect(function(inp)
-                if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
-                    volDragging = false
-                end
-            end)
-
-            -- ON/OFF Logic
-            local function UpdateOnOffVisual()
-                local isPlaying = Bombax.IsPlaying and not Bombax.IsPaused
-                if isPlaying then
-                    onOffIcon.Text = "⚡"
-                    onOffIcon.TextColor3 = Color3.fromRGB(120, 255, 160)
-                    onOffLabel.Text = "ON"
-                    onOffLabel.TextColor3 = Color3.fromRGB(120, 255, 160)
-                    onOffStroke.Color = Color3.fromRGB(80, 200, 120)
-                    onOffStroke.Transparency = 0
-                    TweenService:Create(onOffBtn, TweenInfo.new(0.25), {
-                        BackgroundColor3 = Color3.fromRGB(30, 60, 40),
-                    }):Play()
-                else
-                    onOffIcon.Text = "⭕"
-                    onOffIcon.TextColor3 = Color3.fromRGB(200, 200, 210)
-                    onOffLabel.Text = "OFF"
-                    onOffLabel.TextColor3 = Color3.fromRGB(200, 200, 210)
-                    onOffStroke.Color = Color3.fromRGB(100, 100, 115)
-                    onOffStroke.Transparency = 0.3
-                    TweenService:Create(onOffBtn, TweenInfo.new(0.25), {
-                        BackgroundColor3 = Color3.fromRGB(40, 40, 48),
-                    }):Play()
-                end
-            end
-            W.Bombax_UpdateOnOff = UpdateOnOffVisual
-
-            onOffBtn.MouseButton1Click:Connect(function()
-                CreateRipple(onOffBtn, Color3.fromRGB(200, 255, 220))
-                local isPlaying = Bombax.IsPlaying and not Bombax.IsPaused
-                if isPlaying then
-                    W.Bombax_Stop()
-                else
-                    if Bombax.CurrentTrack and MUSIC_LIBRARY[Bombax.CurrentTrack] then
-                        W.Bombax_Play(MUSIC_LIBRARY[Bombax.CurrentTrack], Bombax.CurrentTrack)
-                    elseif Bombax.CurrentSound and Bombax.CurrentSound.SoundId ~= "" then
-                        W.Bombax_Play(Bombax.CurrentSound.SoundId, Bombax.CurrentTrack or "Unknown")
-                    else
-                        local defaultName = "One"
-                        if MUSIC_LIBRARY[defaultName] then
-                            W.Bombax_Play(MUSIC_LIBRARY[defaultName], defaultName)
-                        end
-                    end
-                end
-                UpdateOnOffVisual()
-            end)
-
-            -- Drag
             local dragging, dragStart, startPos = false, nil, nil
             header.InputBegan:Connect(function(inp)
                 if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
@@ -1039,56 +703,31 @@ local function __FazzHub_Init_Main__()
                 end
             end)
 
-            -- Expand/Collapse with Shine
             local expanded = true
             minBtn.MouseButton1Click:Connect(function()
                 expanded = not expanded
-                CreateRipple(minBtn, Color3.fromRGB(255, 255, 255))
                 if expanded then
-                    frame.Size = UDim2.fromOffset(230, 40)
-                    body.Visible = false
-                    minBtn.Text = "+"
-                    TweenService:Create(frame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                        Size = UDim2.fromOffset(230, 200),
-                    }):Play()
-                    task.wait(0.15)
-                    body.Visible = true
-                    PlayShineSweep(frame)
-                else
+                    TweenService:Create(frame, TweenInfo.new(0.25), { Size = UDim2.fromOffset(230, 168) }):Play()
                     minBtn.Text = "−"
+                    body.Visible = true
+                else
+                    TweenService:Create(frame, TweenInfo.new(0.25), { Size = UDim2.fromOffset(230, 26) }):Play()
+                    minBtn.Text = "+"
                     body.Visible = false
-                    TweenService:Create(frame, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.InOut), {
-                        Size = UDim2.fromOffset(230, 40),
-                    }):Play()
                 end
             end)
 
-            -- Close Button
-            closeBtn.MouseButton1Click:Connect(function()
-                CreateRipple(closeBtn, Color3.fromRGB(255, 120, 120))
-                TweenService:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
-                    Size = UDim2.fromOffset(0, 0),
-                    Position = UDim2.new(0.5, 0, 0.5, 0),
-                }):Play()
-                task.wait(0.35)
-                if MiniState.Gui then pcall(function() MiniState.Gui:Destroy() end); MiniState.Gui = nil end
-            end)
-
-            -- Update function
             W.Bombax_MiniUpdate = function()
                 if not MiniState.Gui then return end
                 local trackTxt = Bombax.CurrentTrack or "No track"
                 if MiniState.TrackLbl then MiniState.TrackLbl.Text = "🎵 " .. trackTxt end
                 if MiniState.VolLbl then MiniState.VolLbl.Text = string.format("🔊 Volume: %.1fx", Bombax.Volume) end
                 if MiniState.VolFill then
-                    local maxV = Bombax.MaxVolume or 15
-                    local ratio = math.clamp(Bombax.Volume / maxV, 0, 1)
+                    local ratio = math.clamp(Bombax.Volume / 10, 0, 1)
                     MiniState.VolFill.Size = UDim2.new(ratio, 0, 1, 0)
                 end
-                if UpdateOnOffVisual then UpdateOnOffVisual() end
             end
 
-            -- Progress loop
             task.spawn(function()
                 while MiniState.Gui and MiniState.Gui.Parent do
                     if Bombax.CurrentSound then
@@ -1111,26 +750,6 @@ local function __FazzHub_Init_Main__()
                     end
                     task.wait(0.2)
                 end
-            end)
-
-            -- Border pulse loop
-            task.spawn(function()
-                local t = 0
-                while MiniState.Gui and MiniState.Gui.Parent do
-                    t = t + 0.05
-                    local pulse = (math.sin(t * 2) + 1) * 0.5
-                    if stroke and stroke.Parent then
-                        stroke.Transparency = 0.5 - pulse * 0.25
-                        stroke.Color = ACCENT:Lerp(ACCENT_GLOW, pulse)
-                    end
-                    task.wait(0.05)
-                end
-            end)
-
-            -- Show shine saat buka
-            task.spawn(function()
-                task.wait(0.15)
-                PlayShineSweep(frame)
             end)
 
             W.Bombax_MiniUpdate()
@@ -1156,7 +775,7 @@ local function __FazzHub_Init_Main__()
             BuildMini()
         end)
             end--========================================================--
--- FAZZHUB v0.3.9
+-- FAZZHUB v0.4.0
 -- PART 5/19 : AUTO CROUCH + AUTO ATTACK + AUTO FLEE
 --========================================================--
 
@@ -1348,7 +967,7 @@ local function __FazzHub_Init_Main__()
             pcall(W.SURV_AutoFlee)
         end
     end)--========================================================--
--- FAZZHUB v0.3.9
+-- FAZZHUB v0.4.0
 -- PART 6A/19 : AUTO PARRY V1 (BAGIAN 1)
 --========================================================--
 
@@ -1619,7 +1238,7 @@ local function __FazzHub_Init_Main__()
     LocalPlayer.ChildAdded:Connect(function(c)
         if c:IsA("PlayerGui") then ParryAttachPlayerGui(c) end
     end)--========================================================--
--- FAZZHUB v0.3.9
+-- FAZZHUB v0.4.0
 -- PART 6B/19 : AUTO PARRY V1 (BAGIAN 2)
 --========================================================--
 
@@ -1886,7 +1505,7 @@ local function __FazzHub_Init_Main__()
 
     W.ParryState = ParryState
     W.ParryCooldown = ParryCooldown--========================================================--
--- FAZZHUB v0.3.9
+-- FAZZHUB v0.4.0
 -- PART 7/19 : AUTO PARRY V2
 --========================================================--
 
@@ -2168,7 +1787,7 @@ local function __FazzHub_Init_Main__()
             end
         end)
                 end--========================================================--
--- FAZZHUB v0.3.9
+-- FAZZHUB v0.4.0
 -- PART 8A/19 : SELF HEAL
 --========================================================--
 
@@ -2331,7 +1950,7 @@ local function __FazzHub_Init_Main__()
         if W.InstantHealSelf then W.setInstantHealSelf(true) end
         if W.AutoHealAll then W.setAutoHealAll(true) end
     end)--========================================================--
--- FAZZHUB v0.3.9
+-- FAZZHUB v0.4.0
 -- PART 8B/19 : FAKE PERKS
 --========================================================--
 
@@ -2687,7 +2306,7 @@ local function __FazzHub_Init_Main__()
             FP.ActiveBuffs["AdrenalineRush"] = nil
         end
                     end--========================================================--
--- FAZZHUB v0.3.9
+-- FAZZHUB v0.4.0
 -- PART 9A/19 : STUN INDICATOR
 -- PATCH: Icon FAZZHUB + Bar Durasi Stun
 --========================================================--
@@ -2837,6 +2456,7 @@ local function __FazzHub_Init_Main__()
         mainStroke.Transparency = 0.15
         mainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
+        -- ICON (IMAGE FAZZHUB)
         local iconHolder = Instance.new("Frame")
         iconHolder.Name = "IconHolder"
         iconHolder.Size = UDim2.fromOffset(24, 24)
@@ -2897,6 +2517,7 @@ local function __FazzHub_Init_Main__()
         sub.ZIndex = 3
         sub.Parent = main
 
+        -- BAR DURASI STUN
         local durBarBg = Instance.new("Frame")
         durBarBg.Name = "DurBarBg"
         durBarBg.Size = UDim2.new(1, -42, 0, 3)
@@ -2958,6 +2579,7 @@ local function __FazzHub_Init_Main__()
             end
         end)
 
+        -- TRACK DURASI STUN
         local durStart = tick()
         local DUR_ESTIMATE = 3.0
         task.spawn(function()
@@ -3029,7 +2651,7 @@ local function __FazzHub_Init_Main__()
             SInd.Cache = {}
         end
                         end--========================================================--
--- FAZZHUB v0.3.9
+-- FAZZHUB v0.4.0
 -- PART 9B/19 : TROLL TP + ESCAPE + MASKED
 --========================================================--
 
@@ -3140,7 +2762,7 @@ local function __FazzHub_Init_Main__()
             VD_Notify("Select Masked", "Deactivated", 2)
         else ForceNotify("Select Masked", "Deactivatepower remote not found", 2) end
                             end--========================================================--
--- FAZZHUB v0.3.9
+-- FAZZHUB v0.4.0
 -- PART 10A/19 : FULL ESP (BAGIAN 1)
 --========================================================--
 
@@ -3229,9 +2851,9 @@ local function __FazzHub_Init_Main__()
                 StatusESP[char] = nil
             end
                                     end--========================================================--
--- FAZZHUB v0.3.9
+-- FAZZHUB v0.4.0
 -- PART 10B/19 : FULL ESP (BAGIAN 2 - STATUS BARU)
--- PATCH: ESP Status sekarang cuma Nama + Jarak (2 baris)
+-- PATCH: ESP Status cuma Nama + Jarak (2 baris)
 --========================================================--
 
         local function CreateStatusESP(plr, char, root)
@@ -3270,6 +2892,7 @@ local function __FazzHub_Init_Main__()
                 scaleObj.Scale = 1
                 scaleObj.Parent = bb
 
+                -- NAMA (baris atas)
                 local nameLbl = Instance.new("TextLabel")
                 nameLbl.Name = "NameLbl"
                 nameLbl.BackgroundTransparency = 1
@@ -3285,6 +2908,7 @@ local function __FazzHub_Init_Main__()
                 nameLbl.TextTruncate = Enum.TextTruncate.AtEnd
                 nameLbl.Parent = bb
 
+                -- JARAK (baris bawah)
                 local distLbl = Instance.new("TextLabel")
                 distLbl.Name = "DistLbl"
                 distLbl.BackgroundTransparency = 1
@@ -3324,7 +2948,7 @@ local function __FazzHub_Init_Main__()
                 distScale.Scale = scaleVal
             end
                                         end--========================================================--
--- FAZZHUB v0.3.9
+-- FAZZHUB v0.4.0
 -- PART 10C/19 : FULL ESP (BAGIAN 3)
 --========================================================--
 
@@ -3589,7 +3213,7 @@ local function __FazzHub_Init_Main__()
             end
         end)
                                         end--========================================================--
--- FAZZHUB v0.3.9
+-- FAZZHUB v0.4.0
 -- PART 11/19 : INVISIBLE
 --========================================================--
 
@@ -3795,7 +3419,7 @@ local function __FazzHub_Init_Main__()
             return "READY"
         end
                                             end--========================================================--
--- FAZZHUB v0.3.9
+-- FAZZHUB v0.4.0
 -- PART 12A/19 : BYPASS (LEAP, GRAB, SLASHER, ABYSS)
 --========================================================--
 
@@ -4055,7 +3679,7 @@ local function __FazzHub_Init_Main__()
         if VD.KILLER_BypassCooldown then W.MAWWW_StartAbyssCooldownBypass()
         else W.MAWWW_StopAbyssCooldownBypass() end
                                                 end--========================================================--
--- FAZZHUB v0.3.9
+-- FAZZHUB v0.4.0
 -- PART 12B/19 : BYPASS (JEFF, ANTIBLIND, DESTROYPALLET, INFLUNGE)
 --========================================================--
 
@@ -4214,7 +3838,7 @@ local function __FazzHub_Init_Main__()
     LocalPlayer.CharacterRemoving:Connect(function()
         VD_OriginalLungeBoost = nil
     end)--========================================================--
--- FAZZHUB v0.3.9
+-- FAZZHUB v0.4.0
 -- PART 13A/19 : AIMLOCK ATTACK + AIMLOCK GUN
 --========================================================--
 
@@ -4457,7 +4081,7 @@ local function __FazzHub_Init_Main__()
         W.GunAim_Start = GA_Start
         W.GunAim_Cfg = GunAim
                                                     end--========================================================--
--- FAZZHUB v0.3.9
+-- FAZZHUB v0.4.0
 -- PART 13B/19 : KILLER ABILITIES + AUTO HOOK
 --========================================================--
 
@@ -4751,7 +4375,7 @@ local function __FazzHub_Init_Main__()
             if VD.KILLER_AutoHook then W.KA_StartAutoHook() else W.KA_StopAutoHook() end
         end
                                                         end--========================================================--
--- FAZZHUB v0.3.9
+-- FAZZHUB v0.4.0
 -- PART 13C/19 : KILLER PERKS DISPLAY
 --========================================================--
 
@@ -5095,7 +4719,7 @@ local function __FazzHub_Init_Main__()
             if VD.KillerPerksDisplay then Start() else Stop() end
         end
                                                             end--========================================================--
--- FAZZHUB v0.3.9
+-- FAZZHUB v0.4.0
 -- PART 14A/19 : SPEED BOOST + CURSOR FEATURE
 --========================================================--
 
@@ -5228,7 +4852,7 @@ local function __FazzHub_Init_Main__()
             if VD.CursorEnabled then W.Cursor_SetEnabled(true) end
         end)
                                                                 end--========================================================--
--- FAZZHUB v0.3.9
+-- FAZZHUB v0.4.0
 -- PART 14B/19 : SILENT FLASK + SPEAR AIMBOT
 --========================================================--
 
@@ -5439,8 +5063,304 @@ local function __FazzHub_Init_Main__()
         W.Flask_SetGravity     = function(v) VD.FLASK_Gravity = tonumber(v) or 196 end
         W.Flask_SetLead        = function(v) VD.FLASK_LeadMult = tonumber(v) or 1.0 end
         W.Flask_SetRange       = function(v) VD.FLASK_Range = tonumber(v) or 200 end
+    end
+
+    --====================================================--
+    -- SPEAR AIMBOT
+    --====================================================--
+    do
+        VD.SPEAR_Aimbot = VD.SPEAR_Aimbot or false
+        VD.SPEAR_Gravity = VD.SPEAR_Gravity or 50
+        VD.SPEAR_Speed = VD.SPEAR_Speed or 100
+
+        local SpearBtnData = {
+            UI = nil, Button = nil, Active = true, DragLocked = false,
+            Dragging = false, DragStart = nil, DragStartPos = nil,
+            ManualTarget = nil, TargetIndex = 0,
+            TargetLabel = nil, LeftArrow = nil, RightArrow = nil,
+        }
+
+        local function SpearAimbotCalc(targetPos)
+            if not VD.SPEAR_Aimbot or GetRole() ~= "Killer" then return nil end
+            local char = LocalPlayer.Character
+            if not char then return nil end
+            local root = char:FindFirstChild("HumanoidRootPart")
+            if not root then return nil end
+            local startPos = root.Position + Vector3.new(0, 2, 0)
+            local distance = (targetPos - startPos).Magnitude
+            local gravity  = VD.SPEAR_Gravity or 50
+            local speed    = VD.SPEAR_Speed or 100
+            local time     = distance / speed
+            local drop     = 0.5 * gravity * time * time
+            return targetPos + Vector3.new(0, drop, 0)
+        end
+
+        local function Spear_GetTargetList()
+            local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            local list = {}
+            if not root then return list end
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and TeamIs(player, "Survivor") and player.Character then
+                    local tr = player.Character:FindFirstChild("HumanoidRootPart")
+                    local th = player.Character:FindFirstChildOfClass("Humanoid")
+                    if tr and th and th.MaxHealth > 0 and (th.Health / th.MaxHealth) > 0.25 then
+                        local dist = (tr.Position - root.Position).Magnitude
+                        table.insert(list, { Player = player, Dist = dist })
+                    end
+                end
+            end
+            table.sort(list, function(a, b) return a.Dist < b.Dist end)
+            local players = {}
+            for _, v in ipairs(list) do table.insert(players, v.Player) end
+            return players
+        end
+
+        local function Spear_UpdateTargetLabel()
+            if not (SpearBtnData and SpearBtnData.TargetLabel) then return end
+            if SpearBtnData.ManualTarget and SpearBtnData.ManualTarget.Parent then
+                SpearBtnData.TargetLabel.Text = SpearBtnData.ManualTarget.Name
+            else
+                SpearBtnData.TargetLabel.Text = "AUTO"
+            end
+            SpearBtnData.TargetLabel.Visible = true
+        end
+
+        local function Spear_CycleTarget(direction)
+            local list = Spear_GetTargetList()
+            if #list == 0 then
+                SpearBtnData.ManualTarget = nil; SpearBtnData.TargetIndex = 0
+                VD_Notify("Spear Aimbot", "Tidak ada target survivor.", 2)
+                return
+            end
+            local curIdx = nil
+            if SpearBtnData.ManualTarget then
+                for i, p in ipairs(list) do
+                    if p == SpearBtnData.ManualTarget then curIdx = i; break end
+                end
+            end
+            local nextIdx
+            if curIdx then
+                nextIdx = curIdx + direction
+                if nextIdx > #list then nextIdx = 1 end
+                if nextIdx < 1 then nextIdx = #list end
+            else nextIdx = 1 end
+            SpearBtnData.TargetIndex  = nextIdx
+            SpearBtnData.ManualTarget = list[nextIdx]
+            VD_Notify("Spear Aimbot", "Target: " .. SpearBtnData.ManualTarget.Name, 2)
+            Spear_UpdateTargetLabel()
+        end
+
+        local function Spear_UpdateAim()
+            if not VD.SPEAR_Aimbot then return end
+            if SpearBtnData and not SpearBtnData.Active then return end
+            if GetRole() ~= "Killer" then return end
+            local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if not root then return end
+            local target = nil
+            if SpearBtnData.ManualTarget then
+                local p = SpearBtnData.ManualTarget
+                local valid = p.Parent and TeamIs(p, "Survivor") and p.Character
+                if valid then
+                    local tr = p.Character:FindFirstChild("HumanoidRootPart")
+                    local th = p.Character:FindFirstChildOfClass("Humanoid")
+                    valid = tr and th and th.MaxHealth > 0 and (th.Health / th.MaxHealth) > 0.25
+                end
+                if valid then target = p
+                else SpearBtnData.ManualTarget = nil; Spear_UpdateTargetLabel() end
+            end
+            if not target then
+                local closest, closestDist = nil, math.huge
+                for _, player in ipairs(Players:GetPlayers()) do
+                    if player ~= LocalPlayer and TeamIs(player, "Survivor") and player.Character then
+                        local tr = player.Character:FindFirstChild("HumanoidRootPart")
+                        local th = player.Character:FindFirstChildOfClass("Humanoid")
+                        if tr and th and th.MaxHealth > 0 and (th.Health / th.MaxHealth) > 0.25 then
+                            local dist = (tr.Position - root.Position).Magnitude
+                            if dist < closestDist then closestDist = dist; closest = player end
+                        end
+                    end
+                end
+                target = closest
+            end
+            if target and target.Character then
+                local tr = target.Character:FindFirstChild("HumanoidRootPart")
+                if tr then
+                    local aimPos = SpearAimbotCalc(tr.Position)
+                    if aimPos then
+                        local cam = Workspace.CurrentCamera
+                        if cam then cam.CFrame = CFrame.new(cam.CFrame.Position, aimPos) end
+                    end
+                end
+            end
+        end
+
+        local function Spear_SetupButton()
+            if SpearBtnData.UI then pcall(function() SpearBtnData.UI:Destroy() end) end
+            local pg = LocalPlayer:FindFirstChild("PlayerGui")
+            if not pg then return end
+            SpearBtnData.UI = Instance.new("ScreenGui")
+            SpearBtnData.UI.Name = "FazzHubSpearAimbotUI"
+            SpearBtnData.UI.ResetOnSpawn = false
+            SpearBtnData.UI.IgnoreGuiInset = true
+            SpearBtnData.UI.Parent = pg
+
+            local btn = Instance.new("TextButton")
+            btn.Name = "SpearAimbotButton"
+            btn.Size = UDim2.new(0, 65, 0, 65)
+            btn.Position = UDim2.new(0.15, 0, 0.75, 0)
+            btn.AnchorPoint = Vector2.new(0.5, 0.5)
+            btn.BackgroundColor3 = Color3.fromRGB(30, 10, 10)
+            btn.BackgroundTransparency = 0.15
+            btn.Text = "SPEAR\nAIM"
+            btn.TextColor3 = Color3.fromRGB(255, 100, 100)
+            btn.TextSize = 11
+            btn.Font = Enum.Font.GothamBold
+            btn.Visible = false
+            btn.ZIndex = 10
+            btn.Parent = SpearBtnData.UI
+            Instance.new("UICorner", btn).CornerRadius = UDim.new(1, 0)
+            SpearBtnData.Button = btn
+
+            local spearStk = Instance.new("UIStroke", btn)
+            spearStk.Color = Color3.fromRGB(255, 80, 80)
+            spearStk.Thickness = 2
+            spearStk.Transparency = 0.2
+
+            local lockBtn = Instance.new("TextButton")
+            lockBtn.Name = "LockDrag"
+            lockBtn.Size = UDim2.new(0, 22, 0, 22)
+            lockBtn.Position = UDim2.new(1, -5, 0, -5)
+            lockBtn.AnchorPoint = Vector2.new(1, 0)
+            lockBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+            lockBtn.BackgroundTransparency = 0.3
+            lockBtn.Text = "L"
+            lockBtn.TextSize = 10
+            lockBtn.Font = Enum.Font.GothamBold
+            lockBtn.TextColor3 = Color3.new(1, 1, 1)
+            lockBtn.ZIndex = 11
+            lockBtn.Parent = btn
+            Instance.new("UICorner", lockBtn).CornerRadius = UDim.new(1, 0)
+            lockBtn.MouseButton1Click:Connect(function()
+                SpearBtnData.DragLocked = not SpearBtnData.DragLocked
+                lockBtn.Text = SpearBtnData.DragLocked and "X" or "L"
+                lockBtn.BackgroundColor3 = SpearBtnData.DragLocked and Color3.fromRGB(200, 50, 50) or Color3.fromRGB(60, 60, 60)
+            end)
+
+            local targetLabel = Instance.new("TextLabel")
+            targetLabel.Name = "SpearTargetLabel"
+            targetLabel.Size = UDim2.new(0, 90, 0, 18)
+            targetLabel.Position = UDim2.new(0.5, 0, 0, -22)
+            targetLabel.AnchorPoint = Vector2.new(0.5, 0)
+            targetLabel.BackgroundTransparency = 1
+            targetLabel.Text = "AUTO"
+            targetLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+            targetLabel.TextSize = 12
+            targetLabel.Font = Enum.Font.GothamBold
+            targetLabel.TextTruncate = Enum.TextTruncate.AtEnd
+            targetLabel.ZIndex = 11
+            targetLabel.Visible = false
+            targetLabel.Parent = btn
+            SpearBtnData.TargetLabel = targetLabel
+
+            local leftArrow = Instance.new("TextButton")
+            leftArrow.Name = "SpearTargetLeft"
+            leftArrow.Size = UDim2.new(0, 28, 0, 28)
+            leftArrow.Position = UDim2.new(0, -34, 0.5, 0)
+            leftArrow.AnchorPoint = Vector2.new(0.5, 0.5)
+            leftArrow.BackgroundColor3 = Color3.fromRGB(30, 10, 10)
+            leftArrow.BackgroundTransparency = 0.15
+            leftArrow.Text = "<"
+            leftArrow.TextColor3 = Color3.fromRGB(158, 158, 158)
+            leftArrow.TextSize = 16
+            leftArrow.Font = Enum.Font.GothamBold
+            leftArrow.ZIndex = 10
+            leftArrow.Parent = btn
+            Instance.new("UICorner", leftArrow).CornerRadius = UDim.new(1, 0)
+            SpearBtnData.LeftArrow = leftArrow
+            leftArrow.MouseButton1Click:Connect(function() Spear_CycleTarget(-1) end)
+
+            local rightArrow = Instance.new("TextButton")
+            rightArrow.Name = "SpearTargetRight"
+            rightArrow.Size = UDim2.new(0, 28, 0, 28)
+            rightArrow.Position = UDim2.new(1, 34, 0.5, 0)
+            rightArrow.AnchorPoint = Vector2.new(0.5, 0.5)
+            rightArrow.BackgroundColor3 = Color3.fromRGB(30, 10, 10)
+            rightArrow.BackgroundTransparency = 0.15
+            rightArrow.Text = ">"
+            rightArrow.TextColor3 = Color3.fromRGB(255, 150, 150)
+            rightArrow.TextSize = 16
+            rightArrow.Font = Enum.Font.GothamBold
+            rightArrow.ZIndex = 10
+            rightArrow.Parent = btn
+            Instance.new("UICorner", rightArrow).CornerRadius = UDim.new(1, 0)
+            SpearBtnData.RightArrow = rightArrow
+            rightArrow.MouseButton1Click:Connect(function() Spear_CycleTarget(1) end)
+
+            btn.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    if SpearBtnData.DragLocked then return end
+                    SpearBtnData.Dragging = true
+                    SpearBtnData.DragStart = input.Position
+                    SpearBtnData.DragStartPos = btn.Position
+                end
+            end)
+            UserInputService.InputChanged:Connect(function(input)
+                if SpearBtnData.Dragging and not SpearBtnData.DragLocked and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                    local delta = input.Position - SpearBtnData.DragStart
+                    btn.Position = UDim2.new(
+                        SpearBtnData.DragStartPos.X.Scale, SpearBtnData.DragStartPos.X.Offset + delta.X,
+                        SpearBtnData.DragStartPos.Y.Scale, SpearBtnData.DragStartPos.Y.Offset + delta.Y
+                    )
+                end
+            end)
+            btn.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    SpearBtnData.Dragging = false
+                end
+            end)
+            btn.MouseButton1Click:Connect(function()
+                SpearBtnData.Active = not SpearBtnData.Active
+                if SpearBtnData.Active then
+                    btn.BackgroundColor3 = Color3.fromRGB(10, 40, 10)
+                    btn.TextColor3 = Color3.fromRGB(80, 255, 120)
+                    spearStk.Color = Color3.fromRGB(80, 255, 120)
+                    VD_Notify("Spear Aimbot", "Spear Aimbot AKTIF!", 3)
+                else
+                    btn.BackgroundColor3 = Color3.fromRGB(30, 10, 10)
+                    btn.TextColor3 = Color3.fromRGB(255, 100, 100)
+                    spearStk.Color = Color3.fromRGB(255, 80, 80)
+                    VD_Notify("Spear Aimbot", "Spear Aimbot NONAKTIF", 3)
+                end
+            end)
+        end
+
+        RunService.RenderStepped:Connect(function() pcall(Spear_UpdateAim) end)
+        RunService.Heartbeat:Connect(function()
+            if SpearBtnData and SpearBtnData.Button then
+                local shouldShow = VD.SPEAR_Aimbot and GetRole() == "Killer"
+                SpearBtnData.Button.Visible = shouldShow
+                if shouldShow then pcall(Spear_UpdateTargetLabel) end
+            end
+        end)
+
+        LocalPlayer.CharacterAdded:Connect(function()
+            task.wait(0.5)
+            if VD.SPEAR_Aimbot then pcall(Spear_SetupButton) end
+        end)
+
+        W.SpearAimbot_SetEnabled = function(v)
+            VD.SPEAR_Aimbot = v and true or false
+            if v then SpearBtnData.Active = true; Spear_SetupButton()
+            else
+                if SpearBtnData.UI then pcall(function() SpearBtnData.UI:Destroy() end); SpearBtnData.UI = nil end
+                SpearBtnData.Button = nil
+            end
+        end
+        W.SpearAimbot_SetGravity = function(v) VD.SPEAR_Gravity = tonumber(v) or 50 end
+        W.SpearAimbot_SetSpeed   = function(v) VD.SPEAR_Speed   = tonumber(v) or 100 end
+        W.SpearAimbot_CycleTarget = Spear_CycleTarget
                                                                     end--========================================================--
--- FAZZHUB v0.3.9
+-- FAZZHUB v0.4.0
 -- PART 14C/19 : DASH LOCK + SWIFT VAULT
 --========================================================--
 
@@ -5673,7 +5593,7 @@ local function __FazzHub_Init_Main__()
         end
         W.SwiftVault_SetSpeed = function(v) VD.SURF_VaultSpeed = tonumber(v) or 13 end
                                                                         end--========================================================--
--- FAZZHUB v0.3.9
+-- FAZZHUB v0.4.0
 -- PART 15A/19 : GRAPHICS SYSTEM
 --========================================================--
 
@@ -5797,6 +5717,7 @@ local function __FazzHub_Init_Main__()
             else cam.FieldOfView = original.FOV end
         end
 
+        -- POTATO MODE
         local Potato_Enabled = false
         local Potato_Busy = false
         local Potato_Changed = {}
@@ -5953,7 +5874,7 @@ local function __FazzHub_Init_Main__()
             Graphics_ApplyNoScreenEffects(); Graphics_ApplyZoom(); Graphics_ApplyFOV()
         end)
                                                                             end--========================================================--
--- FAZZHUB v0.3.9
+-- FAZZHUB v0.4.0
 -- PART 15B/19 : PALLET REFLEX + FAKE PARRY V2
 --========================================================--
 
@@ -6285,9 +6206,9 @@ local function __FazzHub_Init_Main__()
             return false
         end
                                                                                 end--========================================================--
--- FAZZHUB v0.3.9
--- PART 15C/19 : CAMERA DBD + FLOATING BUTTON (BARU)
--- PATCH: Floating Button ImageTransparency = 0.6 (rata ON & OFF)
+-- FAZZHUB v0.4.0
+-- PART 15C/19 : CAMERA DBD + FLOATING BUTTON
+-- PATCH: Floating Button 140x38 + BG Image FAZZHUB (0.5)
 --========================================================--
 
     --====================================================--
@@ -6374,8 +6295,7 @@ local function __FazzHub_Init_Main__()
     end
 
     --====================================================--
-    -- FLOATING BUTTON SYSTEM (BARU - TEMA FAZZHUB + BG IMAGE)
-    -- PATCH: ImageTransparency = 0.6 (rata ON & OFF)
+    -- FLOATING BUTTON SYSTEM (TEMA FAZZHUB + BG IMAGE 0.5)
     --====================================================--
     local BG_IMAGE_ID_BTN = "rbxassetid://72845574620852"
 
@@ -6417,7 +6337,7 @@ local function __FazzHub_Init_Main__()
             if isOn then
                 TweenService:Create(btn, TweenInfo.new(0.2), { BackgroundColor3 = COLOR_BG_ON }):Play()
                 if bgImg then
-                    TweenService:Create(bgImg, TweenInfo.new(0.2), { ImageTransparency = 0.6 }):Play()
+                    TweenService:Create(bgImg, TweenInfo.new(0.2), { ImageTransparency = 0.5 }):Play()
                 end
                 if stroke then
                     TweenService:Create(stroke, TweenInfo.new(0.2), {
@@ -6435,7 +6355,7 @@ local function __FazzHub_Init_Main__()
             else
                 TweenService:Create(btn, TweenInfo.new(0.2), { BackgroundColor3 = COLOR_BG_OFF }):Play()
                 if bgImg then
-                    TweenService:Create(bgImg, TweenInfo.new(0.2), { ImageTransparency = 0.6 }):Play()
+                    TweenService:Create(bgImg, TweenInfo.new(0.2), { ImageTransparency = 0.65 }):Play()
                 end
                 if stroke then
                     TweenService:Create(stroke, TweenInfo.new(0.2), {
@@ -6517,7 +6437,7 @@ local function __FazzHub_Init_Main__()
             bgImg.Position = UDim2.fromScale(0, 0)
             bgImg.BackgroundTransparency = 1
             bgImg.Image = BG_IMAGE_ID_BTN
-            bgImg.ImageTransparency = 0.6
+            bgImg.ImageTransparency = 0.65
             bgImg.ScaleType = Enum.ScaleType.Crop
             bgImg.ZIndex = 3
             bgImg.Parent = btn
@@ -6647,7 +6567,250 @@ local function __FazzHub_Init_Main__()
         return state
     end
     W.CreateFloatingButton = CreateFloatingButton--========================================================--
--- FAZZHUB v0.3.9
+-- FAZZHUB v0.4.0
+-- PART 15D/19 : SELF UNHOOK + 9 FLOATING BAR
+--========================================================--
+
+    --====================================================--
+    -- SELF UNHOOK
+    --====================================================--
+    W.SelfUnhook = W.SelfUnhook or {
+        Enabled=false, Following=false, FollowDuration=30, FollowDistance=20,
+        MonitorConn=nil, TriggerCount=0, _lastTrigger=0, _cooldown=3,
+        _hookPos=nil, _hookCFrame=nil, _activeThread=nil, _wasHooked=false
+    }
+    local SU = W.SelfUnhook
+
+    function W.SU_IsHooked()
+        local char = LocalPlayer.Character
+        if not char then return false end
+        return char:GetAttribute("IsHooked") == true or char:GetAttribute("isHooked") == true
+            or char:GetAttribute("Hooked") == true or char:GetAttribute("HookedState") == true
+    end
+
+    function W.SU_GetRandomGeneratorPoint()
+        local gens = W.GB_GetAllGenerators()
+        if not gens or #gens == 0 then return nil end
+        local valid = {}
+        for _, g in ipairs(gens) do
+            if g and g.Parent then
+                for _, p in ipairs(W.GB_GetPoints(g)) do
+                    if p and p.Parent then table.insert(valid, p) end
+                end
+            end
+        end
+        if #valid == 0 then return nil end
+        return valid[math.random(1, #valid)]
+    end
+
+    function W.SU_GetKillerHRP()
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and TeamIs(p, "Killer") and p.Character then
+                local hrp = p.Character:FindFirstChild("HumanoidRootPart")
+                if hrp then return hrp end
+            end
+        end
+        return nil
+    end
+
+    function W.SU_Abort()
+        SU.Following = false
+        if SU._activeThread and coroutine.status(SU._activeThread) ~= "dead" then
+            pcall(function() task.cancel(SU._activeThread) end)
+        end
+        SU._activeThread = nil
+    end
+
+    function W.SU_Trigger()
+        if SU.Following then return end
+        local now = tick()
+        if now - SU._lastTrigger < SU._cooldown then return end
+        if not W.SU_IsHooked() then return end
+        SU._lastTrigger = now; SU.Following = true
+        SU.TriggerCount = SU.TriggerCount + 1
+        local char = LocalPlayer.Character
+        if char then
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            if hrp then SU._hookPos = hrp.Position; SU._hookCFrame = hrp.CFrame end
+        end
+        SU._activeThread = task.spawn(function()
+            local c = LocalPlayer.Character
+            if not c then SU.Following = false; SU._activeThread = nil; return end
+            local hrp = c:FindFirstChild("HumanoidRootPart")
+            if not hrp then SU.Following = false; SU._activeThread = nil; return end
+            local re = ReplicatedStorage:FindFirstChild("Remotes")
+                and ReplicatedStorage.Remotes:FindFirstChild("Generator")
+                and ReplicatedStorage.Remotes.Generator:FindFirstChild("RepairEvent")
+            if not W.SU_IsHooked() then SU.Following = false; SU._activeThread = nil; return end
+            local tp = W.SU_GetRandomGeneratorPoint()
+            if tp then
+                pcall(function() hrp.Velocity = Vector3.zero; hrp.CFrame = tp.CFrame + Vector3.new(0, 3, 0) end)
+                task.wait(0.15)
+                if re then
+                    pcall(function() re:FireServer(tp, true) end); task.wait(0.35)
+                    pcall(function() re:FireServer(tp, false) end); task.wait(0.15)
+                    pcall(function() re:FireServer(tp, true) end); task.wait(0.35)
+                    pcall(function() re:FireServer(tp, false) end)
+                end
+            end
+            local fUntil = tick() + (SU.FollowDuration or 30)
+            local bOff = SU.FollowDistance or 20
+            while tick() < fUntil and SU.Enabled do
+                if not W.SU_IsHooked() then
+                    SU.Following = false; SU._activeThread = nil
+                    VD_Notify("Self Unhook", "Udah lepas hook - STOP", 2)
+                    return
+                end
+                local cc = LocalPlayer.Character
+                if not cc then break end
+                local r = cc:FindFirstChild("HumanoidRootPart")
+                if not r then break end
+                local khrp = W.SU_GetKillerHRP()
+                if khrp then
+                    pcall(function()
+                        r.Velocity = Vector3.zero
+                        local tPos = Vector3.new(khrp.Position.X, khrp.Position.Y - bOff, khrp.Position.Z)
+                        r.CFrame = CFrame.new(tPos, tPos + Vector3.new(0, 0, -1))
+                    end)
+                end
+                task.wait(0.03)
+            end
+            if W.SU_IsHooked() then
+                local c2 = LocalPlayer.Character
+                if c2 then
+                    local r2 = c2:FindFirstChild("HumanoidRootPart")
+                    if r2 then
+                        if SU._hookCFrame then pcall(function() r2.Velocity = Vector3.zero; r2.CFrame = SU._hookCFrame end)
+                        elseif SU._hookPos then pcall(function() r2.Velocity = Vector3.zero; r2.CFrame = CFrame.new(SU._hookPos + Vector3.new(0, 3, 0)) end) end
+                    end
+                end
+            end
+            SU.Following = false; SU._activeThread = nil
+        end)
+    end
+
+    function W.SU_Start()
+        if SU.MonitorConn then return end
+        SU._wasHooked = false
+        SU.MonitorConn = RunService.Heartbeat:Connect(function()
+            if not SU.Enabled then return end
+            local char = LocalPlayer.Character
+            if not char then return end
+            local isH = W.SU_IsHooked()
+            if not isH then SU._wasHooked = false; return end
+            if not SU._wasHooked and not SU.Following then SU._wasHooked = true; W.SU_Trigger() end
+        end)
+    end
+
+    function W.SU_Stop()
+        if SU.MonitorConn then SU.MonitorConn:Disconnect(); SU.MonitorConn = nil end
+        W.SU_Abort(); SU._wasHooked = false
+    end
+
+    function W.SU_SetEnabled(v)
+        SU.Enabled = v
+        if v then W.SU_Start() else W.SU_Stop() end
+    end
+
+    --====================================================--
+    -- 9 FLOATING BAR INSTANCES
+    --====================================================--
+
+    local SelfHealBtnState = { Enabled=false, DragLocked=false, Gui=nil, SavedPos=UDim2.new(0.03,0,0.28,0), Connections={} }
+    local SelfHealState = CreateFloatingButton({
+        id="SelfHeal", title="Heal", state=SelfHealBtnState,
+        isOn=function() return W.InstantHealSelf end,
+        onToggle=function(v) W.setInstantHealSelf(v) end,
+    })
+    getgenv().FazzHub_SHB_SetEnabled = function(en) SelfHealState.SetEnabled(en) end
+    getgenv().FazzHub_SHB_UpdateVisual = function() SelfHealState.UpdateVisual() end
+
+    local SelfUnhookBtnState = { Enabled=false, DragLocked=false, Gui=nil, SavedPos=UDim2.new(0.03,0,0.35,0), Connections={} }
+    local SelfUnhookState = CreateFloatingButton({
+        id="SelfUnhook", title="Hook", state=SelfUnhookBtnState,
+        isOn=function() return W.SelfUnhook.Enabled end,
+        onToggle=function(v) W.SU_SetEnabled(v) end,
+    })
+    getgenv().FazzHub_SUB_SetEnabled = function(en) SelfUnhookState.SetEnabled(en) end
+    getgenv().FazzHub_SUB_UpdateVisual = function() SelfUnhookState.UpdateVisual() end
+
+    local TrollBtnState = { Enabled=false, DragLocked=false, Gui=nil, SavedPos=UDim2.new(0.03,0,0.42,0), Connections={} }
+    local TrollState = CreateFloatingButton({
+        id="TrollTP", title="Troll TP", state=TrollBtnState,
+        isOn=function() return W.TrollTeleport.Enabled end,
+        onToggle=function(v) W.TrollTeleport_SetEnabled(v) end,
+    })
+    getgenv().FazzHub_TTB_SetEnabled = function(en) TrollState.SetEnabled(en) end
+    getgenv().FazzHub_TTB_UpdateVisual = function() TrollState.UpdateVisual() end
+
+    local EscapeBtnState = { Enabled=false, DragLocked=false, Gui=nil, SavedPos=UDim2.new(0.03,0,0.49,0), Connections={} }
+    local EscapeState = CreateFloatingButton({
+        id="Escape", title="Escape", state=EscapeBtnState,
+        isOn=function() return W.Escape.Enabled end,
+        onToggle=function(v) W.Escape.Enabled = v; if v then W.Escape_Teleport() end end,
+    })
+    getgenv().FazzHub_Escape_SetEnabled = function(en) EscapeState.SetEnabled(en) end
+    getgenv().FazzHub_Escape_UpdateVisual = function() EscapeState.UpdateVisual() end
+
+    local ParryBtnState = { Enabled=false, DragLocked=false, Gui=nil, SavedPos=UDim2.new(0.03,0,0.56,0), Connections={} }
+    local ParryStateBtn = CreateFloatingButton({
+        id="Parry", title="Parry", state=ParryBtnState,
+        isOn=function() return VD.PARRY_Enabled end,
+        onToggle=function(v)
+            VD.PARRY_Enabled = v
+            if not v then ParryState.ActiveAttackers = {} end
+        end,
+    })
+    getgenv().FazzHub_ParryBtn_SetEnabled = function(en) ParryStateBtn.SetEnabled(en) end
+    getgenv().FazzHub_ParryBtn_UpdateVisual = function() ParryStateBtn.UpdateVisual() end
+
+    local InvisBtnState = { Enabled=false, DragLocked=false, Gui=nil, SavedPos=UDim2.new(0.03,0,0.63,0), Connections={} }
+    local InvisStateBtn = CreateFloatingButton({
+        id="Invisible", title="Invis", state=InvisBtnState,
+        isOn=function()
+            local MV = getgenv().FazzHubInvis
+            return MV and MV.Enabled or false
+        end,
+        onToggle=function(v) W.Invisible_SetState(v, true) end,
+    })
+    getgenv().FazzHub_InvisBtn_SetEnabled   = function(en) InvisStateBtn.SetEnabled(en) end
+    getgenv().FazzHub_InvisBtn_UpdateVisual = function() InvisStateBtn.UpdateVisual() end
+
+    local MyersGrabBtnState = { Enabled=false, DragLocked=false, Gui=nil, SavedPos=UDim2.new(0.03,0,0.70,0), Connections={} }
+    local MyersGrabBtn = CreateFloatingButton({
+        id="MyersGrab", title="Grab", state=MyersGrabBtnState,
+        isOn=function() return W.MyersGrabData.Enabled end,
+        onToggle=function(v) W.setMyersGrab(v) end,
+    })
+    getgenv().FazzHub_MGrabBtn_SetEnabled   = function(en) MyersGrabBtn.SetEnabled(en) end
+    getgenv().FazzHub_MGrabBtn_UpdateVisual = function() MyersGrabBtn.UpdateVisual() end
+
+    local VeilBtnState = { Enabled=false, DragLocked=false, Gui=nil, SavedPos=UDim2.new(0.03,0,0.77,0), Connections={} }
+    local VeilBtn = CreateFloatingButton({
+        id="SilentVeil", title="Veil", state=VeilBtnState,
+        isOn=function() return VD.VeilEnabled end,
+        onToggle=function(v)
+            VD.VeilEnabled = v
+            if not v then VD_Notify("Silent Veil", "Disabled", 2)
+            else VD_Notify("Silent Veil", "Enabled", 2) end
+            if getgenv().FazzHub_VeilBtn_UpdateVisual then getgenv().FazzHub_VeilBtn_UpdateVisual() end
+        end,
+    })
+    getgenv().FazzHub_VeilBtn_SetEnabled   = function(en) VeilBtn.SetEnabled(en) end
+    getgenv().FazzHub_VeilBtn_UpdateVisual = function() VeilBtn.UpdateVisual() end
+
+    local MoonwalkBtnState = { Enabled=false, DragLocked=false, Gui=nil, SavedPos=UDim2.new(0.03,0,0.84,0), Connections={} }
+    local MoonwalkFloatingState = CreateFloatingButton({
+        id="Moonwalk", title="Moonwalk", state=MoonwalkBtnState,
+        isOn=function() return _G.FazzHub_MoonwalkEnabled or false end,
+        onToggle=function(v)
+            _G.FazzHub_MoonwalkEnabled = v
+            if _G.FazzHub_MoonwalkToggle then pcall(_G.FazzHub_MoonwalkToggle, v) end
+        end,
+    })
+    getgenv().FazzHub_MoonwalkBtn_SetEnabled   = function(en) MoonwalkFloatingState.SetEnabled(en) end
+    getgenv().FazzHub_MoonwalkBtn_UpdateVisual = function() MoonwalkFloatingState.UpdateVisual() end--========================================================--
+-- FAZZHUB v0.4.0
 -- PART 16A/19 : SILENT VEIL V1 + LOCK POV
 --========================================================--
 
@@ -6920,15 +7083,16 @@ local function __FazzHub_Init_Main__()
 
     W.LockPOV = LockPOV
     W.LockPOV_SetEnabled = LockPOV_SetEnabled--========================================================--
--- FAZZHUB v0.3.9
--- PART 16B/19 : SILENT VEIL V2
+-- FAZZHUB v0.4.0
+-- PART 16B/19 : SILENT VEIL V2 (KODE ASLI ALFZXZZ / W424)
+-- PATCH: Rename branding ke FAZZHUB — no W424/Gluto/Wisnu
 --========================================================--
 
     --====================================================--
-    -- SILENT VEIL V2
+    -- SILENT VEIL V2 (W424 Silent Veil — Renamed to FAZZHUB)
     --====================================================--
     do
-        local Config = {}
+        local Veil2Cfg2 = {}
         local Camera = Workspace.CurrentCamera
 
         local Veil2 = Veil2 or {}
@@ -7009,9 +7173,9 @@ local function __FazzHub_Init_Main__()
         local currentVeilBillboard = nil
 
         local function setupVeilTrackerGui()
-            if CoreGui:FindFirstChild("FazzHubVeil2TrackerGui") then return end
+            if CoreGui:FindFirstChild("FazzHubVeil2_TrackerGui") then return end
             local sg = Instance.new("ScreenGui")
-            sg.Name = "FazzHubVeil2TrackerGui"
+            sg.Name = "FazzHubVeil2_TrackerGui"
             sg.IgnoreGuiInset = true
             sg.ResetOnSpawn = false
             sg.Parent = CoreGui
@@ -7030,9 +7194,9 @@ local function __FazzHub_Init_Main__()
         setupVeilTrackerGui()
 
         local VeilFOVFrame = nil
-        if not CoreGui:FindFirstChild("FazzHubVeil2FOVCircleGui") then
+        if not CoreGui:FindFirstChild("FazzHubVeil2_FOVGui") then
             local FOVGui = Instance.new("ScreenGui")
-            FOVGui.Name = "FazzHubVeil2FOVCircleGui"
+            FOVGui.Name = "FazzHubVeil2_FOVGui"
             FOVGui.Parent = CoreGui
             FOVGui.ResetOnSpawn = false
             FOVGui.IgnoreGuiInset = true
@@ -7079,12 +7243,12 @@ local function __FazzHub_Init_Main__()
                         local myHRP = myChar and myChar:FindFirstChild("HumanoidRootPart")
                         local startPart = myChar and (myChar:FindFirstChild("Head") or myHRP)
                         local isSpecial = myChar and myChar:GetAttribute("special") == true
-                        if Veil2.SpearSmart_enable then
+                        if Veil2Cfg2.SpearSmart_enable then
                             speed = isSpecial and 165 or 142.5
                         else
                             speed = Veil2.SPEAR_Speed or 165
                         end
-                        originPos = originPos or (Veil2.SpearSmart_enable and myHRP and myHRP.Position) or (startPart and startPart.Position)
+                        originPos = originPos or (Veil2Cfg2.SpearSmart_enable and myHRP and myHRP.Position) or (startPart and startPart.Position)
 
                         local bestDir = lookVec
                         local targetPart = getClosestSurvivor()
@@ -7101,7 +7265,7 @@ local function __FazzHub_Init_Main__()
                             targetVel = Vector3.new(targetVel.X, 0, targetVel.Z)
                             local distance = (targetPos - originPos).Magnitude
                             local timeToHit = distance / math.max(speed, 1)
-                            if Veil2.SpearSmart_enable then
+                            if Veil2Cfg2.SpearSmart_enable then
                                 local leadMultiplier = Veil2.Veil_LeadMultiplier or 1.4
                                 local predictedPos = targetPos + (targetVel * (timeToHit * leadMultiplier))
                                 local spearGravity = workspace.Gravity * 0.5
@@ -7187,8 +7351,8 @@ local function __FazzHub_Init_Main__()
                 local startPart = myChar and (myChar:FindFirstChild("Head") or myHRP)
                 if startPart and myHRP then
                     local isSpecial = myChar:GetAttribute("special") == true
-                    local startPos = Veil2.SpearSmart_enable and myHRP.Position or startPart.Position
-                    local currentSpearSpeed = Veil2.SpearSmart_enable and (isSpecial and 165 or 142.5) or Veil2.SPEAR_Speed
+                    local startPos = Veil2Cfg2.SpearSmart_enable and myHRP.Position or startPart.Position
+                    local currentSpearSpeed = Veil2Cfg2.SpearSmart_enable and (isSpecial and 165 or 142.5) or Veil2.SPEAR_Speed
                     local targetPart = getClosestSurvivor()
                     local aimDirection
                     if targetPart then
@@ -7204,7 +7368,7 @@ local function __FazzHub_Init_Main__()
                         targetVel = Vector3.new(targetVel.X, 0, targetVel.Z)
                         local distance = (targetPos - startPos).Magnitude
                         local timeToHit = distance / currentSpearSpeed
-                        if Veil2.SpearSmart_enable then
+                        if Veil2Cfg2.SpearSmart_enable then
                             local leadMultiplier = Veil2.Veil_LeadMultiplier or 1.4
                             local predictedPos = targetPos + (targetVel * (timeToHit * leadMultiplier))
                             local spearGravity = workspace.Gravity * 0.5
@@ -7256,7 +7420,7 @@ local function __FazzHub_Init_Main__()
                         if not currentVeilBillboard or currentVeilBillboard.Parent ~= targetPart then
                             if currentVeilBillboard then currentVeilBillboard:Destroy() end
                             local bb = Instance.new("BillboardGui")
-                            bb.Name = "FazzHubVeil2TrackerBillboard"
+                            bb.Name = "FazzHubVeil2_Billboard"
                             bb.Size = UDim2.fromOffset(14, 14)
                             bb.AlwaysOnTop = true
                             bb.LightInfluence = 0
@@ -7318,14 +7482,15 @@ local function __FazzHub_Init_Main__()
             end
         end)
 
-        W.Veil2_API = {
-            Config = Veil2,
+        W.FazzHub_Veil2API = {
+            Veil2Cfg = Veil2,
+            Veil2Cfg2 = Veil2Cfg2,
             getClosestSurvivor = getClosestSurvivor,
             IsVeilSilentOn = IsVeilSilentOn,
             setTracker = function(v) VeilTrackerEnabled = v end,
         }
-                                                                                    end--========================================================--
--- FAZZHUB v0.3.9
+                                                                                        end--========================================================--
+-- FAZZHUB v0.4.0
 -- PART 16C/19 : SILENT FLASHLIGHT
 --========================================================--
 
@@ -7501,8 +7666,8 @@ local function __FazzHub_Init_Main__()
                 end)
             end)
         end)
-                                                                                        end--========================================================--
--- FAZZHUB v0.3.9
+                                                                                            end--========================================================--
+-- FAZZHUB v0.4.0
 -- PART 17A/19 : TOF V1 (BAGIAN 1)
 --========================================================--
 
@@ -7711,8 +7876,8 @@ local function __FazzHub_Init_Main__()
         local fd = tp - op
         if fd.Magnitude < 0.1 then return end
         pcall(function() e:FireServer(g, fd.Unit) end)
-                                                                                            end--========================================================--
--- FAZZHUB v0.3.9
+                                                                                                end--========================================================--
+-- FAZZHUB v0.4.0
 -- PART 17B/19 : TOF V1 (BAGIAN 2) + PLAYER UTILITY
 --========================================================--
 
@@ -8054,7 +8219,7 @@ local function __FazzHub_Init_Main__()
         end)
     end
     task.spawn(PU_SetupNoCutsceneHook)--========================================================--
--- FAZZHUB v0.3.9
+-- FAZZHUB v0.4.0
 -- PART 17C/19 : PLAYER UTILITY LANJUTAN + EMOTE + JERK OFF
 --========================================================--
 
@@ -8400,8 +8565,8 @@ local function __FazzHub_Init_Main__()
             task.wait(1)
             if JerkTool.Enabled then jerkRunning = true; W.JerkOff_Create() end
         end)
-                                                                                                end--========================================================--
--- FAZZHUB v0.3.9
+                                                                                                    end--========================================================--
+-- FAZZHUB v0.4.0
 -- PART 18A/19 : NO FALL DAMAGE + NEXT MAP PREDICT
 --========================================================--
 
@@ -8605,10 +8770,10 @@ local function __FazzHub_Init_Main__()
             VD.NextMapPredict = v and true or false
             if VD.NextMapPredict then Start() else Stop() end
         end
-                                                                                                    end--========================================================--
--- FAZZHUB v0.3.9
+                                                                                                        end--========================================================--
+-- FAZZHUB v0.4.0
 -- PART 18B/19 : MANUAL/AUTO GENERATOR + GEN BYPASS
--- PATCH: Tombol Gen Bypass dikecilin (80x80 wrap, 48x48 circle)
+-- PATCH: Tombol Gen Bypass kecilin (70x70) + hapus efek pulse
 --========================================================--
 
     --====================================================--
@@ -8861,7 +9026,7 @@ local function __FazzHub_Init_Main__()
 
     --====================================================--
     -- GEN BYPASS (Klik Tombol = Repair Langsung)
-    -- PATCH: Tombol dikecilin (80x80 wrap, 48x48 circle, 60x60 glow)
+    -- PATCH: Ukuran 70x70 + hapus animasi pulse
     --====================================================--
     W.GenBypass = W.GenBypass or {
         Enabled=false, Button=nil, UI=nil, Cache={}, CacheTimer=0,
@@ -8983,29 +9148,26 @@ local function __FazzHub_Init_Main__()
         GenBypass.UI.DisplayOrder = 100
         GenBypass.UI.Parent = pg
 
-        -- PATCH: Wrap dikecilin dari 110x110 → 80x80
         local wrap = Instance.new("Frame")
         wrap.Name = "Wrap"; wrap.AnchorPoint = Vector2.new(1, 0)
         wrap.Position = UDim2.new(1, -20, 0.48, 0)
-        wrap.Size = UDim2.fromOffset(80, 80)
+        wrap.Size = UDim2.fromOffset(70, 70)
         wrap.BackgroundTransparency = 1; wrap.Active = true
         wrap.ZIndex = 2; wrap.Parent = GenBypass.UI
 
-        -- PATCH: Glow dikecilin dari 88x88 → 60x60
         local glow = Instance.new("Frame")
         glow.Name = "Glow"; glow.AnchorPoint = Vector2.new(0.5, 0.5)
         glow.Position = UDim2.new(0.5, 0, 0.5, 0)
-        glow.Size = UDim2.fromOffset(60, 60)
+        glow.Size = UDim2.fromOffset(56, 56)
         glow.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
         glow.BackgroundTransparency = 0.85; glow.BorderSizePixel = 0
         glow.ZIndex = 1; glow.Parent = wrap
         Instance.new("UICorner", glow).CornerRadius = UDim.new(1, 0)
 
-        -- PATCH: MainCircle dikecilin dari 64x64 → 48x48
         local mainCircle = Instance.new("Frame")
         mainCircle.Name = "MainCircle"; mainCircle.AnchorPoint = Vector2.new(0.5, 0.5)
         mainCircle.Position = UDim2.new(0.5, 0, 0.5, 0)
-        mainCircle.Size = UDim2.fromOffset(48, 48)
+        mainCircle.Size = UDim2.fromOffset(42, 42)
         mainCircle.BackgroundColor3 = Color3.fromRGB(12, 12, 15)
         mainCircle.BackgroundTransparency = 0.05; mainCircle.BorderSizePixel = 0
         mainCircle.ZIndex = 4; mainCircle.Parent = wrap
@@ -9021,16 +9183,16 @@ local function __FazzHub_Init_Main__()
 
         local mainStroke = Instance.new("UIStroke", mainCircle)
         mainStroke.Name = "MainStroke"; mainStroke.Color = Color3.fromRGB(255, 255, 255)
-        mainStroke.Thickness = 1.6; mainStroke.Transparency = 0.15
+        mainStroke.Thickness = 1.4; mainStroke.Transparency = 0.15
         mainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
         local genText = Instance.new("TextLabel")
         genText.Name = "GenText"; genText.AnchorPoint = Vector2.new(0.5, 0.5)
         genText.Position = UDim2.new(0.5, 0, 0.5, 0)
-        genText.Size = UDim2.fromOffset(45, 25)
+        genText.Size = UDim2.fromOffset(42, 22)
         genText.BackgroundTransparency = 1; genText.Font = Enum.Font.GothamBlack
         genText.Text = "GEN"; genText.TextColor3 = Color3.fromRGB(255, 255, 255)
-        genText.TextSize = 16; genText.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        genText.TextSize = 15; genText.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
         genText.TextStrokeTransparency = 0.5
         genText.ZIndex = 7; genText.Parent = wrap
 
@@ -9050,10 +9212,10 @@ local function __FazzHub_Init_Main__()
         local function ShowCard()
             wrap.Visible = true
             TweenService:Create(glow, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                Size = UDim2.fromOffset(60, 60), BackgroundTransparency = 0.85,
+                Size = UDim2.fromOffset(56, 56), BackgroundTransparency = 0.85,
             }):Play()
             TweenService:Create(mainCircle, TweenInfo.new(0.55, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                Size = UDim2.fromOffset(48, 48), BackgroundTransparency = 0.05,
+                Size = UDim2.fromOffset(42, 42), BackgroundTransparency = 0.05,
             }):Play()
             TweenService:Create(genText, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
                 TextTransparency = 0, TextStrokeTransparency = 0.5,
@@ -9080,24 +9242,7 @@ local function __FazzHub_Init_Main__()
         end
 
         GenBypass._ShowCard = ShowCard; GenBypass._HideCard = HideCard
-
-        local animActive = true
-        GenBypass._StopAnim = function() animActive = false end
-        task.spawn(function()
-            local t = 0
-            while animActive and wrap.Parent do
-                t = t + 0.035
-                if GenBypass.Enabled then
-                    local pulse = (math.sin(t * 3) + 1) * 0.5
-                    mainStroke.Transparency = 0.35 - pulse * 0.2
-                    mainStroke.Thickness = 1.6 + pulse * 0.4
-                    glow.BackgroundTransparency = 0.85 - pulse * 0.12
-                    glow.Size = UDim2.fromOffset(60 + pulse * 5, 60 + pulse * 5)
-                    genText.Rotation = math.sin(t * 1.2) * 1.5
-                end
-                task.wait(0.03)
-            end
-        end)
+        GenBypass._StopAnim = function() end
 
         local function SetStatus(mode)
             if mode == "ready" then
@@ -9146,72 +9291,33 @@ local function __FazzHub_Init_Main__()
             if not GenBypass.Enabled then return end
             if dragDist > 6 then return end
 
-            TweenService:Create(mainCircle, TweenInfo.new(0.08), { Size = UDim2.fromOffset(40, 40) }):Play()
+            TweenService:Create(mainCircle, TweenInfo.new(0.08), { Size = UDim2.fromOffset(36, 36) }):Play()
             task.delay(0.1, function()
-                TweenService:Create(mainCircle, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Size = UDim2.fromOffset(48, 48) }):Play()
+                TweenService:Create(mainCircle, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Size = UDim2.fromOffset(42, 42) }):Play()
             end)
 
             local ripple = Instance.new("Frame")
             ripple.AnchorPoint = Vector2.new(0.5, 0.5)
             ripple.Position = UDim2.new(0.5, 0, 0.5, 0)
-            ripple.Size = UDim2.fromOffset(48, 48)
+            ripple.Size = UDim2.fromOffset(42, 42)
             ripple.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             ripple.BackgroundTransparency = 0.55; ripple.BorderSizePixel = 0
             ripple.ZIndex = 3; ripple.Parent = wrap
             Instance.new("UICorner", ripple).CornerRadius = UDim.new(1, 0)
-            TweenService:Create(ripple, TweenInfo.new(0.6), { Size = UDim2.fromOffset(120, 120), BackgroundTransparency = 1 }):Play()
+            TweenService:Create(ripple, TweenInfo.new(0.6), { Size = UDim2.fromOffset(110, 110), BackgroundTransparency = 1 }):Play()
             task.delay(0.6, function() if ripple then ripple:Destroy() end end)
 
             SetStatus("searching")
 
-            local myChar = LocalPlayer.Character
-            local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
-            if not myRoot then SetStatus("standby"); return end
-
-            local bestPt, bestDist = nil, math.huge
-            for _, gen in ipairs(W.GB_GetAllGenerators()) do
-                local progress = gen:GetAttribute("RepairProgress")
-                    or gen:GetAttribute("ProgressRepair") or 0
-                if progress < 100 then
-                    for _, pt in ipairs(W.GB_GetPoints(gen)) do
-                        if pt and pt.Parent then
-                            local d = (pt.Position - myRoot.Position).Magnitude
-                            if d < bestDist then
-                                bestDist = d
-                                bestPt = pt
-                            end
-                        end
-                    end
-                end
+            local bp, bd = W.GB_GetNearestPoint()
+            if bp and bd <= GenBypass.TriggerRange then
+                SetStatus("busy")
+                task.spawn(function()
+                    W.GB_DoRepair(bp); task.wait(0.5); SetStatus("ready")
+                end)
+            else
+                task.wait(0.6); SetStatus("standby")
             end
-
-            if not bestPt then
-                SetStatus("standby")
-                ForceNotify("Bypass Gen", "Generator tidak ditemukan", 2)
-                return
-            end
-
-            SetStatus("busy")
-            task.spawn(function()
-                if bestDist > 6 then
-                    pcall(function()
-                        myRoot.CFrame = bestPt.CFrame + Vector3.new(0, 3, 0)
-                    end)
-                    task.wait(0.15)
-                end
-
-                if RepairEventBypass then
-                    pcall(function() RepairEventBypass:FireServer(bestPt, true) end)
-                    task.wait(0.3)
-                    pcall(function() RepairEventBypass:FireServer(bestPt, false) end)
-                    task.wait(0.15)
-                    pcall(function() RepairEventBypass:FireServer(bestPt, true) end)
-                end
-
-                task.wait(0.5)
-                SetStatus("ready")
-                ForceNotify("Bypass Gen", "Repair: " .. string.format("%.0f studs", bestDist), 2)
-            end)
         end)
 
         task.spawn(function()
@@ -9255,1530 +9361,334 @@ local function __FazzHub_Init_Main__()
     end)
 
     function W.setGenBypass(v) GenBypass.Enabled = v; W.GB_UpdateButton() end--========================================================--
--- FAZZHUB v0.3.9
--- PART 19A/19 : UI BUILD — SURVIVOR TAB
--- PATCH: Floating menu Skill Check DIHAPUS
+-- FAZZHUB v0.4.0
+-- PART 19E-1/19 : MISC TAB (BAGIAN 1)
+-- PATCH: Tambah section Crosshair (5 gaya) + Hide Icon (paling atas)
 --========================================================--
 
-    --====================================================--
-    -- AUTO SKILL CHECK V2 (LOGIC BARU - TANPA MENU)
-    --====================================================--
-    W.SkillCheck = W.SkillCheck or {
-        Enabled = false,
-        Mode = "Legit",
-        Busy = false,
-        Connection = nil,
-        CheckDelay = 0.2,
-        FireDelay = 0.05,
-    }
-    local SC = W.SkillCheck
-    local SC_TouchID = 8822
-    local SC_ActionPath = "Survivor-mob.Controls.action.check"
+        --====================================================--
+        -- HIDE ICON (PALING ATAS)
+        --====================================================--
+        local HideIconSection = MakeSection(MiscTab, "Hide Icon")
+        local HideIconEnabled = false
+        local HideIconOrig = {}
 
-    local function SC_PressSpace()
-        if not VirtualInputManager then return end
-        pcall(function()
-            VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Space, false, game)
-            task.wait(SC.FireDelay)
-            VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, game)
-        end)
-    end
-
-    local function SC_GetActionTarget()
-        local pGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
-        if not pGui then return nil end
-        local current = pGui
-        for seg in string.gmatch(SC_ActionPath, "[^%.]+") do
-            current = current and current:FindFirstChild(seg)
+        local function HideIcon_Apply()
+            local pg = LocalPlayer:FindFirstChild("PlayerGui")
+            if not pg then return end
+            for _, gui in ipairs(pg:GetChildren()) do
+                if gui:IsA("ScreenGui") and gui.Name:match("%-mob$") then
+                    local frame = gui:FindFirstChild("Frame")
+                    if frame then
+                        for i = 1, 5 do
+                            local sf = frame:FindFirstChild("Survivor" .. i)
+                            if sf then
+                                local il = sf:FindFirstChild("ImageLabel")
+                                local tl = sf:FindFirstChild("TextLabel")
+                                if il and il:IsA("ImageLabel") then
+                                    if not HideIconOrig[il] then
+                                        HideIconOrig[il] = { Image = il.Image, ImageTransparency = il.ImageTransparency }
+                                    end
+                                    il.Image = "rbxassetid://72845574620852"
+                                    il.ImageTransparency = 0
+                                end
+                                if tl and tl:IsA("TextLabel") then
+                                    if not HideIconOrig[tl] then
+                                        HideIconOrig[tl] = { Text = tl.Text, TextTransparency = tl.TextTransparency }
+                                    end
+                                    tl.Text = "FAZZHUB"
+                                    tl.TextTransparency = 0
+                                end
+                            end
+                        end
+                    end
+                end
+            end
         end
-        return current
-    end
 
-    local function SC_TriggerMobileButton()
-        local b = SC_GetActionTarget()
-        if b and b:IsA("GuiObject") then
-            local p, s = b.AbsolutePosition, b.AbsoluteSize
-            local i = GuiService:GetGuiInset()
-            local cx, cy = p.X + (s.X / 2) + i.X, p.Y + (s.Y / 2) + i.Y
-            pcall(function()
-                VirtualInputManager:SendTouchEvent(SC_TouchID, 0, cx, cy)
-                task.wait(0.01)
-                VirtualInputManager:SendTouchEvent(SC_TouchID, 2, cx, cy)
-            end)
-        end
-    end
-
-    function W.SkillCheck_Start()
-        if SC.Connection then SC.Connection:Disconnect(); SC.Connection = nil end
-        SC.Connection = RunService.RenderStepped:Connect(function()
-            if not SC.Enabled or SC.Busy then return end
-            local pGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
-            if not pGui then return end
-            local prompt = pGui:FindFirstChild("SkillCheckPromptGui")
-            if not prompt then return end
-            local check = prompt:FindFirstChild("Check")
-            if not check or not check.Visible then return end
-            local line = check:FindFirstChild("Line")
-            local goal = check:FindFirstChild("Goal")
-            if not line or not goal then return end
-
-            if SC.Mode == "Instant" then
-                line.Rotation = goal.Rotation + 109
-                SC.Busy = true
-                task.spawn(function()
-                    if UserInputService.TouchEnabled then SC_TriggerMobileButton()
-                    else SC_PressSpace() end
-                    task.wait(SC.CheckDelay)
-                    SC.Busy = false
-                end)
-            else
-                local lr = line.Rotation % 360
-                local gr = goal.Rotation % 360
-                local sR = (gr + 102) % 360
-                local eR = (gr + 116) % 360
-                local success = (sR > eR and (lr >= sR or lr <= eR)) or (lr >= sR and lr <= eR)
-                if success then
-                    SC.Busy = true
-                    task.spawn(function()
-                        if UserInputService.TouchEnabled then SC_TriggerMobileButton()
-                        else SC_PressSpace() end
-                        task.wait(SC.FireDelay)
-                        SC.Busy = false
+        local function HideIcon_Restore()
+            for obj, data in pairs(HideIconOrig) do
+                if obj and obj.Parent then
+                    pcall(function()
+                        if data.Image ~= nil and obj:IsA("ImageLabel") then
+                            obj.Image = data.Image
+                            obj.ImageTransparency = data.ImageTransparency
+                        end
+                        if data.Text ~= nil and obj:IsA("TextLabel") then
+                            obj.Text = data.Text
+                            obj.TextTransparency = data.TextTransparency
+                        end
                     end)
                 end
             end
+            HideIconOrig = {}
+        end
+
+        task.spawn(function()
+            while true do
+                task.wait(1)
+                if HideIconEnabled then pcall(HideIcon_Apply) end
+            end
         end)
-    end
 
-    function W.SkillCheck_Stop()
-        if SC.Connection then SC.Connection:Disconnect(); SC.Connection = nil end
-        SC.Busy = false
-    end
-
-    function W.SkillCheck_SetEnabled(v)
-        SC.Enabled = v and true or false
-        if SC.Enabled then W.SkillCheck_Start() else W.SkillCheck_Stop() end
-    end
-
-    function W.SkillCheck_SetMode(m)
-        if m == "Legit" or m == "Instant" then SC.Mode = m end
-    end
-
-    function W.SkillCheck_SetCheckDelay(v)
-        SC.CheckDelay = math.clamp(tonumber(v) or 0.2, 0.01, 2)
-    end
-
-    function W.SkillCheck_SetFireDelay(v)
-        SC.FireDelay = math.clamp(tonumber(v) or 0.05, 0.01, 1)
-    end
-
-    --====================================================--
-    -- UI BUILD
-    --====================================================--
-    local allSections = {}
-    local function MakeSection(tab, name)
-        local s = tab:AddSection(name)
-        table.insert(allSections, s)
-        return s
-    end
-
-    local uiOK, uiErr = pcall(function()
-        if not UILib then error("UILib tidak tersedia.") end
-
-        local Window = UILib:Window({
-            Title = "FAZZHUB",
-            LogoButtonSize = 52,
-            Image = ICON_ID,
-            Footer = "Violence District",
-            Color = NotifyColor,
-            Version = 1,
-            Search = true
-        })
-
-        local SurvivorTab = Window:AddTab({ Name = "Survivor", Icon = "user" })
-        local VisualsTab  = Window:AddTab({ Name = "Visuals",  Icon = "eye" })
-        local KillerTab   = Window:AddTab({ Name = "Killer",   Icon = "crosshair" })
-        local MiscTab     = Window:AddTab({ Name = "Misc",     Icon = "settings-2" })
-        local BombaxTab   = Window:AddTab({ Name = "Bombax",   Icon = "music" })
-        local ConfigTab   = Window:AddTab({ Name = "Config",   Icon = "save" })
-
-        --====================================================--
-        -- SURVIVOR TAB
-        --====================================================--
-        local escSection = MakeSection(SurvivorTab, "Instant Escape")
-        escSection:AddToggle({ Title = "Enable Escape Button", Default = false, Callback = function(v)
-            if getgenv().FazzHub_Escape_SetEnabled then getgenv().FazzHub_Escape_SetEnabled(v) end
-            if v then VD_Notify("Escape Button", "Shown", 2) end
-        end })
-        escSection:AddButton({ Title = "Teleport Now", Callback = function() W.Escape_Teleport() end })
-
-        local healSection = MakeSection(SurvivorTab, "Self Heal")
-        healSection:AddToggle({ Title = "Self Heal Progress", Default = false, Callback = function(v)
-            W.setInstantHealSelf(v)
-            if getgenv().FazzHub_SHB_UpdateVisual then getgenv().FazzHub_SHB_UpdateVisual() end
-            if v then VD_Notify("Self Heal", "Enabled", 2) end
-        end })
-        healSection:AddToggle({ Title = "Auto Heal All", Default = false, Callback = function(v)
-            W.setAutoHealAll(v)
-            if v then VD_Notify("Auto Heal All", "Enabled", 2) end
-        end })
-        healSection:AddToggle({ Title = "Show Self Heal Button", Default = false, Callback = function(v)
-            if getgenv().FazzHub_SHB_SetEnabled then getgenv().FazzHub_SHB_SetEnabled(v) end
-        end })
-
-        local vaultSection = MakeSection(SurvivorTab, "Swift Vault")
-        vaultSection:AddToggle({ Title = "Swift Vault (Auto Vault)", Content = "Auto vault window saat dekat & bergerak",
-            Default = VD.SURV_AutoVault, Callback = function(v)
-                W.SwiftVault_SetEnabled(v)
-                if v then VD_Notify("Swift Vault", "Enabled", 2) else VD_Notify("Swift Vault", "Disabled", 2) end
-            end })
-        vaultSection:AddToggle({ Title = "Swift Vault V2 (Custom Speed)", Content = "Ubah kecepatan vault",
-            Default = VD.SURV_FastVault, Callback = function(v)
-                W.SwiftVaultV2_SetEnabled(v)
-                if v then VD_Notify("Swift Vault V2", "Enabled", 2) else VD_Notify("Swift Vault V2", "Disabled", 2) end
-            end })
-        vaultSection:AddSlider({ Title = "Vault Speed", Min = 10, Max = 20, Default = VD.SURF_VaultSpeed, Increment = 1,
-            Callback = function(v) W.SwiftVault_SetSpeed(v) end })
-
-        local palletSection = MakeSection(SurvivorTab, "Pallet Reflex")
-        palletSection:AddToggle({ Title = "Enable Pallet Reflex", Content = "Auto drop pallet saat killer dekat",
-            Default = VD.SURV_AutoPallet, Callback = function(v)
-                W.PalletReflex_SetEnabled(v)
-                if v then VD_Notify("Pallet Reflex", "Enabled", 2) else VD_Notify("Pallet Reflex", "Disabled", 2) end
-            end })
-        palletSection:AddSlider({ Title = "Trigger Distance", Min = 5, Max = 50, Default = VD.SURV_AutoPalletDist,
-            Increment = 1, Suffix = " studs", Callback = function(v) W.PalletReflex_SetDistance(v) end })
-
-        local fakeParrySection = MakeSection(SurvivorTab, "Fake Parry")
-        fakeParrySection:AddToggle({
-            Title = "Enable Fake Parry",
-            Content = "Pura-pura parry (animasi saja)",
+        HideIconSection:AddToggle({
+            Title = "Hide Icon (Image FAZZHUB)",
+            Content = "Ganti icon Survivor1-5 jadi image FAZZHUB + teks 'FAZZHUB'",
             Default = false,
             Keybind = true,
             Callback = function(v)
-                W.FakeParry_SetEnabled(v)
-                if v then VD_Notify("Fake Parry", "Enabled — press " .. (VD.SURV_FakeParryKey or "V"), 2)
-                else VD_Notify("Fake Parry", "Disabled", 2) end
+                HideIconEnabled = v and true or false
+                if HideIconEnabled then
+                    HideIcon_Apply()
+                    VD_Notify("Hide Icon", "Icon diganti jadi FAZZHUB", 2)
+                else
+                    HideIcon_Restore()
+                    VD_Notify("Hide Icon", "Icon direstore", 2)
+                end
             end
         })
-        fakeParrySection:AddDropdown({
-            Title = "Animation",
-            Options = { "Enten", "Stopwatch", "Fih", "BloodShield" },
-            Default = VD.SURV_FakeParryAnim or "Enten",
+
+        --====================================================--
+        -- CROSSHAIR (5 GAYA)
+        --====================================================--
+        local CrosshairSection = MakeSection(MiscTab, "Crosshair")
+        local Crosshair = {
+            Enabled = false,
+            Style = "Dot",
+            Size = 12,
+            Thickness = 2,
+            Color = Color3.fromRGB(255, 255, 255),
+            OnlyADS = false,
+            Gui = nil,
+            Parts = {},
+        }
+
+        local function Crosshair_Destroy()
+            if Crosshair.Gui then
+                pcall(function() Crosshair.Gui:Destroy() end)
+                Crosshair.Gui = nil
+            end
+            Crosshair.Parts = {}
+        end
+
+        local function Crosshair_Build()
+            Crosshair_Destroy()
+            local pg = LocalPlayer:FindFirstChild("PlayerGui")
+            if gethui then
+                local ok2, hui = pcall(gethui)
+                if ok2 and hui then pg = hui end
+            end
+            if not pg then return end
+
+            local gui = Instance.new("ScreenGui")
+            gui.Name = "FazzHubCrosshair"
+            gui.ResetOnSpawn = false
+            gui.IgnoreGuiInset = true
+            gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+            gui.DisplayOrder = 999
+            gui.Parent = pg
+            Crosshair.Gui = gui
+
+            local holder = Instance.new("Frame")
+            holder.Name = "Holder"
+            holder.AnchorPoint = Vector2.new(0.5, 0.5)
+            holder.Position = UDim2.new(0.5, 0, 0.5, 0)
+            holder.Size = UDim2.fromOffset(80, 80)
+            holder.BackgroundTransparency = 1
+            holder.Parent = gui
+
+            local size = Crosshair.Size
+            local thick = Crosshair.Thickness
+            local col = Crosshair.Color
+
+            local function mkLine(name, xSize, ySize, xPos, yPos)
+                local f = Instance.new("Frame")
+                f.Name = name
+                f.AnchorPoint = Vector2.new(0.5, 0.5)
+                f.Position = UDim2.new(0.5, xPos, 0.5, yPos)
+                f.Size = UDim2.fromOffset(xSize, ySize)
+                f.BackgroundColor3 = col
+                f.BorderSizePixel = 0
+                f.ZIndex = 2
+                f.Parent = holder
+                table.insert(Crosshair.Parts, f)
+                return f
+            end
+
+            local style = Crosshair.Style
+            if style == "Dot" then
+                local dot = Instance.new("Frame")
+                dot.Name = "Dot"
+                dot.AnchorPoint = Vector2.new(0.5, 0.5)
+                dot.Position = UDim2.new(0.5, 0, 0.5, 0)
+                dot.Size = UDim2.fromOffset(thick + 2, thick + 2)
+                dot.BackgroundColor3 = col
+                dot.BorderSizePixel = 0
+                dot.ZIndex = 2
+                dot.Parent = holder
+                Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
+                table.insert(Crosshair.Parts, dot)
+
+            elseif style == "Cross" then
+                mkLine("Top",    thick, size, 0, -size/2 - 2)
+                mkLine("Bottom", thick, size, 0,  size/2 + 2)
+                mkLine("Left",   size, thick, -size/2 - 2, 0)
+                mkLine("Right",  size, thick,  size/2 + 2, 0)
+
+            elseif style == "Circle" then
+                local c = Instance.new("Frame")
+                c.Name = "Circle"
+                c.AnchorPoint = Vector2.new(0.5, 0.5)
+                c.Position = UDim2.new(0.5, 0, 0.5, 0)
+                c.Size = UDim2.fromOffset(size, size)
+                c.BackgroundTransparency = 1
+                c.BorderSizePixel = 0
+                c.ZIndex = 2
+                c.Parent = holder
+                Instance.new("UICorner", c).CornerRadius = UDim.new(1, 0)
+                local cs = Instance.new("UIStroke", c)
+                cs.Color = col
+                cs.Thickness = thick
+                table.insert(Crosshair.Parts, c)
+
+            elseif style == "Crosshair+Dot" then
+                local gap = 4
+                mkLine("Top",    thick, size, 0, -gap - size/2)
+                mkLine("Bottom", thick, size, 0,  gap + size/2)
+                mkLine("Left",   size, thick, -gap - size/2, 0)
+                mkLine("Right",  size, thick,  gap + size/2, 0)
+                local dot = Instance.new("Frame")
+                dot.Name = "Dot"
+                dot.AnchorPoint = Vector2.new(0.5, 0.5)
+                dot.Position = UDim2.new(0.5, 0, 0.5, 0)
+                dot.Size = UDim2.fromOffset(thick + 1, thick + 1)
+                dot.BackgroundColor3 = col
+                dot.BorderSizePixel = 0
+                dot.ZIndex = 2
+                dot.Parent = holder
+                Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
+                table.insert(Crosshair.Parts, dot)
+
+            elseif style == "X" then
+                local l1 = Instance.new("Frame")
+                l1.Name = "X1"
+                l1.AnchorPoint = Vector2.new(0.5, 0.5)
+                l1.Position = UDim2.new(0.5, 0, 0.5, 0)
+                l1.Size = UDim2.fromOffset(thick, size * 1.4)
+                l1.BackgroundColor3 = col
+                l1.BorderSizePixel = 0
+                l1.Rotation = 45
+                l1.ZIndex = 2
+                l1.Parent = holder
+                table.insert(Crosshair.Parts, l1)
+
+                local l2 = Instance.new("Frame")
+                l2.Name = "X2"
+                l2.AnchorPoint = Vector2.new(0.5, 0.5)
+                l2.Position = UDim2.new(0.5, 0, 0.5, 0)
+                l2.Size = UDim2.fromOffset(thick, size * 1.4)
+                l2.BackgroundColor3 = col
+                l2.BorderSizePixel = 0
+                l2.Rotation = -45
+                l2.ZIndex = 2
+                l2.Parent = holder
+                table.insert(Crosshair.Parts, l2)
+            end
+        end
+
+        local function Crosshair_UpdateColor(c)
+            Crosshair.Color = c
+            if Crosshair.Gui then
+                for _, p in ipairs(Crosshair.Parts) do
+                    if p and p.Parent then
+                        if p:IsA("Frame") and p.Name ~= "Circle" then
+                            p.BackgroundColor3 = c
+                        end
+                        local s = p:FindFirstChildOfClass("UIStroke")
+                        if s then s.Color = c end
+                    end
+                end
+            end
+        end
+
+        CrosshairSection:AddToggle({
+            Title = "Enable Crosshair",
+            Default = false,
+            Keybind = true,
+            Callback = function(v)
+                Crosshair.Enabled = v and true or false
+                if Crosshair.Enabled then
+                    Crosshair_Build()
+                    VD_Notify("Crosshair", "Enabled", 2)
+                else
+                    Crosshair_Destroy()
+                    VD_Notify("Crosshair", "Disabled", 2)
+                end
+            end
+        })
+        CrosshairSection:AddDropdown({
+            Title = "Style",
+            Options = { "Dot", "Cross", "Circle", "Crosshair+Dot", "X" },
+            Default = "Dot",
             Multi = false,
             Callback = function(v)
                 if type(v) == "table" then v = v[1] end
-                W.FakeParry_SetAnim(v)
-                VD_Notify("Fake Parry", "Anim: " .. tostring(v), 2)
+                Crosshair.Style = v
+                if Crosshair.Enabled then Crosshair_Build() end
+                VD_Notify("Crosshair", "Style: " .. tostring(v), 1)
             end
         })
-        fakeParrySection:AddInput({
-            Title = "Keybind",
-            Default = VD.SURV_FakeParryKey or "V",
-            Placeholder = "V / G / F / X / B",
-            Callback = function(input)
-                input = tostring(input or ""):gsub("%s+", "")
-                if input == "" then return end
-                if W.FakeParry_SetKeybind(input) then
-                    VD_Notify("Fake Parry", "Keybind: " .. input:upper(), 2)
-                else
-                    ForceNotify("Fake Parry", "Key tidak valid: " .. input, 2)
+        CrosshairSection:AddSlider({
+            Title = "Size",
+            Min = 4, Max = 40, Default = 12, Increment = 1,
+            Callback = function(v)
+                Crosshair.Size = v
+                if Crosshair.Enabled then Crosshair_Build() end
+            end
+        })
+        CrosshairSection:AddSlider({
+            Title = "Thickness",
+            Min = 1, Max = 6, Default = 2, Increment = 1,
+            Callback = function(v)
+                Crosshair.Thickness = v
+                if Crosshair.Enabled then Crosshair_Build() end
+            end
+        })
+        CrosshairSection:AddColorPicker({
+            Title = "Color",
+            Default = Color3.fromRGB(255, 255, 255),
+            Save = false,
+            Callback = function(c) Crosshair_UpdateColor(c) end
+        })
+        CrosshairSection:AddToggle({
+            Title = "Show Only ADS",
+            Default = false,
+            Callback = function(v)
+                Crosshair.OnlyADS = v and true or false
+                if Crosshair.Gui then
+                    Crosshair.Gui.Enabled = Crosshair.Enabled and (not v or UserInputService.MouseBehavior == Enum.MouseBehavior.LockCenter)
                 end
             end
         })
-        fakeParrySection:AddSlider({
-            Title = "Cooldown",
-            Min = 0, Max = 3,
-            Default = VD.SURV_FakeParryCooldown or 0.4,
-            Increment = 0.1,
-            Suffix = "s",
-            Callback = function(v) VD.SURV_FakeParryCooldown = v end
-        })
-        fakeParrySection:AddToggle({
-            Title = "Show Floating Button",
-            Content = "Tampilkan tombol Fake Parry (mobile friendly)",
-            Default = false,
-            Callback = function(v) W.FakeParry_SetShowButton(v) end
-        })
-        fakeParrySection:AddButton({
-            Title = "Test Fake Parry Now",
-            Content = "Play animasi sekali untuk test",
+        CrosshairSection:AddButton({
+            Title = "Rebuild Crosshair",
             Callback = function()
-                W.FakeParry_Trigger()
-                ForceNotify("Fake Parry", "Playing animation...", 2)
+                if Crosshair.Enabled then Crosshair_Build() end
             end
         })
 
-        local fleeSection = MakeSection(SurvivorTab, "Auto Flee Killer")
-        fleeSection:AddToggle({ Title = "Enable Auto Flee", Content = "Otomatis teleport menjauh dari killer",
-            Default = VD.SURV_AutoFlee, Callback = function(v)
-                VD.SURV_AutoFlee = v
-                if v then VD_Notify("Auto Flee", "Enabled", 2) else VD_Notify("Auto Flee", "Disabled", 2) end
-            end })
-        fleeSection:AddSlider({ Title = "Detect Distance", Min = 15, Max = 150, Default = VD.SURV_AutoFleeDist,
-            Increment = 5, Suffix = " studs", Callback = function(v) VD.SURV_AutoFleeDist = v end })
-        fleeSection:AddSlider({ Title = "Flee Cooldown", Min = 0.5, Max = 10, Default = VD.SURV_AutoFleeCooldown,
-            Increment = 0.5, Suffix = "s", Callback = function(v) VD.SURV_AutoFleeCooldown = v end })
-
-        local fpSection = MakeSection(SurvivorTab, "Fake Perks")
-        fpSection:AddToggle({ Title = "Flowstate (Buff on Vault/Slide)", Default = false, Callback = function(v)
-            W.FP_SetupFlowstate(v); if v then VD_Notify("Fake Perks", "Flowstate Enabled", 2) end end })
-        fpSection:AddToggle({ Title = "Quick Recovery (Buff on Heal)", Default = false, Callback = function(v)
-            W.FP_SetupQuickRecovery(v); if v then VD_Notify("Fake Perks", "Quick Recovery Enabled", 2) end end })
-        fpSection:AddToggle({ Title = "Perfect Landing (Buff on Land)", Default = false, Callback = function(v)
-            W.FP_SetupPerfectLanding(v); if v then VD_Notify("Fake Perks", "Perfect Landing Enabled", 2) end end })
-        fpSection:AddToggle({ Title = "Adrenaline Rush (Buff on Low HP)", Default = false, Callback = function(v)
-            W.FP_SetupAdrenalineRush(v); if v then VD_Notify("Fake Perks", "Adrenaline Rush Enabled", 2) end end })
-        fpSection:AddSlider({ Title = "Perk Cooldown", Min = 0, Max = 30, Default = 5, Increment = 1, Suffix = "s",
-            Callback = function(v) W.FP.CooldownTime = v end })
-        fpSection:AddButton({ Title = "Clear All Active Buffs", Callback = function()
-            for k in pairs(W.FP.ActiveBuffs) do W.FP.ActiveBuffs[k] = nil end
-            local c = LocalPlayer.Character
-            if c then c:SetAttribute("speedboost", 1) end
-            local h = c and c:FindFirstChildOfClass("Humanoid")
-            if h then h.WalkSpeed = 16 end
-            ForceNotify("Fake Perks", "Buffs cleared", 2)
-        end })
-
-        local skillSection = MakeSection(SurvivorTab, "Auto Skill Check")
-        skillSection:AddToggle({
-            Title = "Enable Auto Skill Check",
-            Content = "Auto trigger skill check (PC: Space / Mobile: tap)",
-            Default = false,
-            Callback = function(v)
-                W.SkillCheck_SetEnabled(v)
-                if v then VD_Notify("Auto Skill Check", "Enabled", 2)
-                else VD_Notify("Auto Skill Check", "Disabled", 2) end
-            end
-        })
-        skillSection:AddDropdown({
-            Title = "Mode",
-            Options = { "Legit", "Instant" },
-            Default = "Legit",
-            Callback = function(v)
-                local val = type(v) == "table" and v[1] or v
-                W.SkillCheck_SetMode(val)
-                VD_Notify("Auto Skill Check", "Mode: " .. tostring(val), 2)
-            end
-        })
-        skillSection:AddSlider({
-            Title = "Check Delay",
-            Min = 0.05, Max = 2,
-            Default = 0.2,
-            Increment = 0.05,
-            Suffix = "s",
-            Callback = function(v) W.SkillCheck_SetCheckDelay(v) end
-        })
-        skillSection:AddSlider({
-            Title = "Fire Delay",
-            Min = 0.01, Max = 1,
-            Default = 0.05,
-            Increment = 0.01,
-            Suffix = "s",
-            Callback = function(v) W.SkillCheck_SetFireDelay(v) end
-        })
-
-        local genSection = MakeSection(SurvivorTab, "Bypass Generator")
-        genSection:AddToggle({ Title = "Enable Bypass Generator", Default = false, Callback = function(v)
-            W.setGenBypass(v); if v then VD_Notify("Bypass Generator", "Enabled (Hotkey: B)", 3) end end })
-        genSection:AddSlider({ Title = "Trigger Range", Min = 3, Max = 20, Default = 8, Increment = 1, Suffix = " studs",
-            Callback = function(v) W.GenBypass.TriggerRange = v end })
-        genSection:AddButton({ Title = "Force Repair Nearest Generator", Callback = function()
-            local bp, bd = W.GB_GetNearestPoint()
-            if bp and bd <= W.GenBypass.TriggerRange then W.GB_DoRepair(bp); ForceNotify("Bypass Generator", "Forcing repair...", 2)
-            else ForceNotify("Bypass Generator", "Terlalu jauh", 2) end
-        end })
-
-        local UnlimitedVaultSection = MakeSection(SurvivorTab, "Unlimited Vault")
-        local UnlimitedVaultEnabled = false
-        local UnlimitedVaultConn = nil
-        local function EnableUnlimitedVault()
-            if UnlimitedVaultEnabled then return end
-            UnlimitedVaultEnabled = true
-            if UnlimitedVaultConn then UnlimitedVaultConn:Disconnect() end
-            for _, v in ipairs(CollectionService:GetTagged("Blocked")) do
-                CollectionService:RemoveTag(v, "Blocked")
-            end
-            UnlimitedVaultConn = CollectionService:GetInstanceAddedSignal("Blocked"):Connect(function(instance)
-                CollectionService:RemoveTag(instance, "Blocked")
-            end)
-        end
-        local function DisableUnlimitedVault()
-            UnlimitedVaultEnabled = false
-            if UnlimitedVaultConn then UnlimitedVaultConn:Disconnect(); UnlimitedVaultConn = nil end
-        end
-        UnlimitedVaultSection:AddToggle({ Title = "Unlimited Vault", Content = "Remove 'Blocked' tag",
-            Default = false, Keybind = true,
-            Callback = function(state)
-                if state then EnableUnlimitedVault() else DisableUnlimitedVault() end
-                VD_Notify("Unlimited Vault", state and "Enabled" or "Disabled", 2)
-            end })
-
-        local AntiSlowVaultSection = MakeSection(SurvivorTab, "Anti Slow Vault")
-        local AntiSlowVaultEnabled = false
-        local AntiSlowVaultConn = nil
-        local function EnableAntiSlowVault()
-            if AntiSlowVaultEnabled then return end
-            AntiSlowVaultEnabled = true
-            for _, v in ipairs(CollectionService:GetTagged("SlowVault")) do
-                CollectionService:RemoveTag(v, "SlowVault")
-            end
-            if AntiSlowVaultConn then AntiSlowVaultConn:Disconnect() end
-            AntiSlowVaultConn = CollectionService:GetInstanceAddedSignal("SlowVault"):Connect(function(instance)
-                CollectionService:RemoveTag(instance, "SlowVault")
-            end)
-        end
-        local function DisableAntiSlowVault()
-            AntiSlowVaultEnabled = false
-            if AntiSlowVaultConn then AntiSlowVaultConn:Disconnect(); AntiSlowVaultConn = nil end
-        end
-        AntiSlowVaultSection:AddToggle({ Title = "Anti Slow Vault", Content = "Remove 'SlowVault' tag",
-            Default = false, Keybind = true,
-            Callback = function(state)
-                if state then EnableAntiSlowVault() else DisableAntiSlowVault() end
-                VD_Notify("Anti Slow Vault", state and "Enabled" or "Disabled", 2)
-            end })
-
-        local GodSection = MakeSection(SurvivorTab, "God Mode")
-        local GodModeEnabled = false
-        local GodModeThread = nil
-        local function StartGodMode()
-            if GodModeThread then task.cancel(GodModeThread) end
-            GodModeThread = task.spawn(function()
-                while GodModeEnabled do
-                    local char = LocalPlayer.Character
-                    local hum = char and char:FindFirstChildOfClass("Humanoid")
-                    if hum then
-                        pcall(function()
-                            if hum.Health < hum.MaxHealth and hum.Health > 0 then hum.Health = hum.MaxHealth end
-                        end)
-                    end
-                    task.wait(0.1)
-                end
-                GodModeThread = nil
-            end)
-        end
-        local function StopGodMode()
-            GodModeEnabled = false
-            if GodModeThread then task.cancel(GodModeThread); GodModeThread = nil end
-        end
-        GodSection:AddToggle({ Title = "God Mode", Content = "Auto-heal terus (Health selalu MaxHealth)",
-            Default = false, Keybind = true,
-            Callback = function(state)
-                GodModeEnabled = state
-                if state then StartGodMode(); VD_Notify("God Mode", "Enabled", 2)
-                else StopGodMode(); VD_Notify("God Mode", "Disabled", 2) end
-            end })--========================================================--
--- FAZZHUB v0.3.9
--- PART 19B/19 : SURVIVOR TAB (LANJUTAN)
---========================================================--
-
-        local AutoRunSection = MakeSection(SurvivorTab, "Auto Run")
-        local AutoRunPCEnabled = false
-        local AutoRunMobileEnabled = false
-        local AutoRunPCThread = nil
-        local AutoRunMobileThread = nil
-        local function StartAutoRunPC()
-            if AutoRunPCThread then task.cancel(AutoRunPCThread) end
-            AutoRunPCThread = task.spawn(function()
-                while AutoRunPCEnabled do
-                    pcall(function()
-                        if VirtualInputManager then
-                            VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.LeftShift, false, LocalPlayer:GetMouse())
-                        end
-                    end)
-                    task.wait(0.1)
-                end
-                pcall(function()
-                    if VirtualInputManager then VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.LeftShift, false, LocalPlayer:GetMouse()) end
-                end)
-                AutoRunPCThread = nil
-            end)
-        end
-        local function StopAutoRunPC()
-            AutoRunPCEnabled = false
-            if AutoRunPCThread then task.cancel(AutoRunPCThread); AutoRunPCThread = nil end
-            pcall(function()
-                if VirtualInputManager then VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.LeftShift, false, LocalPlayer:GetMouse()) end
-            end)
-        end
-        local function GetMobileSprintButton()
-            local pg = LocalPlayer:FindFirstChild("PlayerGui"); if not pg then return nil end
-            local mob = pg:FindFirstChild("Survivor-mob"); if not mob then return nil end
-            local controls = mob:FindFirstChild("Controls"); if not controls then return nil end
-            local sprint = controls:FindFirstChild("sprint"); if not sprint then return nil end
-            if sprint:IsA("GuiButton") then return sprint end
-            local icon = sprint:FindFirstChild("icon")
-            if icon and icon:IsA("GuiButton") then return icon end
-            if icon and icon.Parent and icon.Parent:IsA("GuiButton") then return icon.Parent end
-            if sprint.Parent and sprint.Parent:IsA("GuiButton") then return sprint.Parent end
-            return sprint
-        end
-        local function PressSprint()
-            local btn = GetMobileSprintButton()
-            if not btn then return false end
-            pcall(function()
-                if type(firesignal) == "function" then
-                    firesignal(btn.MouseButton1Click)
-                    firesignal(btn.MouseButton1Down)
-                    task.wait(0.04)
-                    firesignal(btn.MouseButton1Up)
-                elseif VirtualInputManager and GuiService then
-                    local pos = btn.AbsolutePosition; local size = btn.AbsoluteSize
-                    local inset = GuiService:GetGuiInset()
-                    local x = pos.X + size.X / 2 + inset.X
-                    local y = pos.Y + size.Y / 2 + inset.Y
-                    local id = 9901
-                    VirtualInputManager:SendTouchEvent(id, 0, x, y)
-                    task.wait(0.04)
-                    VirtualInputManager:SendTouchEvent(id, 2, x, y)
-                end
-            end)
-            return true
-        end
-        local function IsMoving()
-            local char = LocalPlayer.Character; if not char then return false end
-            local hum = char:FindFirstChildOfClass("Humanoid"); if not hum then return false end
-            if hum.MoveDirection.Magnitude > 0.12 then return true end
-            local hrp = char:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                local v = hrp.AssemblyLinearVelocity
-                if Vector3.new(v.X, 0, v.Z).Magnitude > 1.5 then return true end
-            end
-            return false
-        end
-        local function IsCrouching()
-            local char = LocalPlayer.Character; if not char then return false end
-            return char:GetAttribute("Crouching") == true or char:GetAttribute("Crouchingserver") == true
-        end
-        local function IsActuallySprinting()
-            local char = LocalPlayer.Character; if not char then return false end
-            return char:GetAttribute("Sprinting") == true or char:GetAttribute("IsRunning") == true
-        end
-        local function StartAutoRunMobile()
-            if AutoRunMobileThread then return end
-            AutoRunMobileThread = task.spawn(function()
-                while AutoRunMobileEnabled do
-                    local moving = IsMoving()
-                    local crouching = IsCrouching()
-                    local sprinting = IsActuallySprinting()
-                    if crouching then if sprinting then PressSprint() end
-                    else
-                        if moving and not sprinting then PressSprint()
-                        elseif not moving and sprinting then PressSprint() end
-                    end
-                    task.wait(0.12)
-                end
-                if IsActuallySprinting() then PressSprint() end
-                AutoRunMobileThread = nil
-            end)
-        end
-        local function StopAutoRunMobile() AutoRunMobileEnabled = false end
-        AutoRunSection:AddToggle({ Title = "Auto Run [PC]", Content = "Auto hold LeftShift",
-            Default = false, Callback = function(v)
-                AutoRunPCEnabled = v
-                if v then StartAutoRunPC() else StopAutoRunPC() end
-                VD_Notify("Auto Run PC", v and "Enabled" or "Disabled", 2)
-            end })
-        AutoRunSection:AddToggle({ Title = "Auto Run [Mobile]", Content = "Auto sprint di mobile",
-            Default = false, Callback = function(v)
-                AutoRunMobileEnabled = v
-                if v then StartAutoRunMobile(); VD_Notify("Auto Run Mobile", "Enabled", 2)
-                else StopAutoRunMobile(); VD_Notify("Auto Run Mobile", "Disabled", 2) end
-            end })
-        LocalPlayer.CharacterAdded:Connect(function()
-            task.wait(1)
-            if AutoRunPCEnabled then StartAutoRunPC() end
-            if AutoRunMobileEnabled then AutoRunMobileThread = nil; StartAutoRunMobile() end
-        end)
-
-        local trollSection = MakeSection(SurvivorTab, "Troll Teleport")
-        trollSection:AddToggle({ Title = "Enable Troll Teleport", Default = false, Callback = function(v)
-            W.TrollTeleport_SetEnabled(v)
-            if getgenv().FazzHub_TTB_UpdateVisual then getgenv().FazzHub_TTB_UpdateVisual() end
-            if v then VD_Notify("Troll Teleport", "Enabled", 2) end
-        end })
-        trollSection:AddToggle({ Title = "Show Troll TP Button", Default = false, Callback = function(v)
-            if getgenv().FazzHub_TTB_SetEnabled then getgenv().FazzHub_TTB_SetEnabled(v) end
-        end })
-
-        local autoCrouchSection = MakeSection(SurvivorTab, "Auto Crouch Dodge")
-        autoCrouchSection:AddToggle({ Title = "Enable Auto Crouch Dodge", Content = "Auto crouch saat killer pakai Abyssal S1",
-            Default = VD.AutoCrouch, Callback = function(v)
-                VD.AutoCrouch = v
-                if v then VD_Notify("Auto Crouch Dodge", "Enabled", 2) else VD_Notify("Auto Crouch Dodge", "Disabled", 2) end
-            end })
-
-        local parrySection = MakeSection(SurvivorTab, "Auto Parry V1")
-        parrySection:AddToggle({ Title = "Enable Auto Parry", Default = VD.PARRY_Enabled, Callback = function(v)
-            VD.PARRY_Enabled = v
-            if not v then ParryState.ActiveAttackers = {} end
-            if getgenv().FazzHub_ParryBtn_UpdateVisual then getgenv().FazzHub_ParryBtn_UpdateVisual() end
-            if v then VD_Notify("Auto Parry", "Enabled", 2) end
-        end })
-        parrySection:AddToggle({ Title = "Show Parry Button", Default = false, Callback = function(v)
-            VD.PARRY_ShowFloatBtn = v
-            if getgenv().FazzHub_ParryBtn_SetEnabled then getgenv().FazzHub_ParryBtn_SetEnabled(v) end
-        end })
-        parrySection:AddToggle({ Title = "Auto Parry Aggressive", Default = VD.PARRY_Aggressive, Callback = function(v) VD.PARRY_Aggressive = v end })
-        parrySection:AddSlider({ Title = "Parry Distance", Min = 4, Max = 30, Default = VD.PARRY_Distance, Increment = 1, Callback = function(v) VD.PARRY_Distance = v end })
-        parrySection:AddToggle({ Title = "Show Parry Range", Default = VD.PARRY_ShowCircle, Callback = function(v)
-            VD.PARRY_ShowCircle = v
-            if not v and getgenv()._FazzHub_DestroyParryCircle then pcall(getgenv()._FazzHub_DestroyParryCircle) end
-        end })
-        parrySection:AddToggle({ Title = "Silent Parry (Legit)", Default = VD.PARRY_SilentParry, Callback = function(v) VD.PARRY_SilentParry = v end })
-
-        local ap2Section = MakeSection(SurvivorTab, "Auto Parry V2")
-        ap2Section:AddToggle({
-            Title = "Enable Auto Parry V2",
-            Content = "Auto parry cepet",
-            Default = VD.AP2_AutoParry,
-            Callback = function(v)
-                VD.AP2_AutoParry = v and true or false
-                if v then VD_Notify("Auto Parry V2", "Enabled", 2)
-                else VD_Notify("Auto Parry V2", "Disabled", 2) end
-            end
-        })
-        ap2Section:AddToggle({ Title = "Aggressive Mode", Content = "Parry tanpa cek arah hadap killer",
-            Default = VD.AP2_ParryAggressive, Callback = function(v) VD.AP2_ParryAggressive = v and true or false end })
-        ap2Section:AddToggle({ Title = "Safety Parry", Content = "Skip parry kalau lagi vault/repair/heal",
-            Default = VD.AP2_ParrySafety, Callback = function(v) VD.AP2_ParrySafety = v and true or false end })
-        ap2Section:AddSlider({ Title = "Parry Distance", Min = 4, Max = 25, Default = VD.AP2_ParryDistance, Increment = 1, Suffix = " studs",
-            Callback = function(v) VD.AP2_ParryDistance = v end })
-        ap2Section:AddSlider({ Title = "Face Sensitivity Killer", Min = -1, Max = 1, Default = VD.AP2_ParryFace, Increment = 0.05,
-            Callback = function(v) VD.AP2_ParryFace = v end })
-        ap2Section:AddToggle({ Title = "Show Range Circle", Default = VD.AP2_ParryCircle,
-            Callback = function(v) VD.AP2_ParryCircle = v and true or false end })
-        ap2Section:AddDropdown({ Title = "Ignore Skills", Options = { "Hidden S1", "Abyssal S1" }, Multi = true, Default = {},
-            Callback = function(sel)
-                local parsed = {}
-                if type(sel) == "table" then
-                    for k, v in pairs(sel) do
-                        if type(k) == "string" and v then parsed[k] = true
-                        elseif type(v) == "string" then parsed[v] = true end
-                    end
-                elseif type(sel) == "string" then parsed[sel] = true end
-                VD.AP2_IgnoredSkills = parsed
-            end })
-
-        local fallSection = MakeSection(SurvivorTab, "Anti Fall Damage")
-        fallSection:AddToggle({ Title = "Enable No Fall Damage", Content = "Block fall damage remote (Mechanics.Fall)",
-            Default = false, Callback = function(v)
-                VD.NoFallDamage = v and true or false
-                if v then VD_Notify("No Fall Damage", "Enabled", 2)
-                else VD_Notify("No Fall Damage", "Disabled", 2) end
-            end })
-
-        local mapPredictSection = MakeSection(SurvivorTab, "Next Map Prediction")
-        mapPredictSection:AddToggle({ Title = "Enable Map Prediction", Content = "Floating GUI shows detected/next map",
-            Default = false, Callback = function(v)
-                if W.NextMapPredict_SetEnabled then W.NextMapPredict_SetEnabled(v) end
-                if v then VD_Notify("Map Prediction", "Enabled", 2)
-                else VD_Notify("Map Prediction", "Disabled", 2) end
-            end })
-
-        local manualGenSection = MakeSection(SurvivorTab, "Manual Generator")
-        manualGenSection:AddToggle({ Title = "Enable Manual Generator", Content = "Auto repair nearest gen in reach.",
-            Default = false, Callback = function(v)
-                if W.ManualGen_SetEnabled then W.ManualGen_SetEnabled(v) end
-                if v then VD_Notify("Manual Gen", "Enabled", 2)
-                else VD_Notify("Manual Gen", "Disabled", 2) end
-            end })
-        manualGenSection:AddSlider({ Title = "Killer Escape Distance", Min = 10, Max = 80, Default = 30, Increment = 5, Suffix = " studs",
-            Callback = function(v) if W.GenAuto_SetDistance then W.GenAuto_SetDistance(v) end end })
-
-        local autoGenSection = MakeSection(SurvivorTab, "Auto Generator")
-        autoGenSection:AddToggle({ Title = "Enable Auto Generator", Content = "Auto TP to safe gen when killer approaches",
-            Default = false, Callback = function(v)
-                if W.AutoGen_SetEnabled then W.AutoGen_SetEnabled(v) end
-                if v then VD_Notify("Auto Gen", "Enabled", 2)
-                else VD_Notify("Auto Gen", "Disabled", 2) end
-            end })
-
-        local unhookSection = MakeSection(SurvivorTab, "Self Unhook")
-        unhookSection:AddToggle({ Title = "Enable Self Unhook", Default = false, Callback = function(v)
-            if W.SU_SetEnabled then W.SU_SetEnabled(v) end
-            if getgenv().FazzHub_SUB_UpdateVisual then getgenv().FazzHub_SUB_UpdateVisual() end
-            if v then VD_Notify("Self Unhook", "Enabled", 2) end
-        end })
-        unhookSection:AddToggle({ Title = "Show Self Unhook Button", Default = false, Callback = function(v)
-            if getgenv().FazzHub_SUB_SetEnabled then getgenv().FazzHub_SUB_SetEnabled(v) end
-        end })
-        unhookSection:AddSlider({ Title = "Follow Duration", Min = 5, Max = 120, Default = 30, Increment = 5, Suffix = "s",
-            Callback = function(v) if W.SelfUnhook then W.SelfUnhook.FollowDuration = v end end })
-        unhookSection:AddSlider({ Title = "Follow Distance", Min = 5, Max = 60, Default = 20, Increment = 1, Suffix = " studs",
-            Callback = function(v) if W.SelfUnhook then W.SelfUnhook.FollowDistance = v end end })
-
-        local tofSection = MakeSection(SurvivorTab, "Silent Aim TOF")
-        tofSection:AddToggle({ Title = "Enable Silent Aim", Default = VD.TOF_SilentAim, Callback = function(v)
-            SetToFSilentAim(v); if v then VD_Notify("Silent Aim TOF", "Enabled", 2) end end })
-        tofSection:AddKeybind({ Title = "Toggle Key", Default = Enum.KeyCode.Q, Callback = function(kc) VD.TOF_Key = kc and kc.Name or "None" end })
-        tofSection:AddDropdown({ Title = "Target Mode", Options = { "Killer", "Survivors", "Zombie" }, Default = "Killer", Callback = function(v) ToF_SetTargetMode(v, true) end })
-        tofSection:AddToggle({ Title = "Show Laser Beam", Default = true, Callback = function(v) VD.TOF_Laser = v; if not v then ToF_ClearLaser() end end })
-        tofSection:AddToggle({ Title = "Wall Check", Default = true, Callback = function(v) VD.TOF_WallCheck = v end })
-        tofSection:AddToggle({ Title = "Block When Knocked", Default = true, Callback = function(v) VD.TOF_BlockKnocked = v end })
-
-        local flashSection = MakeSection(SurvivorTab, "Silent Flashlight")
-        flashSection:AddToggle({ Title = "Enable Silent Flashlight", Content = "Auto-aim flashlight ke Killer",
-            Default = VD.FLASH_SilentAim, Callback = function(v)
-                W.Flash_SetEnabled(v)
-                if v then VD_Notify("Silent Flashlight", "Enabled", 2) else VD_Notify("Silent Flashlight", "Disabled", 2) end
-            end })
-        flashSection:AddDropdown({ Title = "Target Part", Options = {"Head", "UpperTorso", "Torso", "HumanoidRootPart"},
-            Default = VD.FLASH_TargetPart, Callback = function(v) VD.FLASH_TargetPart = type(v) == "table" and v[1] or v or "Head" end })
-        flashSection:AddSlider({ Title = "Max Range", Min = 20, Max = 250, Default = VD.FLASH_Range, Increment = 5, Suffix = " studs", Callback = function(v) VD.FLASH_Range = v end })
-        flashSection:AddSlider({ Title = "Smoothness", Min = 0.05, Max = 1, Default = VD.FLASH_Smooth, Increment = 0.05, Callback = function(v) VD.FLASH_Smooth = v end })
-        flashSection:AddToggle({ Title = "Show Laser", Default = VD.FLASH_Laser, Callback = function(v)
-            VD.FLASH_Laser = v; if not v and W.Flash_ClearLaser then W.Flash_ClearLaser() end end })
-
-        local aimlockGunSection = MakeSection(SurvivorTab, "Aim Lock Gun")
-        aimlockGunSection:AddToggle({ Title = "Enable Aim Lock Gun", Content = "Hold M2 → camera lock ke target",
-            Default = false, Keybind = true,
-            Callback = function(v)
-                if W.GunAim_Cfg then W.GunAim_Cfg.Enabled = v end
-                if v and W.GunAim_Start then W.GunAim_Start() end
-                if v then VD_Notify("Aim Lock Gun", "Hold M2 to lock", 2) end
-            end })
-        aimlockGunSection:AddDropdown({ Title = "Target Mode", Options = { "Killer", "Survivor" }, Default = "Killer",
-            Callback = function(v) local val = type(v) == "table" and v[1] or v; if W.GunAim_Cfg then W.GunAim_Cfg.TargetMode = val end end })
-        aimlockGunSection:AddSlider({ Title = "FOV Radius", Min = 50, Max = 1000, Default = 250, Increment = 10, Callback = function(v) if W.GunAim_Cfg then W.GunAim_Cfg.FOV = v end end })
-        aimlockGunSection:AddSlider({ Title = "Aim Smoothness", Min = 0.1, Max = 1, Default = 0.5, Increment = 0.05, Callback = function(v) if W.GunAim_Cfg then W.GunAim_Cfg.Strength = v end end })
-        aimlockGunSection:AddSlider({ Title = "Prediction Strength", Min = 0, Max = 1, Default = 0.12, Increment = 0.01, Callback = function(v) if W.GunAim_Cfg then W.GunAim_Cfg.PredictStrength = v end end })
-        aimlockGunSection:AddToggle({ Title = "Visibility Check", Default = true, Callback = function(v) if W.GunAim_Cfg then W.GunAim_Cfg.VisibilityCheck = v end end })
-
-        local MoonwalkSection = MakeSection(SurvivorTab, "Moonwalk")
-        local moonwalkEnabled = false
-        local moonwalkConn = nil
-        local MOONWALK_SIDE_SPEED = 0.9
-        local MOONWALK_BACK_SPEED = 1.2
-        local MOONWALK_INTERVAL = 0.07
-        local function stopMoonwalk()
-            if moonwalkConn then moonwalkConn:Disconnect(); moonwalkConn = nil end
-        end
-        local function startMoonwalk()
-            stopMoonwalk()
-            local char = LocalPlayer.Character
-            if not char then return end
-            local hrp = char:FindFirstChild("HumanoidRootPart")
-            local hum = char:FindFirstChildOfClass("Humanoid")
-            if not hrp or not hum then return end
-            local lastSwitch = 0
-            local direction = 1
-            moonwalkConn = RunService.RenderStepped:Connect(function()
-                if not moonwalkEnabled then return end
-                local c = LocalPlayer.Character
-                if not c then return end
-                local cHrp = c:FindFirstChild("HumanoidRootPart")
-                local cHum = c:FindFirstChildOfClass("Humanoid")
-                if not cHrp or not cHum or cHum.Health <= 0 then return end
-                local now = tick()
-                if now - lastSwitch >= MOONWALK_INTERVAL then
-                    direction = direction * -1
-                    lastSwitch = now
-                end
-                local back = cHrp.CFrame.LookVector * -MOONWALK_BACK_SPEED
-                local side = cHrp.CFrame.RightVector * (direction * MOONWALK_SIDE_SPEED)
-                cHum:Move(back + side, false)
-            end)
-        end
-        local function setMoonwalk(state)
-            moonwalkEnabled = state
-            _G.FazzHub_MoonwalkEnabled = state
-            if state then startMoonwalk() else stopMoonwalk() end
-        end
-        _G.FazzHub_MoonwalkToggle = setMoonwalk
-        MoonwalkSection:AddToggle({ Title = "Moonwalk", Content = "Jalan mundur + geser kiri-kanan.",
-            Default = false, Keybind = true,
-            Callback = function(v) setMoonwalk(v); VD_Notify("Moonwalk", v and "Enabled" or "Disabled", 2) end })
-        MoonwalkSection:AddSlider({ Title = "Side Speed", Min = 0.1, Max = 3, Default = 0.9, Increment = 0.1, Callback = function(v) MOONWALK_SIDE_SPEED = v end })
-        MoonwalkSection:AddSlider({ Title = "Back Speed", Min = 0.1, Max = 3, Default = 1.2, Increment = 0.1, Callback = function(v) MOONWALK_BACK_SPEED = v end })
-        MoonwalkSection:AddSlider({ Title = "Switch Interval", Min = 0.02, Max = 0.5, Default = 0.07, Increment = 0.01, Callback = function(v) MOONWALK_INTERVAL = v end })
-        MoonwalkSection:AddToggle({ Title = "Show Moonwalk Floating Button", Default = false, Callback = function(v)
-            if getgenv().FazzHub_MoonwalkBtn_SetEnabled then getgenv().FazzHub_MoonwalkBtn_SetEnabled(v) end
-        end })
-        UserInputService.InputBegan:Connect(function(input, gp)
-            if gp then return end
-            if input.KeyCode == Enum.KeyCode.F8 then setMoonwalk(not moonwalkEnabled) end
-        end)
-        LocalPlayer.CharacterAdded:Connect(function()
-            task.wait(2)
-            if moonwalkEnabled then startMoonwalk() end
-        end)
-
-        local perksDisplaySection = MakeSection(SurvivorTab, "Killer Perks Display")
-        perksDisplaySection:AddToggle({
-            Title = "Enable Killer Perks Display",
-            Content = "Floating GUI showing killer perks",
-            Default = false,
-            Callback = function(v)
-                if W.KillerPerksDisplay_SetEnabled then W.KillerPerksDisplay_SetEnabled(v) end
-                if v then VD_Notify("Killer Perks Display", "Enabled", 2)
-                else VD_Notify("Killer Perks Display", "Disabled", 2) end
-            end
-        })--========================================================--
--- FAZZHUB v0.3.9
--- PART 19C/19 : VISUALS TAB + KILLER TAB (BAGIAN 1)
+        -- [SISA PART 19E-1 LAINNYA — Settings, Stun, Invis, Camera DBD, Player Utility, Speed Boost, Cursor, Jerk Off, Emote — TIDAK DIUBAH, tetep ada di bawah sini]--========================================================--
+-- FAZZHUB v0.4.0
+-- PART 19E-2/19 : MISC TAB (BAGIAN 2)
+-- PATCH: Fake Avatar — tambah 12 nama preset via username
 --========================================================--
 
         --====================================================--
-        -- VISUALS TAB
-        --====================================================--
-        local ESPBox = MakeSection(VisualsTab, "Full ESP System")
-        ESPBox:AddToggle({ Title = "ESP Survivor", Default = false, Callback = function(v) FESP.Survivor = v end })
-        ESPBox:AddColorPicker({ Title = "Survivor Color", Default = FESPC.Survivor, Save = false, Callback = function(c) FESPC.Survivor = c end })
-        ESPBox:AddToggle({ Title = "ESP Killer", Default = false, Callback = function(v) FESP.Killer = v end })
-        ESPBox:AddColorPicker({ Title = "Killer Color", Default = FESPC.Killer, Save = false, Callback = function(c) FESPC.Killer = c end })
-        ESPBox:AddToggle({ Title = "ESP Generator", Default = false, Callback = function(v) FESP.Generator = v end })
-        ESPBox:AddColorPicker({ Title = "Generator Color", Default = FESPC.Generator, Save = false, Callback = function(c) FESPC.Generator = c end })
-        ESPBox:AddToggle({ Title = "ESP Pallet", Default = false, Callback = function(v) FESP.Pallet = v end })
-        ESPBox:AddColorPicker({ Title = "Pallet Color", Default = FESPC.Pallet, Save = false, Callback = function(c) FESPC.Pallet = c end })
-        ESPBox:AddToggle({ Title = "ESP Window", Default = false, Callback = function(v)
-            FESP.Window = v
-            if v then _G.FazzHubWindowScanned = false
-            else _G.FazzHubWindowScanned = false end
-        end })
-        ESPBox:AddColorPicker({ Title = "Window Color", Default = FESPC.Window, Save = false, Callback = function(c) FESPC.Window = c end })
-        ESPBox:AddToggle({ Title = "ESP SCP", Default = false, Callback = function(v) FESP.SCP = v end })
-        ESPBox:AddColorPicker({ Title = "SCP Color", Default = FESPC.SCP, Save = false, Callback = function(c) FESPC.SCP = c end })
-        ESPBox:AddSlider({ Title = "ESP Radius", Min = 10, Max = 1000, Default = 500, Increment = 10, Callback = function(v) FESP.Distance = v end })
-
-        local ESPStatusBox = MakeSection(VisualsTab, "ESP Status")
-        ESPStatusBox:AddToggle({ Title = "Enable Status ESP", Default = false, Callback = function(v) FESPS.Enabled = v end })
-        ESPStatusBox:AddToggle({ Title = "Show Name", Default = true, Callback = function(v) FESPS.ShowName = v end })
-        ESPStatusBox:AddToggle({ Title = "Show Distance", Default = true, Callback = function(v) FESPS.ShowDistance = v end })
-        ESPStatusBox:AddSlider({ Title = "Status Radius", Min = 20, Max = 1000, Default = 500, Increment = 10, Callback = function(v) FESPS.Radius = v end })
-
-        local graphicsSection = MakeSection(VisualsTab, "Graphics")
-        graphicsSection:AddToggle({ Title = "Fullbright", Default = false, Callback = function(v) W.Graphics.Fullbright = v; W.Graphics_Apply() end })
-        graphicsSection:AddToggle({ Title = "No Shadow", Default = false, Callback = function(v) W.Graphics.NoShadow = v; W.Graphics_Apply() end })
-        graphicsSection:AddToggle({ Title = "Low Graphics", Default = false, Callback = function(v) W.Graphics.LowGraphics = v; W.Graphics_ApplyOptimization() end })
-        graphicsSection:AddToggle({ Title = "No Screen Effects", Default = false, Callback = function(v) W.Graphics.NoScreenEffects = v; W.Graphics_ApplyNoScreenFx() end })
-        graphicsSection:AddToggle({ Title = "Clean Sky", Default = false, Callback = function(v) W.Graphics.CleanSky = v; W.Graphics_ApplyOptimization() end })
-        graphicsSection:AddToggle({ Title = "Potato Mode", Content = "EXTREME low graphics", Default = false, Callback = function(v)
-            if W.Potato_SetEnabled then
-                W.Potato_SetEnabled(v)
-                if v then VD_Notify("Potato Mode", "Enabled", 3) else VD_Notify("Potato Mode", "Disabled", 3) end
-            end
-        end })
-
-        local timeSection = MakeSection(VisualsTab, "Clock & Ambient")
-        timeSection:AddToggle({ Title = "Enable Clock Override", Default = false, Callback = function(v) W.Graphics.ClockTimeEnabled = v; W.Graphics_Apply() end })
-        timeSection:AddSlider({ Title = "Clock Time", Min = 0, Max = 24, Default = 14, Increment = 1, Callback = function(v)
-            W.Graphics.ClockTime = v; W.Graphics.ClockTimeEnabled = true; W.Graphics_Apply() end })
-        timeSection:AddSlider({ Title = "Brightness", Min = 0, Max = 5, Default = 2, Increment = 0.1, Callback = function(v)
-            W.Graphics.Brightness = v; W.Graphics.ClockTimeEnabled = true; W.Graphics_Apply() end })
-
-        local zoomSection = MakeSection(VisualsTab, "Zoom & FOV")
-        zoomSection:AddToggle({ Title = "Unlimited Zoom", Default = false, Callback = function(v) W.Graphics.UnlimitedZoom = v; W.Graphics_ApplyZoom() end })
-        zoomSection:AddSlider({ Title = "Max Zoom Distance", Min = 100, Max = 5000, Default = 1000, Increment = 50, Callback = function(v)
-            W.Graphics.MaxZoomDistance = v; if W.Graphics.UnlimitedZoom then W.Graphics_ApplyZoom() end end })
-        zoomSection:AddToggle({ Title = "Custom FOV", Default = false, Callback = function(v) W.Graphics.FOVEnabled = v; W.Graphics_ApplyFOV() end })
-        zoomSection:AddSlider({ Title = "Camera FOV", Min = 40, Max = 120, Default = 70, Increment = 5, Callback = function(v)
-            W.Graphics.FOV = v; if W.Graphics.FOVEnabled then W.Graphics_ApplyFOV() end end })
-
-        local POVSection = MakeSection(VisualsTab, "Lock POV")
-        POVSection:AddToggle({ Title = "Enable Lock POV", Default = false, Callback = function(v) LockPOV_SetEnabled(v); if v then VD_Notify("Lock POV", "Enabled", 2) end end })
-        POVSection:AddSlider({ Title = "Locked FOV", Min = 40, Max = 120, Default = 80, Increment = 5,
-            Callback = function(v)
-                LockPOV.LockedFOV = v
-                if LockPOV.Enabled then local cam = Workspace.CurrentCamera; if cam then cam.FieldOfView = v end end
-            end })
-
-        --====================================================--
-        -- KILLER TAB
-        --====================================================--
-        local autoAttackSection = MakeSection(KillerTab, "Auto Attack")
-        autoAttackSection:AddToggle({ Title = "Enable Auto Attack", Content = "Auto fire BasicAttack",
-            Default = VD.KILLER_AutoAttack, Callback = function(v) VD.KILLER_AutoAttack = v
-                if v then VD_Notify("Auto Attack", "Enabled", 2) else VD_Notify("Auto Attack", "Disabled", 2) end
-            end })
-        autoAttackSection:AddSlider({ Title = "Attack Range", Min = 5, Max = 30, Default = VD.KILLER_AutoAttackRange, Increment = 1, Suffix = " studs", Callback = function(v) VD.KILLER_AutoAttackRange = v end })
-        autoAttackSection:AddSlider({ Title = "Attack Cooldown", Min = 0.05, Max = 1, Default = VD.KILLER_AutoAttackCooldown, Increment = 0.05, Suffix = "s", Callback = function(v) VD.KILLER_AutoAttackCooldown = v end })
-
-        local infLungeSection = MakeSection(KillerTab, "Infinite Lunge")
-        infLungeSection:AddToggle({ Title = "Infinite Lunge (Basic Attack)", Default = false,
-            Callback = function(v) VD.KILLER_InfLunge = v end })
-
-        local counterParrySection = MakeSection(KillerTab, "Counter Auto Parry")
-        local AntiAutoParryEnabled = false
-        local CounterParryAnimList = {}
-        for id, _ in pairs(KillerAttackAnims) do
-            table.insert(CounterParryAnimList, id)
-        end
-        task.spawn(function()
-            while true do
-                task.wait(0.5)
-                if not AntiAutoParryEnabled then continue end
-                local char = LocalPlayer.Character
-                if not char then continue end
-                local myRoot = char:FindFirstChild("HumanoidRootPart")
-                if not myRoot then continue end
-                local near = false
-                for _, p in pairs(Players:GetPlayers()) do
-                    if p ~= LocalPlayer and p.Team and string.find(string.lower(p.Team.Name), "survivor", 1, true) then
-                        local r = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
-                        if r and (myRoot.Position - r.Position).Magnitude <= 15 then
-                            near = true
-                            break
-                        end
-                    end
-                end
-                if near then
-                    local randomId = CounterParryAnimList[math.random(1, #CounterParryAnimList)]
-                    local anim = Instance.new("Animation")
-                    anim.AnimationId = "rbxassetid://" .. randomId
-                    local hum = char:FindFirstChildOfClass("Humanoid")
-                    local animator = hum and hum:FindFirstChildOfClass("Animator")
-                    if animator then
-                        local track = animator:LoadAnimation(anim)
-                        track:Play()
-                        track:AdjustWeight(0)
-                        task.wait(0.05)
-                        track:Stop()
-                        anim:Destroy()
-                    end
-                end
-            end
-        end)
-        counterParrySection:AddToggle({
-            Title = "Counter Auto Parry",
-            Content = "Spam animasi parry di dekat survivor",
-            Default = false, Keybind = true,
-            Callback = function(v)
-                AntiAutoParryEnabled = v
-                if v then VD_Notify("Counter Auto Parry", "Enabled", 2) end
-            end
-        })
-
-        local AimLockSection = MakeSection(KillerTab, "Aim Lock Hidden")
-        local AimLockEnabled = false
-        local AimLockThread = nil
-        local AimLockAiming = false
-        local AimLockHoldKey = Enum.KeyCode.E
-        local AimLockMobileHooks = {}
-        local function AimLock_GetClosestTarget()
-            local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if not hrp then return nil end
-            local myTeam = LocalPlayer.Team and LocalPlayer.Team.Name or ""
-            local myIsKiller = string.find(string.lower(myTeam), "killer", 1, true) ~= nil
-            local closestTarget, shortestDist = nil, math.huge
-            for _, player in pairs(Players:GetPlayers()) do
-                if player ~= LocalPlayer and player.Character then
-                    local targetHrp = player.Character:FindFirstChild("HumanoidRootPart")
-                    local hum = player.Character:FindFirstChildOfClass("Humanoid")
-                    local playerTeam = player.Team and player.Team.Name or ""
-                    local theirIsKiller = string.find(string.lower(playerTeam), "killer", 1, true) ~= nil
-                    if targetHrp and hum and hum.Health > 0 then
-                        local isEnemy = (myIsKiller and not theirIsKiller) or ((not myIsKiller) and theirIsKiller)
-                        if isEnemy then
-                            local dist = (targetHrp.Position - hrp.Position).Magnitude
-                            if dist < shortestDist then
-                                shortestDist, closestTarget = dist, targetHrp
-                            end
-                        end
-                    end
-                end
-            end
-            return closestTarget
-        end
-        local function AimLock_Start()
-            if AimLockThread then task.cancel(AimLockThread) end
-            AimLockThread = task.spawn(function()
-                while AimLockEnabled do
-                    if AimLockAiming then
-                        local target = AimLock_GetClosestTarget()
-                        if target then
-                            pcall(function()
-                                Workspace.CurrentCamera.CFrame = CFrame.new(
-                                    Workspace.CurrentCamera.CFrame.Position,
-                                    target.Position + Vector3.new(0, 2.5, 0)
-                                )
-                            end)
-                        end
-                    end
-                    task.wait()
-                end
-            end)
-        end
-        UserInputService.InputBegan:Connect(function(input, gp)
-            if gp or not AimLockEnabled then return end
-            if input.UserInputType == Enum.UserInputType.MouseButton2 then AimLockAiming = true end
-            if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == AimLockHoldKey then AimLockAiming = true end
-        end)
-        UserInputService.InputEnded:Connect(function(input)
-            if not AimLockEnabled then return end
-            if input.UserInputType == Enum.UserInputType.MouseButton2 then AimLockAiming = false end
-            if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == AimLockHoldKey then AimLockAiming = false end
-        end)
-        local function AimLock_DisconnectMobile()
-            for _, c in pairs(AimLockMobileHooks) do pcall(function() c:Disconnect() end) end
-            AimLockMobileHooks = {}
-        end
-        local function AimLock_SetupMobile()
-            if not UserInputService.TouchEnabled then return end
-            AimLock_DisconnectMobile()
-            task.spawn(function()
-                local pGui = LocalPlayer:FindFirstChildOfClass("PlayerGui")
-                if not pGui then return end
-                local NAMES = {"attack","shoot","fire","basicattack","tembak","hidden","skill","ability","power","skill1","ability1","gui-mob"}
-                local function isBtn(obj)
-                    if not obj then return false end
-                    if not (obj:IsA("GuiButton") or obj:IsA("ImageButton") or obj:IsA("TextButton")) then return false end
-                    local l = obj.Name:lower()
-                    for _, n in ipairs(NAMES) do
-                        if l == n or l:find(n, 1, true) then return true end
-                    end
-                    return false
-                end
-                local function hook(btn)
-                    if not btn or btn:GetAttribute("AimLockHooked") then return end
-                    btn:SetAttribute("AimLockHooked", true)
-                    table.insert(AimLockMobileHooks, btn.InputBegan:Connect(function(i)
-                        if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then
-                            if AimLockEnabled then AimLockAiming = true end
-                        end
-                    end))
-                    table.insert(AimLockMobileHooks, btn.InputEnded:Connect(function(i)
-                        if i.UserInputType == Enum.UserInputType.Touch or i.UserInputType == Enum.UserInputType.MouseButton1 then
-                            AimLockAiming = false
-                        end
-                    end))
-                    table.insert(AimLockMobileHooks, btn:GetPropertyChangedSignal("Visible"):Connect(function()
-                        if not btn.Visible then AimLockAiming = false end
-                    end))
-                end
-                local function scan()
-                    for _, ch in ipairs(pGui:GetChildren()) do
-                        local ctrl = ch:FindFirstChild("Controls")
-                        if ctrl then
-                            for _, obj in ipairs(ctrl:GetDescendants()) do
-                                if isBtn(obj) then hook(obj) end
-                            end
-                        end
-                    end
-                end
-                scan()
-                table.insert(AimLockMobileHooks, pGui.ChildAdded:Connect(function() task.wait(0.3); scan() end))
-            end)
-        end
-        if UserInputService.TouchEnabled then AimLock_SetupMobile() end
-        LocalPlayer.CharacterAdded:Connect(function()
-            AimLockAiming = false
-            if UserInputService.TouchEnabled then task.wait(2); AimLock_SetupMobile() end
-        end)
-        AimLockSection:AddToggle({
-            Title = "Aim Lock Hidden (Hold)",
-            Content = "Tahan M2 / tombol attack → kamera ngunci ke target",
-            Default = false, Keybind = true,
-            Callback = function(state)
-                AimLockEnabled = state
-                if state then
-                    AimLock_Start()
-                    VD_Notify("Aim Lock Hidden", "Enabled — Hold M2/E", 2)
-                else
-                    AimLockAiming = false
-                    if AimLockThread then task.cancel(AimLockThread); AimLockThread = nil end
-                    VD_Notify("Aim Lock Hidden", "Disabled", 2)
-                end
-            end
-        })
-        AimLockSection:AddInput({
-            Title = "Hold Keybind",
-            Content = "Default: E",
-            Default = "E",
-            Placeholder = "E / Q / F / LeftShift",
-            Callback = function(input)
-                input = tostring(input or ""):gsub("%s+", "")
-                if input == "" then return end
-                local map = {
-                    ["leftshift"]=Enum.KeyCode.LeftShift,["rightshift"]=Enum.KeyCode.RightShift,
-                    ["leftalt"]=Enum.KeyCode.LeftAlt,["rightalt"]=Enum.KeyCode.RightAlt,
-                    ["leftctrl"]=Enum.KeyCode.LeftControl,["rightctrl"]=Enum.KeyCode.RightControl,
-                    ["leftcontrol"]=Enum.KeyCode.LeftControl,["rightcontrol"]=Enum.KeyCode.RightControl,
-                    ["space"]=Enum.KeyCode.Space,["tab"]=Enum.KeyCode.Tab,
-                }
-                local newKey = map[input:lower()]
-                if not newKey then
-                    local ok, kc = pcall(function() return Enum.KeyCode[input:upper():sub(1,1) .. input:lower():sub(2)] end)
-                    if ok and kc then newKey = kc end
-                end
-                if newKey then
-                    AimLockHoldKey = newKey
-                    VD_Notify("Aim Lock", "Hold key: " .. newKey.Name, 2)
-                end
-            end
-        })--========================================================--
--- FAZZHUB v0.3.9
--- PART 19D/19 : KILLER TAB (LANJUTAN)
---========================================================--
-
-        local aimlockAttackSection = MakeSection(KillerTab, "Aim Lock Attack")
-        aimlockAttackSection:AddToggle({
-            Title = "Enable Aim Lock Attack",
-            Content = "Hold M2 / attack button → camera kunci ke survivor terdekat",
-            Default = false, Keybind = true,
-            Callback = function(v)
-                if W.AttackAim_Cfg then W.AttackAim_Cfg.Enabled = v end
-                if v and W.AttackAim_Start then W.AttackAim_Start() end
-                if v then VD_Notify("Aim Lock Attack", "Hold M2 to lock", 2) end
-            end
-        })
-        aimlockAttackSection:AddSlider({ Title = "FOV Radius", Min = 50, Max = 1000, Default = 250, Increment = 10,
-            Callback = function(v) if W.AttackAim_Cfg then W.AttackAim_Cfg.FOV = v end end })
-        aimlockAttackSection:AddSlider({ Title = "Aim Smoothness", Min = 0.1, Max = 1, Default = 1, Increment = 0.05,
-            Callback = function(v) if W.AttackAim_Cfg then W.AttackAim_Cfg.Strength = v end end })
-        aimlockAttackSection:AddSlider({ Title = "Prediction Strength", Min = 0, Max = 1, Default = 0.12, Increment = 0.01,
-            Callback = function(v) if W.AttackAim_Cfg then W.AttackAim_Cfg.PredictStrength = v end end })
-        aimlockAttackSection:AddDropdown({ Title = "Aim Part", Options = { "Head", "HumanoidRootPart", "UpperTorso", "Torso" }, Default = "HumanoidRootPart",
-            Callback = function(v)
-                local val = type(v) == "table" and v[1] or v
-                if W.AttackAim_Cfg then W.AttackAim_Cfg.AimPart = val end
-            end })
-        aimlockAttackSection:AddToggle({ Title = "Visibility Check", Default = true,
-            Callback = function(v) if W.AttackAim_Cfg then W.AttackAim_Cfg.VisibilityCheck = v end end })
-
-        local antiBlindSection = MakeSection(KillerTab, "Anti Blind")
-        antiBlindSection:AddToggle({
-            Title = "Anti Blind (Flashlight)",
-            Content = "Block efek pusing dari flashlight survivor",
-            Default = false,
-            Callback = function(v)
-                VD.KILLER_AntiBlind = v
-                if v and W.SetupAntiBlind then pcall(W.SetupAntiBlind) end
-                if v then VD_Notify("Anti Blind", "Enabled", 2) end
-            end
-        })
-
-        local destroyPalletSection = MakeSection(KillerTab, "Destroy Pallet")
-        destroyPalletSection:AddToggle({
-            Title = "Auto Destroy Pallet",
-            Content = "Auto hancurkan pallet terdekat (radius 6 studs)",
-            Default = false, Keybind = true,
-            Callback = function(v)
-                VD.KILLER_DestroyPallets = v
-                if v then VD_Notify("Destroy Pallet", "Enabled", 2) end
-            end
-        })
-
-        local maskedSection = MakeSection(KillerTab, "Select Masked Power")
-        maskedSection:AddDropdown({ Title = "Masked Power", Options = Masked.Powers, Default = Masked.CurrentPower,
-            Callback = function(v)
-                local val = type(v) == "table" and v[1] or v
-                Masked.CurrentPower = val
-                VD_Notify("Select Masked", "Selected: " .. val, 1)
-            end })
-        maskedSection:AddButton({ Title = "Activate Power", Callback = function() W.Masked_Activate() end })
-        maskedSection:AddButton({ Title = "Deactivate Power", Callback = function() W.Masked_Deactivate() end })
-
-        local VeilSection = MakeSection(KillerTab, "Silent Spear Veil V1")
-        VeilSection:AddToggle({ Title = "Enable Silent Veil V1", Default = VD.VeilEnabled, Callback = function(v)
-            VD.VeilEnabled = v
-            if not v then VeilState.target = nil; VeilState.lookVector = nil; Veil_HideAllVisuals() end
-            if getgenv().FazzHub_VeilBtn_UpdateVisual then getgenv().FazzHub_VeilBtn_UpdateVisual() end
-            if v then VD_Notify("Silent Veil V1", "Enabled", 2) end
-        end })
-        VeilSection:AddToggle({ Title = "Show Veil Floating Button", Default = false, Callback = function(v)
-            if getgenv().FazzHub_VeilBtn_SetEnabled then getgenv().FazzHub_VeilBtn_SetEnabled(v) end
-        end })
-        VeilSection:AddToggle({ Title = "Show FOV Circle", Default = VD.VeilShowFOV, Callback = function(v) VD.VeilShowFOV = v end })
-        VeilSection:AddToggle({ Title = "Show Target Tracker", Default = VD.VeilShowTracker, Callback = function(v) VD.VeilShowTracker = v end })
-        VeilSection:AddToggle({ Title = "Auto Predict", Default = VD.VeilAutoPredict, Callback = function(v) VD.VeilAutoPredict = v end })
-        VeilSection:AddSlider({ Title = "FOV Size", Min = 50, Max = 500, Default = VD.VeilFOV, Increment = 10, Callback = function(v) VD.VeilFOV = v end })
-        VeilSection:AddSlider({ Title = "Max Distance", Min = 50, Max = 280, Default = VD.VeilMaxDist, Increment = 10, Callback = function(v) VD.VeilMaxDist = v end })
-        VeilSection:AddSlider({ Title = "Spear Speed", Min = 50, Max = 400, Default = VD.VeilSpearSpeed, Increment = 5, Callback = function(v) VD.VeilSpearSpeed = v end })
-        VeilSection:AddSlider({ Title = "Spear Gravity", Min = 10, Max = 300, Default = VD.VeilGravity, Increment = 1, Callback = function(v) VD.VeilGravity = v end })
-        VeilSection:AddSlider({ Title = "Lead Multiplier", Min = 0.1, Max = 5, Default = VD.VeilLeadMultiplier, Increment = 0.1, Callback = function(v) VD.VeilLeadMultiplier = v end })
-
-        local veil2Group = MakeSection(KillerTab, "Silent Spear Veil V2")
-        veil2Group:AddToggle({ Title = "Silent Veil V1", Default = false, Keybind = true,
-            Callback = function(Value) Veil2.Aim_SilentVeil = Value end })
-        veil2Group:AddToggle({ Title = "Silent Veil V2", Default = false, Keybind = true,
-            Callback = function(Value)
-                Veil2.Aim_SilentVeilV2 = Value
-                VD_Notify("Silent Veil V2", Value and "ON" or "OFF", 2)
-            end })
-        veil2Group:AddToggle({ Title = "Auto Predict", Default = false,
-            Callback = function(Value) Veil2.SpearSmart_enable = Value end })
-        veil2Group:AddSlider({ Title = "Lead Multiplier", Min = 0.5, Max = 5, Default = 1.4,
-            Callback = function(Value) Veil2.Veil_LeadMultiplier = Value end })
-        veil2Group:AddSlider({ Title = "Spear Speed", Min = 50, Max = 200, Default = 165,
-            Callback = function(Value) Veil2.SPEAR_Speed = Value end })
-        veil2Group:AddSlider({ Title = "Spear Gravity", Min = 0, Max = 200, Default = 103,
-            Callback = function(Value) Veil2.SPEAR_Gravity = Value end })
-        veil2Group:AddToggle({ Title = "ESP Tracker Target", Default = false,
-            Callback = function(Value) if W.Veil2_API then W.Veil2_API.setTracker(Value) end end })
-        veil2Group:AddToggle({ Title = "Show Veil FOV", Default = true,
-            Callback = function(Value) Veil2.Veil_ShowFOV = Value end })
-        veil2Group:AddSlider({ Title = "Veil FOV Radius", Min = 50, Max = 500, Default = 150,
-            Callback = function(Value) Veil2.Veil_FOV = Value end })
-
-        local bypassSection = MakeSection(KillerTab, "Bypass No Cooldown")
-        bypassSection:AddToggle({ Title = "Hidden - Leap Bypass", Default = false,
-            Callback = function(v) W.BYPASS_SetHiddenLeap(v); if v then VD_Notify("Bypass", "Hidden Leap: ON", 2) end end })
-        bypassSection:AddToggle({ Title = "Myers - Infinite Grab", Content = "Hotkey H", Default = false,
-            Callback = function(v) W.setMyersGrab(v); if v then VD_Notify("Bypass", "Inf Grab: ON (H)", 2) end end })
-        bypassSection:AddToggle({ Title = "Slasher - Infinite LakeMist", Default = false,
-            Callback = function(v) W.MAWWW_SetLakeMist(v) end })
-        bypassSection:AddToggle({ Title = "Slasher - Infinite Pursuit", Default = false,
-            Callback = function(v) W.MAWWW_SetPursuit(v) end })
-        bypassSection:AddToggle({ Title = "Abyss - Bypass Cooldown", Default = false,
-            Callback = function(v) W.MAWWW_SetAbyssBypass(v) end })
-        bypassSection:AddToggle({ Title = "Jeff - Infinite Frenzy", Default = false,
-            Callback = function(v) W.MAWWW_SetJeffFrenzy(v) end })
-        bypassSection:AddButton({ Title = "Auto-Fix Boolean Math", Callback = function()
-            pcall(function()
-                local b = true
-                local mt = debug.getmetatable(b)
-                if not mt then mt = {}; debug.setmetatable(b, mt) end
-                if setreadonly then setreadonly(mt, false) end
-                mt.__div = function() return 0 end
-                mt.__mul = function() return 0 end
-                mt.__add = function() return 0 end
-                mt.__sub = function() return 0 end
-                if setreadonly then setreadonly(mt, true) end
-            end)
-            ForceNotify("Bypass", "Boolean failsafe applied", 2)
-        end })
-
-        local UnlockSkillSection = MakeSection(KillerTab, "Unlock Skill While Carrying")
-        if not W.CarryConfig then W.CarryConfig = { Enabled = false, Hooked = false } end
-        local CarryCfg = W.CarryConfig
-        local function SetupCarryHook()
-            if CarryCfg.Hooked then return end
-            if typeof(getrawmetatable) ~= "function" then return end
-            pcall(function()
-                local mt = getrawmetatable(game)
-                if setreadonly then setreadonly(mt, false) end
-                local oldNamecall = mt.__namecall
-                mt.__namecall = newcclosure(function(self, ...)
-                    local method = getnamecallmethod()
-                    local args = {...}
-                    if CarryCfg.Enabled and method == "GetAttribute" and not checkcaller() then
-                        if args[1] == "IsCarrying" then return false end
-                    end
-                    return oldNamecall(self, ...)
-                end)
-                if setreadonly then setreadonly(mt, true) end
-                CarryCfg.Hooked = true
-            end)
-        end
-        UnlockSkillSection:AddToggle({
-            Title = "Unlock Skill While Carrying",
-            Content = "Bisa pakai skill killer walaupun sedang ngangkat survivor",
-            Default = false,
-            Callback = function(v)
-                CarryCfg.Enabled = v
-                if v then SetupCarryHook(); VD_Notify("Unlock Carry", "Enabled", 2)
-                else VD_Notify("Unlock Carry", "Disabled", 2) end
-            end
-        })
-
-        local spearSection = MakeSection(KillerTab, "Spear Aimbot")
-        spearSection:AddToggle({ Title = "Enable Spear Aimbot", Content = "Auto-aim spear ke survivor",
-            Default = VD.SPEAR_Aimbot, Callback = function(v)
-                W.SpearAimbot_SetEnabled(v)
-                if v then VD_Notify("Spear Aimbot", "Enabled", 2) else VD_Notify("Spear Aimbot", "Disabled", 2) end
-            end })
-        spearSection:AddSlider({ Title = "Spear Gravity", Min = 10, Max = 200, Default = VD.SPEAR_Gravity, Increment = 1, Callback = function(v) W.SpearAimbot_SetGravity(v) end })
-        spearSection:AddSlider({ Title = "Spear Speed", Min = 50, Max = 300, Default = VD.SPEAR_Speed, Increment = 5, Callback = function(v) W.SpearAimbot_SetSpeed(v) end })
-
-        local killerAbilitySection = MakeSection(KillerTab, "Killer Abilities")
-        killerAbilitySection:AddToggle({ Title = "Auto Stalk (Myers)", Default = KA.AutoStalk, Callback = function(v)
-            W.KA_SetAutoStalk(v); VD_Notify("Auto Stalk", v and "Enabled" or "Disabled", 2) end })
-        killerAbilitySection:AddSlider({ Title = "Auto Stalk Range", Min = 20, Max = 500, Default = KA.AutoStalkRange, Increment = 10, Suffix = " studs", Callback = function(v) KA.AutoStalkRange = v; VD.KA_AutoStalkRange = v end })
-        killerAbilitySection:AddToggle({ Title = "Auto Kill All", Default = KA.AutoKillAll, Callback = function(v)
-            W.KA_SetAutoKillAll(v); VD_Notify("Auto Kill All", v and "Enabled" or "Disabled", 2) end })
-        killerAbilitySection:AddToggle({ Title = "Drop All Pallet", Default = KA.DropAllPallet, Callback = function(v)
-            W.KA_SetDropAllPallet(v); VD_Notify("Drop All Pallet", v and "Enabled" or "Disabled", 2) end })
-        killerAbilitySection:AddToggle({ Title = "Block All Vault", Default = KA.BlockAllVault, Callback = function(v)
-            W.KA_SetBlockAllVault(v); VD_Notify("Block All Vault", v and "Enabled" or "Disabled", 2) end })
-        killerAbilitySection:AddButton({ Title = "Instant Auto Kill (1x)", Callback = function()
-            local saved = KA.AutoKillAll; KA.AutoKillAll = true
-            task.spawn(function() task.wait(0.3); KA.AutoKillAll = saved end)
-            VD_Notify("Auto Kill", "Triggered once", 2)
-        end })
-        killerAbilitySection:AddButton({ Title = "Instant Drop All Pallet (1x)", Callback = function()
-            lastDropAllPallet = 0; pcall(W.KA_DropAllPallets)
-        end })
-        killerAbilitySection:AddButton({ Title = "Instant Block All Vault (1x)", Callback = function()
-            lastBlockVault = 0; pcall(W.KA_BlockAllVaults)
-        end })
-        killerAbilitySection:AddButton({ Title = "Unblock All Vault (1x)", Callback = function()
-            local VaultCompleteEvent = ReplicatedStorage:FindFirstChild("Remotes")
-                and ReplicatedStorage.Remotes:FindFirstChild("Window")
-                and ReplicatedStorage.Remotes.Window:FindFirstChild("VaultCompleteEvent")
-            if not VaultCompleteEvent then return end
-            local count = 0
-            local map = workspace:FindFirstChild("Map"); if not map then return end
-            for _, trigger in ipairs(map:GetDescendants()) do
-                if trigger.Name == "VaultPointInUse" then
-                    local vaultParent = trigger.Parent
-                    if vaultParent then
-                        pcall(function()
-                            VaultCompleteEvent:FireServer(vaultParent, false)
-                            count = count + 1
-                        end)
-                    end
-                end
-            end
-            ForceNotify("Block Vault", "Unblock " .. count .. " vaults!", 3)
-        end })
-        killerAbilitySection:AddToggle({ Title = "Auto Hook", Content = "Auto carry & hook downed survivor",
-            Default = false, Keybind = true,
-            Callback = function(v)
-                if W.KA_SetAutoHook then W.KA_SetAutoHook(v) end
-                if v then VD_Notify("Auto Hook", "Enabled", 2) else VD_Notify("Auto Hook", "Disabled", 2) end
-            end })
-
-        local flaskSection = MakeSection(KillerTab, "Silent Flask (The Cure)")
-        flaskSection:AddToggle({ Title = "Enable Silent Flask", Default = VD.FLASK_SilentAim, Callback = function(v)
-            W.Flask_SetEnabled(v)
-            if v then VD_Notify("Silent Flask", "Enabled", 2) else VD_Notify("Silent Flask", "Disabled", 2) end
-        end })
-        flaskSection:AddToggle({ Title = "Show Beam", Default = VD.FLASK_ShowBeam, Callback = function(v) VD.FLASK_ShowBeam = v and true or false end })
-        flaskSection:AddToggle({ Title = "Show Landing Marker", Default = VD.FLASK_ShowLanding, Callback = function(v) VD.FLASK_ShowLanding = v and true or false end })
-        flaskSection:AddToggle({ Title = "Enable Prediction", Default = VD.FLASK_Predict, Callback = function(v) VD.FLASK_Predict = v and true or false end })
-        flaskSection:AddColorPicker({ Title = "Beam Color", Default = VD.FLASK_BeamColor, Save = false, Callback = function(c) W.Flask_SetBeamColor(c) end })
-        flaskSection:AddColorPicker({ Title = "Accent Color", Default = VD.FLASK_AccentColor, Save = false, Callback = function(c) W.Flask_SetAccentColor(c) end })
-        flaskSection:AddSlider({ Title = "Flask Speed", Min = 30, Max = 200, Default = VD.FLASK_Speed, Increment = 5, Callback = function(v) W.Flask_SetSpeed(v) end })
-        flaskSection:AddSlider({ Title = "Flask Gravity", Min = 50, Max = 400, Default = VD.FLASK_Gravity, Increment = 5, Callback = function(v) W.Flask_SetGravity(v) end })
-        flaskSection:AddSlider({ Title = "Lead Multiplier", Min = 0, Max = 3, Default = VD.FLASK_LeadMult, Increment = 0.1, Callback = function(v) W.Flask_SetLead(v) end })
-        flaskSection:AddSlider({ Title = "Max Range", Min = 50, Max = 500, Default = VD.FLASK_Range, Increment = 10, Suffix = " studs", Callback = function(v) W.Flask_SetRange(v) end })
-
-        local dashLockSection = MakeSection(KillerTab, "Dash Lock")
-        dashLockSection:AddToggle({ Title = "Enable Dash Lock", Content = "Auto-lock camera saat pakai dash",
-            Default = VD.DashLockEnabled, Callback = function(v)
-                W.DashLock_SetEnabled(v)
-                if v then VD_Notify("Dash Lock", "Enabled", 2) else VD_Notify("Dash Lock", "Disabled", 2) end
-            end })
-        dashLockSection:AddSlider({ Title = "Lock Duration", Min = 0.5, Max = 5, Default = VD.DashLockDuration, Increment = 0.1, Suffix = "s", Callback = function(v) VD.DashLockDuration = v end })
-        dashLockSection:AddSlider({ Title = "Camera Smoothness", Min = 0.05, Max = 1, Default = VD.DashLockSmoothness, Increment = 0.05, Callback = function(v) VD.DashLockSmoothness = v end })
-        dashLockSection:AddToggle({ Title = "Freeze Character During Lock", Default = VD.FreezeDuringDashLock, Callback = function(v)
-            VD.FreezeDuringDashLock = v and true or false
-            if not v then
-                local char = LocalPlayer.Character
-                local hum = char and char:FindFirstChildOfClass("Humanoid")
-                if hum and hum.WalkSpeed == 0 then hum.WalkSpeed = 16 end
-            end
-        end })--========================================================--
--- FAZZHUB v0.3.9
--- PART 19E-1/19 : MISC TAB (BAGIAN 1)
---========================================================--
-
-        --====================================================--
-        -- SETTINGS
-        --====================================================--
-        local settingsSection = MakeSection(MiscTab, "Settings")
-        settingsSection:AddToggle({ Title = "Enable Notifications", Default = true, Callback = function(v)
-            W.NotifyEnabled = v
-            if v then ForceNotify("Settings", "Notifications Enabled") end
-        end })
-
-        --====================================================--
-        -- STUN INDICATOR
-        --====================================================--
-        local stunSection = MakeSection(MiscTab, "Stun Indicator")
-        stunSection:AddToggle({ Title = "Enable Stun Indicator", Default = false, Callback = function(v)
-            W.SInd_SetEnabled(v); if v then VD_Notify("Stun Indicator", "Enabled", 2) end end })
-        stunSection:AddDropdown({ Title = "Stun Sound",
-            Options = { "Default", "Clash Royale", "Blash", "Coin", "Kururin Kuru", "Spongebob", "Fahhhh", "Cave", "Aughhh", "Samsung", "iPhone", "Siren" },
-            Default = "Default", Callback = function(v)
-                local val = type(v) == "table" and v[1] or v
-                SInd.SelectedSound = val
-                ForceNotify("Stun Indicator", "Sound: " .. val, 2)
-            end })
-        stunSection:AddToggle({ Title = "Stun Sound Alert", Default = true, Callback = function(v) SInd.SoundEnabled = v end })
-        stunSection:AddButton({ Title = "Preview Sound", Callback = function()
-            pcall(function()
-                local snd = Instance.new("Sound")
-                snd.SoundId = "rbxassetid://" .. tostring(SInd_GetActiveSoundId())
-                snd.Volume = SInd.SoundVolume or 1.5
-                snd.Parent = LocalPlayer:FindFirstChildOfClass("PlayerGui") or Workspace
-                snd:Play()
-                snd.Ended:Connect(function() pcall(function() snd:Destroy() end) end)
-                task.delay(5, function() pcall(function() if snd and snd.Parent then snd:Destroy() end end) end)
-            end)
-        end })
-        stunSection:AddSlider({ Title = "Detect Range", Min = 50, Max = 2000, Default = 500, Increment = 25, Suffix = " studs", Callback = function(v) SInd.Range = v end })
-        stunSection:AddSlider({ Title = "Sound Volume", Min = 0, Max = 5, Default = 1.5, Increment = 0.1, Callback = function(v) SInd.SoundVolume = v end })
-
-        --====================================================--
-        -- INVISIBILITY
-        --====================================================--
-        local invisSection = MakeSection(MiscTab, "Invisibilty")
-        invisSection:AddParagraph({ Title = "Fitur ini bisa Membuat anda tidak terlihat oleh pemain lain", Content = "Real invisibility" })
-        invisSection:AddToggle({ Title = "Enable invisibilty", Default = false, Callback = function(v)
-            W.Invisible_SetState(v, false)
-            if getgenv().FazzHub_InvisBtn_UpdateVisual then getgenv().FazzHub_InvisBtn_UpdateVisual() end
-        end })
-        invisSection:AddToggle({ Title = "Show invisibilty Floating Button", Default = false, Callback = function(v)
-            if getgenv().FazzHub_InvisBtn_SetEnabled then getgenv().FazzHub_InvisBtn_SetEnabled(v) end
-        end })
-        invisSection:AddKeybind({ Title = "Toggle Hotkey", Default = Enum.KeyCode.G, Callback = function(kc)
-            W.Invisible_SetHotkey(kc)
-            ForceNotify("Invisible", "Hotkey: " .. (kc and kc.Name or "None"), 2)
-        end })
-
-        --====================================================--
-        -- CAMERA DBD
-        --====================================================--
-        local camDBDSection = MakeSection(MiscTab, "Camera DBD")
-        camDBDSection:AddToggle({ Title = "DBD Camera (Smooth Follow)", Default = false, Callback = function(v)
-            W.CamDBD_SetSmooth(v); VD_Notify("Camera DBD", v and "Smooth ON" or "Smooth OFF", 2) end })
-        camDBDSection:AddSlider({ Title = "Camera Smoothness", Min = 1, Max = 30, Default = 4, Increment = 1, Callback = function(v) W.CamDBD_SetSmoothSpeed(v) end })
-        camDBDSection:AddToggle({ Title = "POV Lock", Default = false, Callback = function(v)
-            W.CamDBD_SetPOVLock(v); VD_Notify("Camera DBD", v and "POV Lock ON" or "POV Lock OFF", 2) end })
-        camDBDSection:AddSlider({ Title = "POV Value", Min = 60, Max = 120, Default = 85, Increment = 1, Suffix = "°", Callback = function(v) W.CamDBD_SetTargetPOV(v) end })
-        camDBDSection:AddSlider({ Title = "POV Smoothness", Min = 3, Max = 20, Default = 9, Increment = 1, Callback = function(v) W.CamDBD_SetPOVSmooth(v) end })
-
-        --====================================================--
-        -- PLAYER UTILITY
-        --====================================================--
-        local puSection = MakeSection(MiscTab, "Player Utility")
-        puSection:AddToggle({ Title = "Speed Hack", Default = false, Callback = function(v)
-            PU.SpeedEnabled = v and true or false
-            if not v then
-                local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-                if hum then hum.WalkSpeed = 16 end
-            end
-            if v then VD_Notify("Player Utility", "Speed Hack ON", 2) end
-        end })
-        puSection:AddSlider({ Title = "Speed Value", Min = 16, Max = 200, Default = 16, Increment = 1, Callback = function(v) PU.SpeedValue = v end })
-        puSection:AddToggle({ Title = "Skip End Screen", Default = false, Callback = function(v)
-            PU.SkipEndScreen = v and true or false
-            if v then VD_Notify("Player Utility", "Skip End Screen ON", 2) end
-        end })
-        puSection:AddToggle({ Title = "Shift Lock", Default = false, Callback = function(v)
-            PU.ShiftLock = v and true or false
-            if not v and PU._shiftLockWasActive then
-                local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-                if hum then pcall(function() hum.AutoRotate = true end) end
-                PU._shiftLockWasActive = false
-            end
-            if v then VD_Notify("Player Utility", "Shift Lock ON", 2) end
-        end })
-        puSection:AddToggle({ Title = "Hide Survivor Icon", Default = false, Callback = function(v)
-            PU.HideSurvivorIcon = v and true or false
-            if v then PU_ApplyHideSurvivorIcon() else PU_RestoreSurvivorIcon() end
-        end })
-        puSection:AddToggle({ Title = "Show Ping & FPS", Default = false, Callback = function(v)
-            PU.ShowPingFPS = v and true or false
-            if v then
-                PU_CreatePingFPS()
-                PU._FPS.frames = 0; PU._FPS.last = tick()
-                VD_Notify("Player Utility", "Ping & FPS ON", 2)
-            elseif PU._pingGui then
-                pcall(function() PU._pingGui:Destroy() end)
-                PU._pingGui = nil
-            end
-        end })
-        puSection:AddToggle({ Title = "Hide Name", Default = false, Callback = function(v)
-            PU_SetHideName(v); if v then VD_Notify("Player Utility", "Hide Name ON", 2) end
-        end })
-        puSection:AddToggle({ Title = "Unlimited Zoom", Default = false, Callback = function(v)
-            PU.UnlimitedZoom = v and true or false
-            if not v then
-                pcall(function()
-                    LocalPlayer.CameraMaxZoomDistance = 128
-                    LocalPlayer.CameraMinZoomDistance = 0.5
-                end)
-            end
-        end })
-        puSection:AddToggle({ Title = "Noclip", Default = false, Callback = function(v)
-            PU.Noclip = v and true or false
-            if not v then PU_RestoreNoclip() end
-            if v then VD_Notify("Player Utility", "Noclip ON", 2) end
-        end })
-
-        --====================================================--
-        -- SPEED BOOST
-        --====================================================--
-        local sbSection = MakeSection(MiscTab, "Speed Boost")
-        sbSection:AddToggle({ Title = "Enable Speed Boost", Content = "Auto-apply WalkSpeed, disabled saat stun/parry/downed",
-            Default = false, Keybind = true,
-            Callback = function(v)
-                if W.SpeedBoost_SetEnabled then W.SpeedBoost_SetEnabled(v) end
-                if v then VD_Notify("Speed Boost", "Enabled", 2)
-                else VD_Notify("Speed Boost", "Disabled", 2) end
-            end })
-        sbSection:AddSlider({ Title = "Speed Value", Min = 16, Max = 100, Default = 30, Increment = 1,
-            Callback = function(v) if W.SpeedBoost_SetValue then W.SpeedBoost_SetValue(v) end end })
-
-        --====================================================--
-        -- CURSOR FEATURE
-        --====================================================--
-        local cursorSection = MakeSection(MiscTab, "Cursor Feature")
-        cursorSection:AddParagraph({ Title = "Cursor Unlock", Content = "Unlock cursor & disable auto-rotate. Hotkey: Left/Right Alt" })
-        cursorSection:AddToggle({ Title = "Enable Cursor Unlock", Content = "Show cursor & disable camera auto-rotate (ALT toggle)",
-            Default = false, Keybind = true,
-            Callback = function(v)
-                if W.Cursor_SetEnabled then W.Cursor_SetEnabled(v) end
-                if v then VD_Notify("Cursor Unlock", "Enabled", 2)
-                else VD_Notify("Cursor Unlock", "Disabled", 2) end
-            end })
-        cursorSection:AddButton({ Title = "Toggle Cursor Now", Content = "Quick toggle without unchecking",
-            Callback = function()
-                if W.Cursor_SetEnabled then W.Cursor_SetEnabled(not VD.CursorEnabled) end
-                VD_Notify("Cursor Unlock", VD.CursorEnabled and "ON" or "OFF", 2)
-            end })
-
-        --====================================================--
-        -- JERK OFF
-        --====================================================--
-        local jerkSection = MakeSection(MiscTab, "Jerk Off")
-        jerkSection:AddParagraph({ Title = "Jerk Off Tool", Content = "Tool dengan animasi & tooltip meme. Equip buat mulai." })
-        jerkSection:AddToggle({ Title = "Enable Jerk Off Tool", Content = "Auto-spawn tool Jerk Off ke Backpack",
-            Default = false, Keybind = true,
-            Callback = function(v)
-                W.JerkOff_SetEnabled(v)
-                if v then VD_Notify("Jerk Off", "Tool spawned!", 2)
-                else VD_Notify("Jerk Off", "Tool removed", 2) end
-            end })
-
-        --====================================================--
-        -- EMOTE
-        --====================================================--
-        local emoteSection = MakeSection(MiscTab, "Emote")
-        emoteSection:AddToggle({ Title = "Enable Emote", Default = false, Callback = function(v)
-            W.EmoteSystem_SetEnabled(v)
-            if v then VD_Notify("Emote", "Playing: " .. W.EmoteSystem.SelectedEmote, 2)
-            else VD_Notify("Emote", "Stopped", 2) end
-        end })
-        emoteSection:AddDropdown({ Title = "Select Emote", Options = W.EmoteSystem.Options, Default = "Friday Night", Multi = false,
-            Callback = function(v)
-                local val = type(v) == "table" and v[1] or v
-                W.EmoteSystem_SelectEmote(val or "Friday Night")
-                VD_Notify("Emote", "Selected: " .. W.EmoteSystem.SelectedEmote, 2)
-            end })
-        emoteSection:AddButton({ Title = "Stop Emote", Callback = function()
-            W.EmoteSystem_Stop(); W.EmoteSystem.Enabled = false; VD_Notify("Emote", "Stopped", 2)
-        end })
-        emoteSection:AddButton({ Title = "Replay Current Emote", Callback = function()
-            if not W.EmoteSystem.Enabled then VD_Notify("Emote", "Enable dulu!", 2); return end
-            W.EmoteSystem_Play()
-            VD_Notify("Emote", "Replaying: " .. W.EmoteSystem.SelectedEmote, 2)
-        end })--========================================================--
--- FAZZHUB v0.3.9
--- PART 19E-2/19 : MISC TAB (BAGIAN 2) - FINAL MISC
---========================================================--
-
-        --====================================================--
-        -- FAKE AVATAR (PATCH: Preset diganti jadi list username)
+        -- FAKE AVATAR (dengan Username Auto-Resolve)
         --====================================================--
         local FakeAvatarSection = MakeSection(MiscTab, "Fake Avatar")
         local FakeAvatarEnabled = false
         local SelectedFakeAva = LocalPlayer.UserId
-
-        -- PATCH: Username preset baru (32 usernames)
-        local FakeAvatarUsernames = {
-            "xn1vyu", "nurblomst2013", "kino_yk", "nvratee", "Sakaryle", "Grouchy1400",
-            "Kill_xsu", "Jahxure", "IIIlIIllIlIIIlII", "LordTherion", "xKami3D", "116vv",
-            "WoozyNate", "Nicholas", "yvlyf", "traevp", "J0LLY", "LucashDev", "CEOofIsaac",
-            "Stealthy", "Wildes", "Talon", "Relukt", "Sammy", "Diesel", "S4ans03",
-            "Aura", "iJava", "White Guy", "Purple King", "Kachaaaa Gay", "Mpruyyy",
-        }
-
-        local FakeAvatarUserIdCache = {}
 
         local function LoadAppearanceIntoChar(appearance, character, head)
             local items = appearance:GetChildren()
@@ -10872,10 +9782,241 @@ local function __FazzHub_Init_Main__()
             end)
         end
 
-        -- PATCH: Dropdown pakai list username baru
-        local FakeAvatarDropdownOptions = { "Self Avatar" }
-        for _, uname in ipairs(FakeAvatarUsernames) do
-            table.insert(FakeAvatarDropdownOptions, uname)
+        -- [PATCH] Preset via username
+        FakeAvatarSection:AddDropdown({
+            Title = "Fake Avatar Preset",
+            Options = {
+                "Self Avatar",
+                "Random 1", "Random 2", "Random 3", "Random 4", "Random 5", "Random 6", "Random 7",
+                "--- Username Preset ---",
+                "x1nvyu", "nurblomst2013", "kino_yk", "nvratee", "Sakaryle",
+                "Grouchy1400", "Kill_xsu", "Jahxure", "IIIlIIllIlIIIlII",
+                "LordTherion", "xKami3D", "116vv"
+            },
+            Default = "Self Avatar",
+            Multi = false,
+            Callback = function(option)
+                local ids = {
+                    ["Self Avatar"] = LocalPlayer.UserId,
+                    ["Random 1"] = 2888298851, ["Random 2"] = 10074747755,
+                    ["Random 3"] = 5209567453, ["Random 4"] = 8991982843,
+                    ["Random 5"] = 5796319029, ["Random 6"] = 9744452117,
+                    ["Random 7"] = 8476755006
+                }
+                if ids[option] then
+                    SelectedFakeAva = ids[option]
+                    if FakeAvatarEnabled then ApplyFakeAvatar() end
+                    return
+                end
+                if option == "--- Username Preset ---" then return end
+                -- Resolve via username
+                task.spawn(function()
+                    local cleanName = tostring(option):gsub("^@", "")
+                    local ok, userId = pcall(function()
+                        return game:GetService("Players"):GetUserIdFromNameAsync(cleanName)
+                    end)
+                    if ok and userId then
+                        SelectedFakeAva = userId
+                        VD_Notify("Fake Avatar", "Loaded: @" .. cleanName, 2)
+                        if FakeAvatarEnabled then ApplyFakeAvatar() end
+                    else
+                        ForceNotify("Fake Avatar", "Username tidak ditemukan: " .. cleanName, 2)
+                    end
+                end)
+            end
+        })
+
+        FakeAvatarSection:AddToggle({
+            Title = "Enable Fake Avatar",
+            Default = false,
+            Keybind = true,
+            Callback = function(state)
+                FakeAvatarEnabled = state
+                if state then ApplyFakeAvatar() end
+            end
+        })
+
+        local UsernameInput = ""
+        FakeAvatarSection:AddInput({
+            Title = "Fake Avatar Via Username",
+            Placeholder = "username (tanpa @)",
+            Callback = function(input) UsernameInput = (input or ""):gsub("^@", "") end
+        })
+        FakeAvatarSection:AddButton({
+            Title = "Apply From Username",
+            Callback = function()
+                if UsernameInput == "" then ForceNotify("Fake Avatar", "Masukkan username dulu!", 2); return end
+                local ok, userId = pcall(function() return game:GetService("Players"):GetUserIdFromNameAsync(UsernameInput) end)
+                if not ok or not userId then ForceNotify("Fake Avatar", "Username tidak ditemukan: " .. UsernameInput, 2); return end
+                SelectedFakeAva = userId
+                ApplyFakeAvatar()
+                ForceNotify("Fake Avatar", "Applied: @" .. UsernameInput, 2)
+            end
+        })
+
+        LocalPlayer.CharacterAdded:Connect(function()
+            if FakeAvatarEnabled then task.wait(1); ApplyFakeAvatar() end
+        end)
+
+        --====================================================--
+        -- [SISA PART 19E-2 LAINNYA — Fake Korless, Header Title, Spectator Counter — TIDAK DIUBAH, tetep ada di bawah sini]
+        --====================================================----========================================================--
+-- FAZZHUB v0.3.9
+-- PART 19F/19 : FAKE AVATAR + BOMBAX + CONFIG + CLOSING
+--========================================================--
+
+        --====================================================--
+        -- FAKE AVATAR (PATCH: 40 preset — 32 username + 7 Random + Self)
+        --====================================================--
+        local FakeAvatarSection = MakeSection(MiscTab, "Fake Avatar")
+        local FakeAvatarEnabled = false
+        local SelectedFakeAva = LocalPlayer.UserId
+
+        -- PATCH: Preset lengkap (Self + Username + Random)
+        local FakeAvatarPresets = {
+            { name = "Self Avatar", id = nil },
+            { name = "xn1vyu", id = nil },
+            { name = "nurblomst2013", id = nil },
+            { name = "kino_yk", id = nil },
+            { name = "nvratee", id = nil },
+            { name = "Sakaryle", id = nil },
+            { name = "Grouchy1400", id = nil },
+            { name = "Kill_xsu", id = nil },
+            { name = "Jahxure", id = nil },
+            { name = "IIIlIIllIlIIIlII", id = nil },
+            { name = "LordTherion", id = nil },
+            { name = "xKami3D", id = nil },
+            { name = "116vv", id = nil },
+            { name = "WoozyNate", id = nil },
+            { name = "Nicholas", id = nil },
+            { name = "yvlyf", id = nil },
+            { name = "traevp", id = nil },
+            { name = "J0LLY", id = nil },
+            { name = "LucashDev", id = nil },
+            { name = "CEOofIsaac", id = nil },
+            { name = "Stealthy", id = nil },
+            { name = "Wildes", id = nil },
+            { name = "Talon", id = nil },
+            { name = "Relukt", id = nil },
+            { name = "Sammy", id = nil },
+            { name = "Diesel", id = nil },
+            { name = "S4ans03", id = nil },
+            { name = "Aura", id = nil },
+            { name = "iJava", id = nil },
+            { name = "White Guy", id = nil },
+            { name = "Purple King", id = nil },
+            { name = "Kachaaaa Gay", id = nil },
+            { name = "Mpruyyy", id = nil },
+            { name = "Random 1", id = 2888298851 },
+            { name = "Random 2", id = 10074747755 },
+            { name = "Random 3", id = 5209567453 },
+            { name = "Random 4", id = 8991982843 },
+            { name = "Random 5", id = 5796319029 },
+            { name = "Random 6", id = 9744452117 },
+            { name = "Random 7", id = 8476755006 },
+        }
+
+        local FakeAvatarUserIdCache = {}
+        for _, p in ipairs(FakeAvatarPresets) do
+            if p.id then FakeAvatarUserIdCache[p.name] = p.id end
+        end
+
+        local function LoadAppearanceIntoChar(appearance, character, head)
+            local items = appearance:GetChildren()
+            local function applyMesh(obj)
+                if obj:IsA("CharacterMesh") or obj:IsA("BodyColors") or obj:IsA("Shirt") or obj:IsA("Pants") then
+                    local existing = character:FindFirstChild(obj.Name)
+                    if existing and existing.ClassName == obj.ClassName then existing:Destroy() end
+                    obj:Clone().Parent = character
+                end
+            end
+            for _, item in pairs(items) do
+                if item:IsA("Folder") or item:IsA("Model") then
+                    for _, subItem in pairs(item:GetChildren()) do applyMesh(subItem) end
+                else applyMesh(item) end
+            end
+            for _, item in pairs(items) do
+                if item:IsA("SpecialMesh") and head then
+                    local targetMesh = head:FindFirstChildOfClass("SpecialMesh") or Instance.new("SpecialMesh", head)
+                    targetMesh.MeshType = Enum.MeshType.FileMesh
+                    targetMesh.MeshId = item.MeshId
+                    targetMesh.TextureId = item.TextureId
+                elseif item:IsA("Decal") and item.Name == "face" and head then
+                    if head:FindFirstChild("face") then head.face:Destroy() end
+                    item:Clone().Parent = head
+                end
+            end
+            for _, item in pairs(items) do
+                if item:IsA("Accessory") then
+                    local clone = item:Clone()
+                    local handle = clone:FindFirstChild("Handle")
+                    if handle then
+                        local att = handle:FindFirstChildOfClass("Attachment")
+                        if att then
+                            local targetAtt = character:FindFirstChild(att.Name, true)
+                            if targetAtt then
+                                local weld = Instance.new("Weld")
+                                weld.Part0 = handle; weld.Part1 = targetAtt.Parent
+                                weld.C0 = att.CFrame; weld.C1 = targetAtt.CFrame
+                                weld.Parent = handle
+                            end
+                        end
+                        handle.CanCollide = false; handle.Massless = true; clone.Parent = character
+                    end
+                end
+            end
+        end
+
+        local function ApplyFakeAvatar()
+            local character = LocalPlayer.Character
+            if not character or not SelectedFakeAva then return end
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            if not humanoid then return end
+            task.spawn(function()
+                local success, appearance = pcall(function()
+                    return game:GetService("Players"):GetCharacterAppearanceAsync(SelectedFakeAva)
+                end)
+                if not success or not appearance then warn("[FakeAvatar] Gagal load data avatar!"); return end
+                for _, obj in pairs(character:GetChildren()) do
+                    if obj:IsA("Accessory") or obj:IsA("Shirt") or obj:IsA("Pants")
+                    or obj:IsA("BodyColors") or obj:IsA("CharacterMesh") or obj:IsA("ShirtGraphic") then
+                        obj:Destroy()
+                    end
+                end
+                local head = character:FindFirstChild("Head")
+                if head then
+                    for _, hObj in pairs(head:GetChildren()) do
+                        if hObj:IsA("SpecialMesh") or hObj:IsA("Decal") then hObj:Destroy() end
+                    end
+                    local m = Instance.new("SpecialMesh", head)
+                    m.MeshType = Enum.MeshType.Head; m.Scale = Vector3.new(1, 1, 1)
+                end
+                local scaleDefaults = { BodyDepthScale = 1, BodyHeightScale = 1, BodyWidthScale = 1, HeadScale = 1, BodyTypeScale = 0, BodyProportionScale = 0 }
+                for scaleName, val in pairs(scaleDefaults) do
+                    local s = humanoid:FindFirstChild(scaleName); if s then s.Value = val end
+                end
+                task.wait(0.1)
+                LoadAppearanceIntoChar(appearance, character, head)
+                pcall(function()
+                    local info = game:GetService("Players"):GetCharacterAppearanceInfoAsync(SelectedFakeAva)
+                    if head and info.assets then
+                        for _, asset in pairs(info.assets) do
+                            if asset.assetType.name == "Face" then
+                                if head:FindFirstChild("face") then head.face:Destroy() end
+                                local f = Instance.new("Decal", head)
+                                f.Name = "face"; f.Texture = "rbxassetid://" .. asset.id
+                                break
+                            end
+                        end
+                    end
+                end)
+            end)
+        end
+
+        -- Build dropdown options
+        local FakeAvatarDropdownOptions = {}
+        for _, p in ipairs(FakeAvatarPresets) do
+            table.insert(FakeAvatarDropdownOptions, p.name)
         end
 
         FakeAvatarSection:AddDropdown({ Title = "Fake Avatar Preset",
@@ -10887,6 +10028,7 @@ local function __FazzHub_Init_Main__()
                     SelectedFakeAva = LocalPlayer.UserId
                 elseif FakeAvatarUserIdCache[name] then
                     SelectedFakeAva = FakeAvatarUserIdCache[name]
+                    if FakeAvatarEnabled then ApplyFakeAvatar() end
                 else
                     task.spawn(function()
                         local ok, userId = pcall(function()
@@ -11202,10 +10344,7 @@ local function __FazzHub_Init_Main__()
             else
                 if SpecGui then SpecGui:Destroy(); SpecGui = nil; SpecLabel = nil end
             end
-        end })--========================================================--
--- FAZZHUB v0.3.9
--- PART 19F/19 : BOMBAX + CONFIG + CLOSING (FINAL)
---========================================================--
+        end })
 
         --====================================================--
         -- BOMBAX TAB
@@ -11289,7 +10428,7 @@ local function __FazzHub_Init_Main__()
         local soundSection = MakeSection(BombaxTab, "Sound Settings")
         soundSection:AddSlider({
             Title = "Volume",
-            Min = 0, Max = 10,
+            Min = 0, Max = 15,
             Default = Bombax.Volume,
             Increment = 0.1,
             Suffix = "x",
@@ -11313,16 +10452,33 @@ local function __FazzHub_Init_Main__()
                 if W.Bombax_MiniEnable then W.Bombax_MiniEnable(v) end
             end
         })
+        soundSection:AddToggle({
+            Title = "Bass Boost",
+            Content = "Tambah efek bass pada audio",
+            Default = true,
+            Callback = function(v)
+                if W.Bombax_SetBassBoost then W.Bombax_SetBassBoost(v) end
+            end
+        })
+        soundSection:AddToggle({
+            Title = "Treble Boost",
+            Content = "Tambah efek treble (suara lebih jernih)",
+            Default = true,
+            Callback = function(v)
+                if W.Bombax_SetTrebleBoost then W.Bombax_SetTrebleBoost(v) end
+            end
+        })
 
         local volSection = MakeSection(BombaxTab, "Volume Control")
         volSection:AddParagraph({
             Title = "Volume Presets",
-            Content = "Atur volume cepat:\n• Low: 1x\n• Medium: 3x\n• High: 5x\n• Max: 10x"
+            Content = "Atur volume cepat:\n• Low: 1x\n• Medium: 3x\n• High: 5x\n• Max: 10x\n• Extreme: 15x"
         })
         volSection:AddButton({ Title = "🔉 Low (1x)",   Callback = function() W.Bombax_SetVolume(1)  end })
         volSection:AddButton({ Title = "🔊 Medium (3x)", Callback = function() W.Bombax_SetVolume(3)  end })
         volSection:AddButton({ Title = "🔊 High (5x)",   Callback = function() W.Bombax_SetVolume(5)  end })
         volSection:AddButton({ Title = "📢 Max (10x)",   Callback = function() W.Bombax_SetVolume(10) end })
+        volSection:AddButton({ Title = "💥 Extreme (15x)", Callback = function() W.Bombax_SetVolume(15) end })
 
         --====================================================--
         -- CONFIG TAB
@@ -11625,12 +10781,13 @@ local function __FazzHub_Init_Main__()
     RunService.RenderStepped:Connect(function() pcall(Veil_UpdateAimbot) end)
 
     print("[FAZZHUB v0.3.9] Loaded!")
-    print("  - All features loaded with Bombax Music Player (Original)")
+    print("  - All features loaded with Bombax Music Player (Upgraded)")
     print("  - ESP Status: Name + Distance only")
     print("  - Auto Skill Check V2 (no floating menu)")
     print("  - Floating Button: ImageTransparency = 0.6")
     print("  - Gen Bypass: Smaller button (80x80)")
-    print("  - Fake Avatar: Username preset (32 usernames)")
+    print("  - Fake Avatar: 40 presets (32 usernames + 7 Random + Self)")
+    print("  - Bombax: Audio boost + ON/OFF + Shine effects")
     ForceNotify("FAZZHUB v0.3.9 Loaded", "All features ready", 6)
 
 end
