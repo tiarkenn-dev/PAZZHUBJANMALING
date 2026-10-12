@@ -235,6 +235,27 @@ local function __FazzHub_Init_Main__()
     W.InstantHealSelf = W.InstantHealSelf or false
     W.AutoHealAll     = W.AutoHealAll or false
 
+    --====================================================--
+    -- [PATCH] SILENT SPEAR VEIL V3 DEFAULTS
+    --====================================================--
+    VD.Veil3_Enabled        = VD.Veil3_Enabled        or false
+    VD.Veil3_ShowFOV        = VD.Veil3_ShowFOV        ~= false
+    VD.Veil3_ShowTrajectory = VD.Veil3_ShowTrajectory ~= false
+    VD.Veil3_FOV            = VD.Veil3_FOV            or 450
+    VD.Veil3_SpearSpeed     = VD.Veil3_SpearSpeed     or 165
+    VD.Veil3_Gravity        = VD.Veil3_Gravity        or (workspace.Gravity * 0.50)
+    VD.Veil3_TargetPart     = VD.Veil3_TargetPart     or "HumanoidRootPart"
+    VD.Veil3_PredictMode    = VD.Veil3_PredictMode    or "OFF"
+    VD.Veil3_LeadMultiplier = VD.Veil3_LeadMultiplier or 1.4
+
+    --====================================================--
+    -- [PATCH] FLOATING BUTTON TRANSPARENCY
+    --====================================================--
+    VD.FloatingBtn_BgOff   = VD.FloatingBtn_BgOff   or 0.4
+    VD.FloatingBtn_BgOn    = VD.FloatingBtn_BgOn    or 0.2
+    VD.FloatingBtn_Overlay = VD.FloatingBtn_Overlay or 0.2
+    VD.FloatingBtn_BtnBg   = VD.FloatingBtn_BtnBg   or 0.1
+
     _G.GLUTO_ACCENT     = Color3.fromRGB(120, 120, 120)
     _G.GLUTO_ACCENT_BG  = Color3.fromRGB(0, 0, 0)
     _G.GLUTO_NEUTRAL    = Color3.fromRGB(90, 90, 90)
@@ -242,7 +263,7 @@ local function __FazzHub_Init_Main__()
     _G.GLUTO_BG_OFF     = Color3.fromRGB(0, 0, 0)--========================================================--
 -- FAZZHUB v0.3.9
 -- PART 3/19 : BOMBAX SONG LIBRARY + MUSIC + AUTO NEXT
--- PATCH: Notif ganti lagu DIHAPUS
+-- PATCH: +6 lagu baru (total 38 lagu)
 --========================================================--
 
     --====================================================--
@@ -289,6 +310,15 @@ local function __FazzHub_Init_Main__()
         {id="101280279977761", judul="Kini Kita Pe Kisah"},
         {id="117080961502380", judul="DJ Music Dubstep x Bangun Tidur Selfie"},
         {id="110337096446518", judul="DJ Onia"},
+        --====================================================--
+        -- [PATCH] 6 LAGU BARU
+        --====================================================--
+        {id="108556908140218", judul="Who Am I"},
+        {id="95163564243987",  judul="Never Stop (DJ WHO x Mokyy)"},
+        {id="99445078556609",  judul="Hope"},
+        {id="132575056090579", judul="Heroes"},
+        {id="124662835711453", judul="Where Do We Begin x An Angel's Love"},
+        {id="91303938501044",  judul="AKIMILAKU PUNYA ISTRI TIGA"},
     }
 
     local MUSIC_LIBRARY = {}
@@ -325,7 +355,6 @@ local function __FazzHub_Init_Main__()
         Bombax.TrackLength = snd.TimeLength or 0
         Bombax.TrackPosition = 0
         table.insert(Bombax.History, { name = trackName, id = soundId, time = tick() })
-        -- [PATCH] Notif ganti lagu DIHAPUS biar gak spam
         if W.Bombax_MiniUpdate then pcall(W.Bombax_MiniUpdate) end
     end
 
@@ -417,6 +446,7 @@ local function __FazzHub_Init_Main__()
 -- FAZZHUB v0.3.9
 -- PART 4/19 : BOMBAX MINI GUI + PROGRESS BAR
 -- PATCH: Background pakai image ID FAZZHUB + transparan
+-- PATCH: Feedback Visual Play/Pause/Stop + Dot Indikator
 --========================================================--
 
     --====================================================--
@@ -430,9 +460,17 @@ local function __FazzHub_Init_Main__()
             Frame = nil, Body = nil,
             TrackLbl = nil, VolLbl = nil, VolFill = nil,
             ProgressFill = nil, ProgressLbl = nil,
+            PlayBtn = nil, PauseBtn = nil, StopBtn = nil, NextBtn = nil,
+            StatusDot = nil,
         }
 
         local BG_IMAGE_ID = "rbxassetid://72845574620852"
+
+        local COLOR_OFF     = Color3.fromRGB(30, 30, 40)
+        local COLOR_PLAY    = Color3.fromRGB(40, 180, 90)
+        local COLOR_PAUSE   = Color3.fromRGB(230, 180, 40)
+        local COLOR_STOP    = Color3.fromRGB(200, 50, 50)
+        local COLOR_DISABLE = Color3.fromRGB(20, 20, 25)
 
         local function BuildMini()
             if MiniState.Gui then pcall(function() MiniState.Gui:Destroy() end) end
@@ -514,6 +552,16 @@ local function __FazzHub_Init_Main__()
             title.TextXAlignment = Enum.TextXAlignment.Left
             title.ZIndex = 4
 
+            local statusDot = Instance.new("Frame", header)
+            statusDot.Name = "StatusDot"
+            statusDot.Size = UDim2.fromOffset(8, 8)
+            statusDot.Position = UDim2.new(1, -52, 0.5, -4)
+            statusDot.BackgroundColor3 = Color3.fromRGB(120, 120, 120)
+            statusDot.BorderSizePixel = 0
+            statusDot.ZIndex = 6
+            Instance.new("UICorner", statusDot).CornerRadius = UDim.new(1, 0)
+            MiniState.StatusDot = statusDot
+
             local minBtn = Instance.new("TextButton", header)
             minBtn.Name = "MinBtn"
             minBtn.Size = UDim2.fromOffset(22, 22)
@@ -593,7 +641,7 @@ local function __FazzHub_Init_Main__()
                 b.Name = name
                 b.Size = UDim2.fromOffset(56, 26)
                 b.Position = UDim2.fromOffset(xPos, 0)
-                b.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+                b.BackgroundColor3 = COLOR_OFF
                 b.BackgroundTransparency = 0.2
                 b.BorderSizePixel = 0
                 b.Text = text
@@ -610,7 +658,7 @@ local function __FazzHub_Init_Main__()
                 return b
             end
 
-            makeBtn("PlayBtn", "▶", 0, function()
+            MiniState.PlayBtn = makeBtn("PlayBtn", "▶", 0, function()
                 if Bombax.CurrentTrack and MUSIC_LIBRARY[Bombax.CurrentTrack] then
                     W.Bombax_Play(MUSIC_LIBRARY[Bombax.CurrentTrack], Bombax.CurrentTrack)
                 elseif Bombax.CurrentSound and Bombax.CurrentSound.SoundId ~= "" then
@@ -619,14 +667,14 @@ local function __FazzHub_Init_Main__()
                     ForceNotify("Bombax", "Pilih lagu dulu di tab Bombax", 2)
                 end
             end)
-            makeBtn("PauseBtn", "⏸", 60, function() W.Bombax_Pause() end)
-            makeBtn("StopBtn", "⏹", 120, function() W.Bombax_Stop() end)
+            MiniState.PauseBtn = makeBtn("PauseBtn", "⏸", 60, function() W.Bombax_Pause() end)
+            MiniState.StopBtn  = makeBtn("StopBtn", "⏹", 120, function() W.Bombax_Stop() end)
 
             local nextBtn = Instance.new("TextButton", btnRow)
             nextBtn.Name = "NextBtn"
             nextBtn.Size = UDim2.fromOffset(26, 26)
             nextBtn.Position = UDim2.new(1, -26, 0, 0)
-            nextBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+            nextBtn.BackgroundColor3 = COLOR_OFF
             nextBtn.BackgroundTransparency = 0.2
             nextBtn.BorderSizePixel = 0
             nextBtn.Text = "⏭"
@@ -642,6 +690,7 @@ local function __FazzHub_Init_Main__()
             nextBtn.MouseButton1Click:Connect(function()
                 W.Bombax_Next()
             end)
+            MiniState.NextBtn = nextBtn
 
             local volLbl = Instance.new("TextLabel", body)
             volLbl.Name = "VolLbl"
@@ -718,6 +767,48 @@ local function __FazzHub_Init_Main__()
                     local ratio = math.clamp(Bombax.Volume / 10, 0, 1)
                     MiniState.VolFill.Size = UDim2.new(ratio, 0, 1, 0)
                 end
+
+                local isPlaying = Bombax.IsPlaying and not Bombax.IsPaused
+                local isPaused  = Bombax.IsPlaying and Bombax.IsPaused
+                local isStopped = not Bombax.IsPlaying
+                local hasTrack  = Bombax.CurrentSound ~= nil and Bombax.CurrentSound.SoundId ~= ""
+
+                if MiniState.PlayBtn then
+                    if isPlaying then
+                        TweenService:Create(MiniState.PlayBtn, TweenInfo.new(0.2), { BackgroundColor3 = COLOR_PLAY, BackgroundTransparency = 0.1 }):Play()
+                        MiniState.PlayBtn.Text = "🔊"
+                    elseif not hasTrack then
+                        TweenService:Create(MiniState.PlayBtn, TweenInfo.new(0.2), { BackgroundColor3 = COLOR_DISABLE, BackgroundTransparency = 0.6 }):Play()
+                        MiniState.PlayBtn.Text = "▶"
+                    else
+                        TweenService:Create(MiniState.PlayBtn, TweenInfo.new(0.2), { BackgroundColor3 = COLOR_OFF, BackgroundTransparency = 0.2 }):Play()
+                        MiniState.PlayBtn.Text = "▶"
+                    end
+                end
+
+                if MiniState.PauseBtn then
+                    if isPaused then
+                        TweenService:Create(MiniState.PauseBtn, TweenInfo.new(0.2), { BackgroundColor3 = COLOR_PAUSE, BackgroundTransparency = 0.1 }):Play()
+                    else
+                        TweenService:Create(MiniState.PauseBtn, TweenInfo.new(0.2), { BackgroundColor3 = COLOR_OFF, BackgroundTransparency = 0.2 }):Play()
+                    end
+                end
+
+                if MiniState.StopBtn then
+                    if isStopped and hasTrack then
+                        TweenService:Create(MiniState.StopBtn, TweenInfo.new(0.2), { BackgroundColor3 = COLOR_STOP, BackgroundTransparency = 0.3 }):Play()
+                    else
+                        TweenService:Create(MiniState.StopBtn, TweenInfo.new(0.2), { BackgroundColor3 = COLOR_OFF, BackgroundTransparency = 0.2 }):Play()
+                    end
+                end
+
+                if MiniState.StatusDot then
+                    local dc = Color3.fromRGB(120, 120, 120)
+                    if isPlaying then dc = Color3.fromRGB(40, 220, 100)
+                    elseif isPaused then dc = Color3.fromRGB(240, 190, 40)
+                    elseif isStopped then dc = Color3.fromRGB(200, 50, 50) end
+                    TweenService:Create(MiniState.StatusDot, TweenInfo.new(0.25), { BackgroundColor3 = dc }):Play()
+                end
             end
 
             task.spawn(function()
@@ -741,6 +832,13 @@ local function __FazzHub_Init_Main__()
                         end
                     end
                     task.wait(0.2)
+                end
+            end)
+
+            task.spawn(function()
+                while MiniState.Gui and MiniState.Gui.Parent do
+                    task.wait(0.15)
+                    if W.Bombax_MiniUpdate then pcall(W.Bombax_MiniUpdate) end
                 end
             end)
 
@@ -2448,7 +2546,6 @@ local function __FazzHub_Init_Main__()
         mainStroke.Transparency = 0.15
         mainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
-        -- ICON (IMAGE FAZZHUB)
         local iconHolder = Instance.new("Frame")
         iconHolder.Name = "IconHolder"
         iconHolder.Size = UDim2.fromOffset(24, 24)
@@ -2509,7 +2606,6 @@ local function __FazzHub_Init_Main__()
         sub.ZIndex = 3
         sub.Parent = main
 
-        -- BAR DURASI STUN
         local durBarBg = Instance.new("Frame")
         durBarBg.Name = "DurBarBg"
         durBarBg.Size = UDim2.new(1, -42, 0, 3)
@@ -2571,7 +2667,6 @@ local function __FazzHub_Init_Main__()
             end
         end)
 
-        -- TRACK DURASI STUN
         local durStart = tick()
         local DUR_ESTIMATE = 3.0
         task.spawn(function()
@@ -2756,6 +2851,7 @@ local function __FazzHub_Init_Main__()
                             end--========================================================--
 -- FAZZHUB v0.3.9
 -- PART 10A/19 : FULL ESP (BAGIAN 1)
+-- PATCH: +FESPC.Knocked color + Hook + Gate
 --========================================================--
 
     --====================================================--
@@ -2764,6 +2860,7 @@ local function __FazzHub_Init_Main__()
     W.FullESP = W.FullESP or {
         Survivor = false, Killer = false,
         Generator = false, Pallet = false, Window = false, SCP = false,
+        Hook = false, Gate = false,
         Distance = 500,
     }
     W.FullESPStatus = W.FullESPStatus or {
@@ -2775,6 +2872,9 @@ local function __FazzHub_Init_Main__()
         Survivor  = Color3.fromRGB(0, 190, 255), Killer    = Color3.fromRGB(255, 0, 0),
         Generator = Color3.fromRGB(255, 255, 0), Window    = Color3.fromRGB(255, 255, 255),
         Pallet    = Color3.fromRGB(255, 165, 0), SCP       = Color3.fromRGB(0, 255, 0),
+        Knocked   = Color3.fromRGB(255, 60, 60),
+        Hook      = Color3.fromRGB(255, 120, 60),
+        Gate      = Color3.fromRGB(0, 255, 120),
     }
     local FESP  = W.FullESP
     local FESPS = W.FullESPStatus
@@ -2787,7 +2887,11 @@ local function __FazzHub_Init_Main__()
         local CachedGen     = {}
         local CachedPallet  = {}
         local CachedWindow  = {}
+        local CachedHook    = {}
+        local CachedGate    = {}
         local WindowObjects = {}
+        local HookObjects   = {}
+        local GateObjects   = {}
 
         local function CacheObject(obj)
             if not obj then return end
@@ -2798,6 +2902,17 @@ local function __FazzHub_Init_Main__()
             elseif obj.Name == "Pallet" or obj.Name == "Palletwrong" then
                 CachedPallet[obj] = true
             end
+            if obj.Name == "Hook" and obj:IsA("Model") then
+                CachedHook[obj] = true
+            end
+            if obj:IsA("BasePart") and (
+                string.lower(obj.Name) == "finishline" or
+                string.lower(obj.Name) == "fininshline" or
+                string.lower(obj.Name) == "gate" or
+                string.lower(obj.Name) == "exitgate"
+            ) then
+                CachedGate[obj] = true
+            end
         end
 
         for _, obj in ipairs(Workspace:GetDescendants()) do CacheObject(obj) end
@@ -2805,6 +2920,7 @@ local function __FazzHub_Init_Main__()
         Workspace.DescendantRemoving:Connect(function(obj)
             CachedSCP[obj] = nil; CachedGen[obj] = nil
             CachedPallet[obj] = nil; CachedWindow[obj] = nil
+            CachedHook[obj] = nil; CachedGate[obj] = nil
             if ESPObjects[obj] then pcall(function() ESPObjects[obj]:Destroy() end); ESPObjects[obj] = nil end
             if StatusESP[obj] then pcall(function() StatusESP[obj]:Destroy() end); StatusESP[obj] = nil end
         end)
@@ -2845,7 +2961,7 @@ local function __FazzHub_Init_Main__()
                                     end--========================================================--
 -- FAZZHUB v0.3.9
 -- PART 10B/19 : FULL ESP (BAGIAN 2 - STATUS BARU)
--- PATCH: ESP Status sekarang cuma Nama + Jarak (2 baris)
+-- PATCH: ESP Survivor — Normal (Survivor Color) / Knocked (Merah)
 --========================================================--
 
         local function CreateStatusESP(plr, char, root)
@@ -2855,19 +2971,27 @@ local function __FazzHub_Init_Main__()
             local hum = char:FindFirstChildOfClass("Humanoid")
             if not head or not hum then return end
 
+            -- [PATCH] Deteksi knocked/downed
             local isDown = hum.Health <= 0 or hum.Health < 2
                 or char:GetAttribute("Downed") == true
                 or char:GetAttribute("IsDown") == true
                 or char:GetAttribute("Knocked") == true
+                or char:GetAttribute("IsHooked") == true
+                or char:GetAttribute("IsCarried") == true
+                or char:GetAttribute("HookProgressDepleting") == true
 
             local dist = (head.Position - root.Position).Magnitude
             if dist > FESPS.Radius then RemoveStatusESP(char); return end
 
-            -- Warna beda per team (Survivor biru, Killer merah)
+            -- [PATCH] Warna accent
             local accentColor = Color3.fromRGB(255, 255, 255)
-            if TeamIs(plr, "Killer") then accentColor = FESPC.Killer
-            elseif TeamIs(plr, "Survivor") then accentColor = FESPC.Survivor end
-            if isDown then accentColor = Color3.fromRGB(255, 60, 60) end
+            if isDown then
+                accentColor = FESPC.Knocked
+            elseif TeamIs(plr, "Killer") then
+                accentColor = FESPC.Killer
+            elseif TeamIs(plr, "Survivor") then
+                accentColor = FESPC.Survivor
+            end
 
             local bb = StatusESP[char]
             if not bb or not bb.Parent then
@@ -2885,7 +3009,6 @@ local function __FazzHub_Init_Main__()
                 scaleObj.Scale = 1
                 scaleObj.Parent = bb
 
-                -- NAMA (baris atas)
                 local nameLbl = Instance.new("TextLabel")
                 nameLbl.Name = "NameLbl"
                 nameLbl.BackgroundTransparency = 1
@@ -2901,7 +3024,6 @@ local function __FazzHub_Init_Main__()
                 nameLbl.TextTruncate = Enum.TextTruncate.AtEnd
                 nameLbl.Parent = bb
 
-                -- JARAK (baris bawah)
                 local distLbl = Instance.new("TextLabel")
                 distLbl.Name = "DistLbl"
                 distLbl.BackgroundTransparency = 1
@@ -2927,12 +3049,12 @@ local function __FazzHub_Init_Main__()
             if nameLbl then
                 nameLbl.Text = plr.Name
                 nameLbl.Visible = FESPS.ShowName
-                nameLbl.TextColor3 = isDown and Color3.fromRGB(255, 100, 100) or accentColor
+                nameLbl.TextColor3 = isDown and FESPC.Knocked or accentColor
             end
             if distLbl then
                 distLbl.Text = string.format("[%.0fm]", dist)
                 distLbl.Visible = FESPS.ShowDistance
-                distLbl.TextColor3 = Color3.fromRGB(210, 210, 220)
+                distLbl.TextColor3 = isDown and Color3.fromRGB(255, 120, 120) or Color3.fromRGB(210, 210, 220)
             end
 
             if distScale then
@@ -2943,6 +3065,8 @@ local function __FazzHub_Init_Main__()
                                         end--========================================================--
 -- FAZZHUB v0.3.9
 -- PART 10C/19 : FULL ESP (BAGIAN 3)
+-- PATCH: +ESP Hook, +ESP Gate, +ESP Nama Gene
+-- PATCH: UI KEREN — Progress bar kecil + Optimasi
 --========================================================--
 
         local function GetGameValue(obj, name)
@@ -2957,54 +3081,266 @@ local function __FazzHub_Init_Main__()
             return nil
         end
 
-        local function UpdateGenerator(gen)
+        --====================================================--
+        -- GEN NAME CACHE (urut X — kiri ke kanan)
+        --====================================================--
+        local GenNameCache = {}
+        local GenCacheDirty = true
+        local GenCacheDebounce = 0
+
+        Workspace.DescendantAdded:Connect(function(obj)
+            if obj.Name == "Generator" and obj:IsA("Model") then
+                GenCacheDirty = true
+                GenCacheDebounce = tick() + 2
+            end
+        end)
+        Workspace.DescendantRemoving:Connect(function(obj)
+            if obj.Name == "Generator" and obj:IsA("Model") then
+                GenCacheDirty = true
+                GenCacheDebounce = tick() + 2
+            end
+        end)
+
+        local function RebuildGenCache()
+            GenNameCache = {}
+            local gens = {}
+            local mf = Workspace:FindFirstChild("Map")
+            if mf then
+                for _, obj in ipairs(mf:GetDescendants()) do
+                    if obj:IsA("Model") and obj.Name == "Generator" then
+                        local real = obj:GetAttribute("RepairProgress") ~= nil
+                                  or obj:GetAttribute("kickcount") ~= nil
+                                  or obj:GetAttribute("ProgressRepair") ~= nil
+                        if real then
+                            local pos = nil
+                            pcall(function() pos = obj:GetPivot().Position end)
+                            if pos then
+                                table.insert(gens, { gen = obj, x = pos.X })
+                            end
+                        end
+                    end
+                end
+            end
+            table.sort(gens, function(a, b) return a.x < b.x end)
+            for i, g in ipairs(gens) do
+                GenNameCache[g.gen] = "Gene " .. i
+            end
+            GenCacheDirty = false
+        end
+
+        local function GetGenName(gen)
+            if GenCacheDirty and tick() > GenCacheDebounce then RebuildGenCache() end
+            return GenNameCache[gen] or "Gene ?"
+        end
+
+        --====================================================--
+        -- UPDATE GENERATOR — Progress Bar Kecil
+        --====================================================--
+        local GenUpdateInterval = 0.3
+        local GenLastUpdate = 0
+
+        local function UpdateGenerator(gen, doFullUpdate)
             if not gen or not gen.Parent then return end
             if not FESP.Generator then
                 local o = gen:FindFirstChild("GenESP"); if o then o:Destroy() end
                 local h = gen:FindFirstChild("GenHighlight"); if h then h:Destroy() end
                 return
             end
+
+            local bb = gen:FindFirstChild("GenESP")
+            if not doFullUpdate and bb then return end
+
             local percent = GetGameValue(gen, "RepairProgress")
                 or GetGameValue(gen, "Progress")
                 or GetGameValue(gen, "ProgressRepair") or 0
-            local bb = gen:FindFirstChild("GenESP")
             if percent >= 100 then if bb then bb:Destroy() end; return end
             local cp = math.clamp(percent, 0, 100)
-            local color = FESPC.Generator:Lerp(Color3.fromRGB(0, 255, 120), cp / 100)
-            local text = string.format("[%.0f%%]", percent)
+            local ratio = cp / 100
+
+            -- Warna gradient: merah → kuning → hijau
+            local color
+            if ratio < 0.5 then
+                color = Color3.fromRGB(255, 60, 60):Lerp(Color3.fromRGB(255, 200, 60), ratio / 0.5)
+            else
+                color = Color3.fromRGB(255, 200, 60):Lerp(Color3.fromRGB(60, 255, 120), (ratio - 0.5) / 0.5)
+            end
+
+            local genName = GetGenName(gen)
+
             if not bb then
                 bb = Instance.new("BillboardGui")
                 bb.Name = "GenESP"
-                bb.Size = UDim2.new(0, 100, 0, 30)
+                bb.Size = UDim2.fromOffset(110, 30)
                 bb.AlwaysOnTop = true
-                local lbl = Instance.new("TextLabel")
-                lbl.Size = UDim2.new(1, 0, 1, 0)
-                lbl.BackgroundTransparency = 1
-                lbl.Text = text
-                lbl.TextColor3 = color
-                lbl.TextStrokeTransparency = 0
-                lbl.Font = Enum.Font.GothamBold
-                lbl.TextSize = 12
-                lbl.Parent = bb
+                bb.LightInfluence = 0
+                bb.MaxDistance = FESP.Distance or 500
                 bb.Adornee = gen
+
+                local card = Instance.new("Frame")
+                card.Name = "Card"
+                card.Size = UDim2.fromOffset(100, 26)
+                card.Position = UDim2.new(0.5, -50, 0, 2)
+                card.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
+                card.BackgroundTransparency = 0.1
+                card.BorderSizePixel = 0
+                card.Parent = bb
+                Instance.new("UICorner", card).CornerRadius = UDim.new(0, 5)
+
+                local grad = Instance.new("UIGradient")
+                grad.Rotation = 135
+                grad.Color = ColorSequence.new({
+                    ColorSequenceKeypoint.new(0, Color3.fromRGB(25, 25, 32)),
+                    ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 8, 12)),
+                })
+                grad.Parent = card
+
+                local stroke = Instance.new("UIStroke")
+                stroke.Name = "Stroke"
+                stroke.Color = color
+                stroke.Thickness = 1
+                stroke.Transparency = 0.1
+                stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+                stroke.Parent = card
+
+                local iconHolder = Instance.new("Frame")
+                iconHolder.Name = "IconHolder"
+                iconHolder.Size = UDim2.fromOffset(14, 14)
+                iconHolder.Position = UDim2.new(0, 4, 0, 3)
+                iconHolder.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+                iconHolder.BorderSizePixel = 0
+                iconHolder.Parent = card
+                Instance.new("UICorner", iconHolder).CornerRadius = UDim.new(1, 0)
+                local iconStroke = Instance.new("UIStroke")
+                iconStroke.Color = color
+                iconStroke.Thickness = 1
+                iconStroke.Transparency = 0.3
+                iconStroke.Parent = iconHolder
+
+                local iconLbl = Instance.new("TextLabel")
+                iconLbl.Name = "Icon"
+                iconLbl.Size = UDim2.fromScale(1, 1)
+                iconLbl.BackgroundTransparency = 1
+                iconLbl.Font = Enum.Font.GothamBlack
+                iconLbl.Text = "⚙"
+                iconLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+                iconLbl.TextScaled = true
+                iconLbl.Parent = iconHolder
+
+                local nameLbl = Instance.new("TextLabel")
+                nameLbl.Name = "NameLbl"
+                nameLbl.Size = UDim2.new(1, -50, 0, 10)
+                nameLbl.Position = UDim2.new(0, 22, 0, 3)
+                nameLbl.BackgroundTransparency = 1
+                nameLbl.Text = genName
+                nameLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+                nameLbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                nameLbl.TextStrokeTransparency = 0.3
+                nameLbl.Font = Enum.Font.GothamBold
+                nameLbl.TextSize = 9
+                nameLbl.TextXAlignment = Enum.TextXAlignment.Left
+                nameLbl.Parent = card
+
+                local pctLbl = Instance.new("TextLabel")
+                pctLbl.Name = "PctLbl"
+                pctLbl.Size = UDim2.fromOffset(30, 10)
+                pctLbl.Position = UDim2.new(1, -34, 0, 3)
+                pctLbl.BackgroundTransparency = 1
+                pctLbl.Text = string.format("%.0f%%", percent)
+                pctLbl.TextColor3 = color
+                pctLbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                pctLbl.TextStrokeTransparency = 0.4
+                pctLbl.Font = Enum.Font.GothamBold
+                pctLbl.TextSize = 8
+                pctLbl.TextXAlignment = Enum.TextXAlignment.Right
+                pctLbl.Parent = card
+
+                local barBg = Instance.new("Frame")
+                barBg.Name = "BarBg"
+                barBg.Size = UDim2.new(1, -8, 0, 5)
+                barBg.Position = UDim2.new(0, 4, 1, -9)
+                barBg.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
+                barBg.BorderSizePixel = 0
+                barBg.Parent = card
+                Instance.new("UICorner", barBg).CornerRadius = UDim.new(1, 0)
+
+                local barInnerStroke = Instance.new("UIStroke")
+                barInnerStroke.Color = Color3.fromRGB(60, 60, 70)
+                barInnerStroke.Thickness = 1
+                barInnerStroke.Transparency = 0.5
+                barInnerStroke.Parent = barBg
+
+                local barFill = Instance.new("Frame")
+                barFill.Name = "BarFill"
+                barFill.Size = UDim2.new(ratio, 0, 1, 0)
+                barFill.BackgroundColor3 = color
+                barFill.BorderSizePixel = 0
+                barFill.Parent = barBg
+                Instance.new("UICorner", barFill).CornerRadius = UDim.new(1, 0)
+
+                local fillGlow = Instance.new("UIStroke")
+                fillGlow.Color = color
+                fillGlow.Thickness = 1
+                fillGlow.Transparency = 0.3
+                fillGlow.Parent = barFill
+
                 bb.Parent = gen
             else
-                local lbl = bb:FindFirstChildOfClass("TextLabel")
-                if lbl then lbl.Text = text; lbl.TextColor3 = color end
+                local card = bb:FindFirstChild("Card")
+                if card then
+                    local nameLbl = card:FindFirstChild("NameLbl")
+                    local pctLbl = card:FindFirstChild("PctLbl")
+                    local stroke = card:FindFirstChild("Stroke")
+                    local barFill = card:FindFirstChild("BarBg") and card.BarBg:FindFirstChild("BarFill")
+                    local fillGlow = barFill and barFill:FindFirstChildOfClass("UIStroke")
+                    local iconHolder = card:FindFirstChild("IconHolder")
+                    local iconStroke = iconHolder and iconHolder:FindFirstChildOfClass("UIStroke")
+
+                    if nameLbl and nameLbl.Text ~= genName then
+                        nameLbl.Text = genName
+                    end
+                    if pctLbl then
+                        local pctText = string.format("%.0f%%", percent)
+                        if pctLbl.Text ~= pctText then
+                            pctLbl.Text = pctText
+                            pctLbl.TextColor3 = color
+                        end
+                    end
+                    if stroke then stroke.Color = color end
+                    if barFill then
+                        TweenService:Create(barFill, TweenInfo.new(0.3), {
+                            Size = UDim2.new(ratio, 0, 1, 0),
+                            BackgroundColor3 = color,
+                        }):Play()
+                    end
+                    if fillGlow then fillGlow.Color = color end
+                    if iconStroke then iconStroke.Color = color end
+                end
             end
-            local h = gen:FindFirstChild("GenHighlight") or Instance.new("Highlight")
-            h.Name = "GenHighlight"
-            h.Adornee = gen
-            h.FillColor = color
-            h.OutlineColor = color
-            h.FillTransparency = 0.9
-            h.OutlineTransparency = 0.3
-            h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-            h.Parent = gen
+
+            local h = gen:FindFirstChild("GenHighlight")
+            if not h then
+                h = Instance.new("Highlight")
+                h.Name = "GenHighlight"
+                h.Adornee = gen
+                h.FillColor = color
+                h.OutlineColor = color
+                h.FillTransparency = 0.9
+                h.OutlineTransparency = 0.3
+                h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+                h.Parent = gen
+            elseif h.FillColor ~= color then
+                h.FillColor = color
+                h.OutlineColor = color
+            end
         end
 
+        --====================================================--
+        -- UPDATE MAP ESP (PALLET)
+        --====================================================--
         local function UpdateMapESP(obj, root)
             if not obj or not root or not obj.Parent then return end
+            if not FESP.Pallet then RemoveESP(obj); return end
+
             local pos
             if obj:IsA("Model") then
                 if obj.PrimaryPart then pos = obj.PrimaryPart.Position
@@ -3022,15 +3358,151 @@ local function __FazzHub_Init_Main__()
             if not pos then return end
             local dist = (pos - root.Position).Magnitude
 
-            if obj.Name == "Pallet" or obj.Name == "Palletwrong" then
-                if FESP.Pallet and dist <= FESP.Distance then
-                    CreateESP(obj, FESPC.Pallet)
-                else
-                    RemoveESP(obj)
+            if dist <= FESP.Distance then
+                CreateESP(obj, FESPC.Pallet)
+            else
+                RemoveESP(obj)
+            end
+        end
+
+        --====================================================--
+        -- UPDATE HOOK ESP
+        --====================================================--
+        local function UpdateHookESP(root, doFullUpdate)
+            if not FESP.Hook then
+                for obj in pairs(CachedHook) do RemoveESP(obj) end
+                for obj, data in pairs(HookObjects) do
+                    if data.billboard then pcall(function() data.billboard:Destroy() end) end
+                    HookObjects[obj] = nil
+                end
+                return
+            end
+            for obj in pairs(CachedHook) do
+                if obj and obj.Parent then
+                    local pos
+                    if obj:IsA("Model") then
+                        if obj.PrimaryPart then pos = obj.PrimaryPart.Position
+                        else
+                            local ok, pivot = pcall(function() return obj:GetPivot().Position end)
+                            pos = ok and pivot or nil
+                            if not pos then
+                                local bp = obj:FindFirstChildWhichIsA("BasePart", true)
+                                if bp then pos = bp.Position end
+                            end
+                        end
+                    elseif obj:IsA("BasePart") then
+                        pos = obj.Position
+                    end
+                    if pos then
+                        local dist = (pos - root.Position).Magnitude
+                        if dist <= FESP.Distance then
+                            CreateESP(obj, FESPC.Hook)
+                            local data = HookObjects[obj]
+                            if not data then
+                                local bb = Instance.new("BillboardGui")
+                                bb.Name = "FazzHubHookESP"
+                                bb.Size = UDim2.new(0, 100, 0, 30)
+                                bb.AlwaysOnTop = true
+                                bb.StudsOffset = Vector3.new(0, 3, 0)
+                                bb.MaxDistance = FESP.Distance or 500
+                                bb.Adornee = (obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart", true))) or obj
+                                if bb.Adornee then
+                                    local lbl = Instance.new("TextLabel")
+                                    lbl.Name = "HookLbl"
+                                    lbl.Size = UDim2.new(1, 0, 1, 0)
+                                    lbl.BackgroundTransparency = 1
+                                    lbl.Font = Enum.Font.GothamBold
+                                    lbl.TextSize = 12
+                                    lbl.TextColor3 = FESPC.Hook
+                                    lbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                                    lbl.TextStrokeTransparency = 0.3
+                                    lbl.Text = "HOOK"
+                                    lbl.Parent = bb
+                                    bb.Parent = obj
+                                    HookObjects[obj] = { billboard = bb, lbl = lbl }
+                                end
+                            else
+                                if doFullUpdate and data.lbl then
+                                    data.lbl.Text = string.format("HOOK [%.0fm]", dist)
+                                    data.lbl.TextColor3 = FESPC.Hook
+                                end
+                            end
+                        else
+                            RemoveESP(obj)
+                            local data = HookObjects[obj]
+                            if data then
+                                if data.billboard then pcall(function() data.billboard:Destroy() end) end
+                                HookObjects[obj] = nil
+                            end
+                        end
+                    end
                 end
             end
         end
 
+        --====================================================--
+        -- UPDATE GATE ESP
+        --====================================================--
+        local function UpdateGateESP(root, doFullUpdate)
+            if not FESP.Gate then
+                for obj in pairs(CachedGate) do RemoveESP(obj) end
+                for obj, data in pairs(GateObjects) do
+                    if data.billboard then pcall(function() data.billboard:Destroy() end) end
+                    GateObjects[obj] = nil
+                end
+                return
+            end
+            for obj in pairs(CachedGate) do
+                if obj and obj.Parent then
+                    local pos = obj.Position
+                    if pos then
+                        local dist = (pos - root.Position).Magnitude
+                        if dist <= FESP.Distance then
+                            CreateESP(obj, FESPC.Gate)
+                            local data = GateObjects[obj]
+                            if not data then
+                                local bb = Instance.new("BillboardGui")
+                                bb.Name = "FazzHubGateESP"
+                                bb.Size = UDim2.new(0, 120, 0, 30)
+                                bb.AlwaysOnTop = true
+                                bb.StudsOffset = Vector3.new(0, 4, 0)
+                                bb.MaxDistance = FESP.Distance or 500
+                                bb.Adornee = obj
+                                local lbl = Instance.new("TextLabel")
+                                lbl.Name = "GateLbl"
+                                lbl.Size = UDim2.new(1, 0, 1, 0)
+                                lbl.BackgroundTransparency = 1
+                                lbl.Font = Enum.Font.GothamBold
+                                lbl.TextSize = 12
+                                lbl.TextColor3 = FESPC.Gate
+                                lbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                                lbl.TextStrokeTransparency = 0.3
+                                lbl.Text = "GATE"
+                                lbl.Parent = bb
+                                bb.Parent = obj
+                                GateObjects[obj] = { billboard = bb, lbl = lbl }
+                            else
+                                if doFullUpdate and data.lbl then
+                                    data.lbl.Text = string.format("GATE [%.0fm]", dist)
+                                    data.lbl.TextColor3 = FESPC.Gate
+                                end
+                            end
+                        else
+                            RemoveESP(obj)
+                            local data = GateObjects[obj]
+                            if data then
+                                if data.billboard then pcall(function() data.billboard:Destroy() end) end
+                                GateObjects[obj] = nil
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+        --====================================================--
+        -- UPDATE SCP
+        --====================================================--
         local function UpdateSCPEsp(root)
             if not FESP.SCP then
                 for obj in pairs(CachedSCP) do RemoveESP(obj) end
@@ -3057,6 +3529,9 @@ local function __FazzHub_Init_Main__()
             end
         end
 
+        --====================================================--
+        -- WINDOW ESP
+        --====================================================--
         local function RemoveWindowESP(model)
             if not model then return end
             local wData = WindowObjects[model]
@@ -3150,48 +3625,70 @@ local function __FazzHub_Init_Main__()
             end
         end)
 
-        local espLastUpdate = 0
+        --====================================================--
+        -- MAIN ESP LOOP — OPTIMIZED
+        --====================================================--
+        local espLastPlayer = 0
+        local espLastObject = 0
+        local espLastGenFull = 0
+        local PLAYER_RATE = 0.1
+        local OBJECT_RATE = 0.4
+        local GEN_FULL_RATE = 1.0
+
         RunService.RenderStepped:Connect(function()
             local now = tick()
-            if now - espLastUpdate < 0.05 then return end
-            espLastUpdate = now
 
             local root = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
             if not root then return end
 
-            for _, p in ipairs(Players:GetPlayers()) do
-                if p ~= LocalPlayer and p.Character then
-                    local char = p.Character
-                    local hum = char:FindFirstChildOfClass("Humanoid")
-                    if hum and hum.Health > 0 then
-                        local hrp = char:FindFirstChild("HumanoidRootPart")
-                        if hrp then
-                            local dist = (hrp.Position - root.Position).Magnitude
-                            if dist <= FESP.Distance then
-                                if FESP.Survivor and TeamIs(p, "Survivor") then
-                                    CreateESP(char, FESPC.Survivor)
-                                elseif FESP.Killer and TeamIs(p, "Killer") then
-                                    CreateESP(char, FESPC.Killer)
+            -- Player update (0.1s)
+            if now - espLastPlayer >= PLAYER_RATE then
+                espLastPlayer = now
+                for _, p in ipairs(Players:GetPlayers()) do
+                    if p ~= LocalPlayer and p.Character then
+                        local char = p.Character
+                        local hum = char:FindFirstChildOfClass("Humanoid")
+                        if hum and hum.Health > 0 then
+                            local hrp = char:FindFirstChild("HumanoidRootPart")
+                            if hrp then
+                                local dist = (hrp.Position - root.Position).Magnitude
+                                if dist <= FESP.Distance then
+                                    if FESP.Survivor and TeamIs(p, "Survivor") then
+                                        CreateESP(char, FESPC.Survivor)
+                                    elseif FESP.Killer and TeamIs(p, "Killer") then
+                                        CreateESP(char, FESPC.Killer)
+                                    else
+                                        RemoveESP(char)
+                                    end
                                 else
                                     RemoveESP(char)
                                 end
-                            else
-                                RemoveESP(char)
                             end
+                            CreateStatusESP(p, char, root)
+                        else
+                            RemoveESP(char)
+                            RemoveStatusESP(char)
                         end
-                        CreateStatusESP(p, char, root)
-                    else
-                        RemoveESP(char)
-                        RemoveStatusESP(char)
                     end
                 end
             end
 
-            if FESP.Generator then
-                for gen in pairs(CachedGen) do UpdateGenerator(gen) end
+            -- Object update (0.4s)
+            if now - espLastObject >= OBJECT_RATE then
+                espLastObject = now
+                for obj in pairs(CachedPallet) do UpdateMapESP(obj, root) end
+                UpdateSCPEsp(root)
+                UpdateHookESP(root, false)
+                UpdateGateESP(root, false)
             end
-            for obj in pairs(CachedPallet) do UpdateMapESP(obj, root) end
-            UpdateSCPEsp(root)
+
+            -- Gen update (0.3s) + full update (1s)
+            if FESP.Generator and now - GenLastUpdate >= GenUpdateInterval then
+                GenLastUpdate = now
+                local doFull = (now - espLastGenFull) >= GEN_FULL_RATE
+                if doFull then espLastGenFull = now end
+                for gen in pairs(CachedGen) do UpdateGenerator(gen, doFull) end
+            end
 
             if FESP.Window then
                 if not _G.FazzHubWindowScanned then
@@ -3205,7 +3702,7 @@ local function __FazzHub_Init_Main__()
                 end
             end
         end)
-                                        end--========================================================--
+    end--========================================================--
 -- FAZZHUB v0.3.9
 -- PART 11/19 : INVISIBLE
 --========================================================--
@@ -6199,8 +6696,9 @@ local function __FazzHub_Init_Main__()
         end
                                                                                 end--========================================================--
 -- FAZZHUB v0.3.9
--- PART 15C/19 : CAMERA DBD + FLOATING BUTTON (BARU)
+-- PART 15C/19 : CAMERA DBD + FLOATING BUTTON
 -- PATCH: Floating Button 140x38 + BG Image FAZZHUB
+-- PATCH: Transparency lebih terang biar BG FAZZHUB keliatan
 --========================================================--
 
     --====================================================--
@@ -6287,8 +6785,8 @@ local function __FazzHub_Init_Main__()
     end
 
     --====================================================--
-    -- FLOATING BUTTON SYSTEM (BARU - TEMA FAZZHUB + BG IMAGE)
-    -- PATCH: Ukuran 140x38 + background image FAZZHUB
+    -- FLOATING BUTTON SYSTEM
+    -- PATCH: Transparency lebih terang
     --====================================================--
     local BG_IMAGE_ID_BTN = "rbxassetid://72845574620852"
 
@@ -6305,6 +6803,12 @@ local function __FazzHub_Init_Main__()
 
         local W_BTN = 140
         local H_BTN = 38
+
+        -- [PATCH] TRANSPARENCY — lebih terang
+        local BG_IMG_OFF_TRANS = 0.4
+        local BG_IMG_ON_TRANS  = 0.2
+        local OVERLAY_TRANS    = 0.2
+        local BTN_BG_TRANS     = 0.1
 
         local function ClearConns()
             for _, c in ipairs(state.Connections) do pcall(function() c:Disconnect() end) end
@@ -6330,7 +6834,7 @@ local function __FazzHub_Init_Main__()
             if isOn then
                 TweenService:Create(btn, TweenInfo.new(0.2), { BackgroundColor3 = COLOR_BG_ON }):Play()
                 if bgImg then
-                    TweenService:Create(bgImg, TweenInfo.new(0.2), { ImageTransparency = 0.4 }):Play()
+                    TweenService:Create(bgImg, TweenInfo.new(0.2), { ImageTransparency = BG_IMG_ON_TRANS }):Play()
                 end
                 if stroke then
                     TweenService:Create(stroke, TweenInfo.new(0.2), {
@@ -6348,7 +6852,7 @@ local function __FazzHub_Init_Main__()
             else
                 TweenService:Create(btn, TweenInfo.new(0.2), { BackgroundColor3 = COLOR_BG_OFF }):Play()
                 if bgImg then
-                    TweenService:Create(bgImg, TweenInfo.new(0.2), { ImageTransparency = 0.65 }):Play()
+                    TweenService:Create(bgImg, TweenInfo.new(0.2), { ImageTransparency = BG_IMG_OFF_TRANS }):Play()
                 end
                 if stroke then
                     TweenService:Create(stroke, TweenInfo.new(0.2), {
@@ -6356,7 +6860,7 @@ local function __FazzHub_Init_Main__()
                     }):Play()
                 end
                 if label then
-                    TweenService:Create(label, TweenInfo.new(0.2), { TextColor3 = Color3.fromRGB(170, 170, 185) }):Play()
+                    TweenService:Create(label, TweenInfo.new(0.2), { TextColor3 = Color3.fromRGB(200, 200, 215) }):Play()
                 end
                 if dot then
                     TweenService:Create(dot, TweenInfo.new(0.2), {
@@ -6416,6 +6920,7 @@ local function __FazzHub_Init_Main__()
             btn.Size = UDim2.fromOffset(W_BTN, H_BTN)
             btn.Position = UDim2.new(0, 0, 0, 0)
             btn.BackgroundColor3 = COLOR_BG_OFF
+            btn.BackgroundTransparency = BTN_BG_TRANS
             btn.BorderSizePixel = 0
             btn.Text = ""
             btn.AutoButtonColor = false
@@ -6430,7 +6935,7 @@ local function __FazzHub_Init_Main__()
             bgImg.Position = UDim2.fromScale(0, 0)
             bgImg.BackgroundTransparency = 1
             bgImg.Image = BG_IMAGE_ID_BTN
-            bgImg.ImageTransparency = 0.65
+            bgImg.ImageTransparency = BG_IMG_OFF_TRANS
             bgImg.ScaleType = Enum.ScaleType.Crop
             bgImg.ZIndex = 3
             bgImg.Parent = btn
@@ -6441,7 +6946,7 @@ local function __FazzHub_Init_Main__()
             overlay.Size = UDim2.fromScale(1, 1)
             overlay.Position = UDim2.fromScale(0, 0)
             overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-            overlay.BackgroundTransparency = 0.35
+            overlay.BackgroundTransparency = OVERLAY_TRANS
             overlay.BorderSizePixel = 0
             overlay.ZIndex = 4
             overlay.Parent = btn
@@ -6462,12 +6967,12 @@ local function __FazzHub_Init_Main__()
             label.BackgroundTransparency = 1
             label.Font = Enum.Font.GothamBold
             label.Text = cfg.title
-            label.TextColor3 = Color3.fromRGB(170, 170, 185)
+            label.TextColor3 = Color3.fromRGB(200, 200, 215)
             label.TextSize = 12
             label.TextXAlignment = Enum.TextXAlignment.Left
             label.TextYAlignment = Enum.TextYAlignment.Center
             label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-            label.TextStrokeTransparency = 0.5
+            label.TextStrokeTransparency = 0.3
             label.ZIndex = 6
             label.Parent = btn
 
@@ -6708,7 +7213,6 @@ local function __FazzHub_Init_Main__()
     --====================================================--
     -- 9 FLOATING BAR INSTANCES
     --====================================================--
-
     local SelfHealBtnState = { Enabled=false, DragLocked=false, Gui=nil, SavedPos=UDim2.new(0.03,0,0.28,0), Connections={} }
     local SelfHealState = CreateFloatingButton({
         id="SelfHeal", title="Heal", state=SelfHealBtnState,
@@ -7111,12 +7615,12 @@ local function __FazzHub_Init_Main__()
         end
 
         function getTargetPartObject(char)
-            if Veil2.AIM_TargetPart == "Head" then 
+            if Veil2.AIM_TargetPart == "Head" then
                 return char:FindFirstChild("Head")
-            elseif Veil2.AIM_TargetPart == "Root" or Veil2.AIM_TargetPart == "HumanoidRootPart" then 
+            elseif Veil2.AIM_TargetPart == "Root" or Veil2.AIM_TargetPart == "HumanoidRootPart" then
                 return char:FindFirstChild("HumanoidRootPart")
-            else 
-                return char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso") or char:FindFirstChild("HumanoidRootPart") 
+            else
+                return char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso") or char:FindFirstChild("HumanoidRootPart")
             end
         end
 
@@ -8556,7 +9060,7 @@ local function __FazzHub_Init_Main__()
             task.wait(1)
             if JerkTool.Enabled then jerkRunning = true; W.JerkOff_Create() end
         end)
-                                                                                                    end--========================================================--
+    end--========================================================--
 -- FAZZHUB v0.3.9
 -- PART 18A/19 : NO FALL DAMAGE + NEXT MAP PREDICT
 --========================================================--
@@ -8764,6 +9268,7 @@ local function __FazzHub_Init_Main__()
                                                                                                         end--========================================================--
 -- FAZZHUB v0.3.9
 -- PART 18B/19 : MANUAL/AUTO GENERATOR + GEN BYPASS
+-- PATCH: Bypass Gen kecil + no efek
 --========================================================--
 
     --====================================================--
@@ -9016,6 +9521,7 @@ local function __FazzHub_Init_Main__()
 
     --====================================================--
     -- GEN BYPASS (Klik Tombol = Repair Langsung)
+    -- PATCH: Tombol kecilin 44x44 + hapus efek
     --====================================================--
     W.GenBypass = W.GenBypass or {
         Enabled=false, Button=nil, UI=nil, Cache={}, CacheTimer=0,
@@ -9137,26 +9643,31 @@ local function __FazzHub_Init_Main__()
         GenBypass.UI.DisplayOrder = 100
         GenBypass.UI.Parent = pg
 
+        -- [PATCH] Tombol kecilin 44x44
+        local SIZE_MAIN = 44
+        local SIZE_GLOW = 60
+
         local wrap = Instance.new("Frame")
         wrap.Name = "Wrap"; wrap.AnchorPoint = Vector2.new(1, 0)
         wrap.Position = UDim2.new(1, -20, 0.48, 0)
-        wrap.Size = UDim2.fromOffset(110, 110)
+        wrap.Size = UDim2.fromOffset(SIZE_GLOW + 4, SIZE_GLOW + 4)
         wrap.BackgroundTransparency = 1; wrap.Active = true
         wrap.ZIndex = 2; wrap.Parent = GenBypass.UI
 
         local glow = Instance.new("Frame")
         glow.Name = "Glow"; glow.AnchorPoint = Vector2.new(0.5, 0.5)
         glow.Position = UDim2.new(0.5, 0, 0.5, 0)
-        glow.Size = UDim2.fromOffset(88, 88)
+        glow.Size = UDim2.fromOffset(SIZE_GLOW, SIZE_GLOW)
         glow.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        glow.BackgroundTransparency = 0.85; glow.BorderSizePixel = 0
+        glow.BackgroundTransparency = 1
+        glow.BorderSizePixel = 0
         glow.ZIndex = 1; glow.Parent = wrap
         Instance.new("UICorner", glow).CornerRadius = UDim.new(1, 0)
 
         local mainCircle = Instance.new("Frame")
         mainCircle.Name = "MainCircle"; mainCircle.AnchorPoint = Vector2.new(0.5, 0.5)
         mainCircle.Position = UDim2.new(0.5, 0, 0.5, 0)
-        mainCircle.Size = UDim2.fromOffset(64, 64)
+        mainCircle.Size = UDim2.fromOffset(SIZE_MAIN, SIZE_MAIN)
         mainCircle.BackgroundColor3 = Color3.fromRGB(12, 12, 15)
         mainCircle.BackgroundTransparency = 0.05; mainCircle.BorderSizePixel = 0
         mainCircle.ZIndex = 4; mainCircle.Parent = wrap
@@ -9172,16 +9683,16 @@ local function __FazzHub_Init_Main__()
 
         local mainStroke = Instance.new("UIStroke", mainCircle)
         mainStroke.Name = "MainStroke"; mainStroke.Color = Color3.fromRGB(255, 255, 255)
-        mainStroke.Thickness = 1.6; mainStroke.Transparency = 0.15
+        mainStroke.Thickness = 1.4; mainStroke.Transparency = 0.15
         mainStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
         local genText = Instance.new("TextLabel")
         genText.Name = "GenText"; genText.AnchorPoint = Vector2.new(0.5, 0.5)
         genText.Position = UDim2.new(0.5, 0, 0.5, 0)
-        genText.Size = UDim2.fromOffset(60, 30)
+        genText.Size = UDim2.fromOffset(SIZE_MAIN - 8, SIZE_MAIN - 14)
         genText.BackgroundTransparency = 1; genText.Font = Enum.Font.GothamBlack
         genText.Text = "GEN"; genText.TextColor3 = Color3.fromRGB(255, 255, 255)
-        genText.TextSize = 20; genText.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        genText.TextSize = 15; genText.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
         genText.TextStrokeTransparency = 0.5
         genText.ZIndex = 7; genText.Parent = wrap
 
@@ -9198,30 +9709,21 @@ local function __FazzHub_Init_Main__()
         GenBypass._MainCircle = mainCircle; GenBypass._MainStroke = mainStroke
         GenBypass._GenText = genText; GenBypass._ActionBtn = actionBtn
 
+        -- TANPA ANIMASI
         local function ShowCard()
             wrap.Visible = true
-            TweenService:Create(glow, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                Size = UDim2.fromOffset(88, 88), BackgroundTransparency = 0.85,
-            }):Play()
-            TweenService:Create(mainCircle, TweenInfo.new(0.55, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-                Size = UDim2.fromOffset(64, 64), BackgroundTransparency = 0.05,
-            }):Play()
-            TweenService:Create(genText, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                TextTransparency = 0, TextStrokeTransparency = 0.5,
-            }):Play()
+            mainCircle.Size = UDim2.fromOffset(SIZE_MAIN, SIZE_MAIN)
+            mainCircle.BackgroundTransparency = 0.05
+            glow.Size = UDim2.fromOffset(SIZE_GLOW, SIZE_GLOW)
+            glow.BackgroundTransparency = 1
+            genText.TextTransparency = 0
+            genText.TextStrokeTransparency = 0.5
+            genText.Rotation = 0
         end
 
         local function HideCard()
-            TweenService:Create(glow, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-                Size = UDim2.fromOffset(0, 0), BackgroundTransparency = 1,
-            }):Play()
-            TweenService:Create(mainCircle, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-                Size = UDim2.fromOffset(0, 0), BackgroundTransparency = 1,
-            }):Play()
-            TweenService:Create(genText, TweenInfo.new(0.2), {
-                TextTransparency = 1, TextStrokeTransparency = 1,
-            }):Play()
-            task.delay(0.3, function()
+            wrap.Visible = false
+            task.delay(0.05, function()
                 if GenBypass._StopAnim then pcall(GenBypass._StopAnim); GenBypass._StopAnim = nil end
                 if GenBypass.UI then pcall(function() GenBypass.UI:Destroy() end); GenBypass.UI = nil end
                 GenBypass._Wrap = nil; GenBypass._ShowCard = nil
@@ -9231,42 +9733,21 @@ local function __FazzHub_Init_Main__()
         end
 
         GenBypass._ShowCard = ShowCard; GenBypass._HideCard = HideCard
-
-        local animActive = true
-        GenBypass._StopAnim = function() animActive = false end
-        task.spawn(function()
-            local t = 0
-            while animActive and wrap.Parent do
-                t = t + 0.035
-                if GenBypass.Enabled then
-                    local pulse = (math.sin(t * 3) + 1) * 0.5
-                    mainStroke.Transparency = 0.35 - pulse * 0.2
-                    mainStroke.Thickness = 1.6 + pulse * 0.4
-                    glow.BackgroundTransparency = 0.85 - pulse * 0.12
-                    glow.Size = UDim2.fromOffset(88 + pulse * 5, 88 + pulse * 5)
-                    genText.Rotation = math.sin(t * 1.2) * 1.5
-                end
-                task.wait(0.03)
-            end
-        end)
+        GenBypass._StopAnim = function() end
 
         local function SetStatus(mode)
             if mode == "ready" then
                 mainStroke.Color = Color3.fromRGB(120, 255, 160)
                 genText.TextColor3 = Color3.fromRGB(120, 255, 160)
-                glow.BackgroundColor3 = Color3.fromRGB(120, 255, 160)
             elseif mode == "busy" then
                 mainStroke.Color = Color3.fromRGB(255, 200, 100)
                 genText.TextColor3 = Color3.fromRGB(255, 200, 100)
-                glow.BackgroundColor3 = Color3.fromRGB(255, 200, 100)
             elseif mode == "searching" then
                 mainStroke.Color = Color3.fromRGB(150, 200, 255)
                 genText.TextColor3 = Color3.fromRGB(150, 200, 255)
-                glow.BackgroundColor3 = Color3.fromRGB(150, 200, 255)
             else
                 mainStroke.Color = Color3.fromRGB(255, 255, 255)
                 genText.TextColor3 = Color3.fromRGB(255, 255, 255)
-                glow.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             end
         end
         GenBypass._SetStatus = SetStatus
@@ -9296,22 +9777,6 @@ local function __FazzHub_Init_Main__()
         actionBtn.MouseButton1Up:Connect(function()
             if not GenBypass.Enabled then return end
             if dragDist > 6 then return end
-
-            TweenService:Create(mainCircle, TweenInfo.new(0.08), { Size = UDim2.fromOffset(54, 54) }):Play()
-            task.delay(0.1, function()
-                TweenService:Create(mainCircle, TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Size = UDim2.fromOffset(64, 64) }):Play()
-            end)
-
-            local ripple = Instance.new("Frame")
-            ripple.AnchorPoint = Vector2.new(0.5, 0.5)
-            ripple.Position = UDim2.new(0.5, 0, 0.5, 0)
-            ripple.Size = UDim2.fromOffset(64, 64)
-            ripple.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-            ripple.BackgroundTransparency = 0.55; ripple.BorderSizePixel = 0
-            ripple.ZIndex = 3; ripple.Parent = wrap
-            Instance.new("UICorner", ripple).CornerRadius = UDim.new(1, 0)
-            TweenService:Create(ripple, TweenInfo.new(0.6), { Size = UDim2.fromOffset(160, 160), BackgroundTransparency = 1 }):Play()
-            task.delay(0.6, function() if ripple then ripple:Destroy() end end)
 
             SetStatus("searching")
 
@@ -9408,11 +9873,10 @@ local function __FazzHub_Init_Main__()
     function W.setGenBypass(v) GenBypass.Enabled = v; W.GB_UpdateButton() end--========================================================--
 -- FAZZHUB v0.3.9
 -- PART 19A/19 : UI BUILD — SURVIVOR TAB
--- PATCH: Floating menu Skill Check DIHAPUS
 --========================================================--
 
     --====================================================--
-    -- AUTO SKILL CHECK V2 (LOGIC BARU - TANPA MENU)
+    -- AUTO SKILL CHECK V2
     --====================================================--
     W.SkillCheck = W.SkillCheck or {
         Enabled = false,
@@ -9691,9 +10155,6 @@ local function __FazzHub_Init_Main__()
             ForceNotify("Fake Perks", "Buffs cleared", 2)
         end })
 
-        --====================================================--
-        -- AUTO SKILL CHECK (TANPA FLOATING MENU)
-        --====================================================--
         local skillSection = MakeSection(SurvivorTab, "Auto Skill Check")
         skillSection:AddToggle({
             Title = "Enable Auto Skill Check",
@@ -9701,11 +10162,8 @@ local function __FazzHub_Init_Main__()
             Default = false,
             Callback = function(v)
                 W.SkillCheck_SetEnabled(v)
-                if v then
-                    VD_Notify("Auto Skill Check", "Enabled", 2)
-                else
-                    VD_Notify("Auto Skill Check", "Disabled", 2)
-                end
+                if v then VD_Notify("Auto Skill Check", "Enabled", 2)
+                else VD_Notify("Auto Skill Check", "Disabled", 2) end
             end
         })
         skillSection:AddDropdown({
@@ -10173,6 +10631,7 @@ local function __FazzHub_Init_Main__()
         })--========================================================--
 -- FAZZHUB v0.3.9
 -- PART 19C/19 : VISUALS TAB + KILLER TAB (BAGIAN 1)
+-- PATCH: Hapus duplikat Aim Lock Attack + Veil V1/V2
 --========================================================--
 
         --====================================================--
@@ -10195,6 +10654,10 @@ local function __FazzHub_Init_Main__()
         ESPBox:AddColorPicker({ Title = "Window Color", Default = FESPC.Window, Save = false, Callback = function(c) FESPC.Window = c end })
         ESPBox:AddToggle({ Title = "ESP SCP", Default = false, Callback = function(v) FESP.SCP = v end })
         ESPBox:AddColorPicker({ Title = "SCP Color", Default = FESPC.SCP, Save = false, Callback = function(c) FESPC.SCP = c end })
+        ESPBox:AddToggle({ Title = "ESP Hook", Default = false, Callback = function(v) FESP.Hook = v end })
+        ESPBox:AddColorPicker({ Title = "Hook Color", Default = FESPC.Hook, Save = false, Callback = function(c) FESPC.Hook = c end })
+        ESPBox:AddToggle({ Title = "ESP Gate", Default = false, Callback = function(v) FESP.Gate = v end })
+        ESPBox:AddColorPicker({ Title = "Gate Color", Default = FESPC.Gate, Save = false, Callback = function(c) FESPC.Gate = c end })
         ESPBox:AddSlider({ Title = "ESP Radius", Min = 10, Max = 1000, Default = 500, Increment = 10, Callback = function(v) FESP.Distance = v end })
 
         local ESPStatusBox = MakeSection(VisualsTab, "ESP Status")
@@ -10240,7 +10703,7 @@ local function __FazzHub_Init_Main__()
             end })
 
         --====================================================--
-        -- KILLER TAB
+        -- KILLER TAB (BAGIAN ATAS)
         --====================================================--
         local autoAttackSection = MakeSection(KillerTab, "Auto Attack")
         autoAttackSection:AddToggle({ Title = "Enable Auto Attack", Content = "Auto fire BasicAttack",
@@ -10464,8 +10927,26 @@ local function __FazzHub_Init_Main__()
             end
         })--========================================================--
 -- FAZZHUB v0.3.9
--- PART 19D/19 : KILLER TAB (LANJUTAN)
+-- PART 19D-1/19 : KILLER TAB (LANJUTAN)
+-- PATCH: Auto-disable V1/V2/V3 (Single Active)
 --========================================================--
+
+        --====================================================--
+        -- AUTO-DISABLE V1/V2/V3 (Cuma 1 aktif kapan aja)
+        --====================================================--
+        local function DisableAllVeilsExcept(keep)
+            if keep ~= "V1" then
+                VD.VeilEnabled = false
+                if getgenv().FazzHub_VeilBtn_UpdateVisual then pcall(getgenv().FazzHub_VeilBtn_UpdateVisual) end
+            end
+            if keep ~= "V2" then
+                if Veil2 then Veil2.Aim_SilentVeil = false; Veil2.Aim_SilentVeilV2 = false end
+            end
+            if keep ~= "V3" then
+                if W.Veil3_SetEnabled then pcall(W.Veil3_SetEnabled, false) end
+            end
+        end
+        W.DisableAllVeilsExcept = DisableAllVeilsExcept
 
         local aimlockAttackSection = MakeSection(KillerTab, "Aim Lock Attack")
         aimlockAttackSection:AddToggle({
@@ -10527,6 +11008,7 @@ local function __FazzHub_Init_Main__()
 
         local VeilSection = MakeSection(KillerTab, "Silent Spear Veil V1")
         VeilSection:AddToggle({ Title = "Enable Silent Veil V1", Default = VD.VeilEnabled, Callback = function(v)
+            if v then DisableAllVeilsExcept("V1") end
             VD.VeilEnabled = v
             if not v then VeilState.target = nil; VeilState.lookVector = nil; Veil_HideAllVisuals() end
             if getgenv().FazzHub_VeilBtn_UpdateVisual then getgenv().FazzHub_VeilBtn_UpdateVisual() end
@@ -10546,9 +11028,13 @@ local function __FazzHub_Init_Main__()
 
         local veil2Group = MakeSection(KillerTab, "Silent Spear Veil V2")
         veil2Group:AddToggle({ Title = "Silent Veil V1", Default = false, Keybind = true,
-            Callback = function(Value) Veil2.Aim_SilentVeil = Value end })
+            Callback = function(Value)
+                if Value then DisableAllVeilsExcept("V2") end
+                Veil2.Aim_SilentVeil = Value
+            end })
         veil2Group:AddToggle({ Title = "Silent Veil V2", Default = false, Keybind = true,
             Callback = function(Value)
+                if Value then DisableAllVeilsExcept("V2") end
                 Veil2.Aim_SilentVeilV2 = Value
                 VD_Notify("Silent Veil V2", Value and "ON" or "OFF", 2)
             end })
@@ -10565,8 +11051,529 @@ local function __FazzHub_Init_Main__()
         veil2Group:AddToggle({ Title = "Show Veil FOV", Default = true,
             Callback = function(Value) Veil2.Veil_ShowFOV = Value end })
         veil2Group:AddSlider({ Title = "Veil FOV Radius", Min = 50, Max = 500, Default = 150,
-            Callback = function(Value) Veil2.Veil_FOV = Value end })
+            Callback = function(Value) Veil2.Veil_FOV = Value end })--====================================================--
+-- PART 19D-2/19 : SILENT SPEAR VEIL V3
+-- Logic: Balistik + Prediksi V1/V2 + Trajectory
+--====================================================--
+local Veil3 = {
+    Enabled = false,
+    ShowFOV = true,
+    ShowTrajectory = true,
+    FOV = 450,
+    SpearSpeed = 165,
+    Gravity = workspace.Gravity * 0.50,
+    TargetPart = "HumanoidRootPart",
+    PredictMode = "OFF",
+    Veil_LeadMultiplier = 1.4,
+    ChargingSpear = false,
+    TouchInput = nil,
+    AttackCooldown = false,
+    RenderConn = nil,
+    InputBeganConn = nil,
+    InputEndedConn = nil,
+    FOVCircle = nil,
+    PathFolder = nil,
+    TrajectoryParts = {},
+    HitDot = nil,
+    HookInstalled = false,
+    Segments = 15,
+}
+W.Veil3 = Veil3
 
+local oldPathV3 = workspace:FindFirstChild("FAZZHUB_V3_Trajectory")
+if oldPathV3 then oldPathV3:Destroy() end
+Veil3.PathFolder = Instance.new("Folder")
+Veil3.PathFolder.Name = "FAZZHUB_V3_Trajectory"
+Veil3.PathFolder.Parent = workspace
+
+for i = 1, Veil3.Segments do
+    local p = Instance.new("Part")
+    p.Anchored = true
+    p.CanCollide = false
+    p.CanTouch = false
+    p.CanQuery = false
+    p.CastShadow = false
+    p.Material = Enum.Material.Neon
+    p.Color = Color3.fromRGB(170, 0, 255)
+    p.Size = Vector3.new(0.15, 0.15, 1)
+    p.Transparency = 1
+    p.Parent = Veil3.PathFolder
+    Veil3.TrajectoryParts[i] = p
+end
+
+Veil3.HitDot = Instance.new("Part")
+Veil3.HitDot.Name = "FAZZHUB_V3_HitDot"
+Veil3.HitDot.Shape = Enum.PartType.Ball
+Veil3.HitDot.Size = Vector3.new(0.8, 0.8, 0.8)
+Veil3.HitDot.Anchored = true
+Veil3.HitDot.CanCollide = false
+Veil3.HitDot.CanTouch = false
+Veil3.HitDot.CanQuery = false
+Veil3.HitDot.CastShadow = false
+Veil3.HitDot.Material = Enum.Material.Neon
+Veil3.HitDot.Color = Color3.fromRGB(170, 0, 255)
+Veil3.HitDot.Transparency = 1
+Veil3.HitDot.Parent = Veil3.PathFolder
+
+pcall(function()
+    if typeof(Drawing) == "table" and Drawing.new then
+        Veil3.FOVCircle = Drawing.new("Circle")
+        Veil3.FOVCircle.Color = Color3.fromRGB(170, 0, 255)
+        Veil3.FOVCircle.Thickness = 1.5
+        Veil3.FOVCircle.Filled = false
+        Veil3.FOVCircle.Visible = false
+        Veil3.FOVCircle.NumSides = 90
+    end
+end)
+
+local function Veil3_calculateAimVector(startPos, targetPos)
+    local speed = Veil3.SpearSpeed
+    local g = Veil3.Gravity
+    local rawDiff = targetPos - startPos
+    local horizontalDist = Vector3.new(rawDiff.X, 0, rawDiff.Z).Magnitude
+
+    if horizontalDist < 286 then
+        local adjustedTarget = targetPos + Vector3.new(0, 0.8, 0)
+        local diff = adjustedTarget - startPos
+        local horizontalDiff = Vector3.new(diff.X, 0, diff.Z)
+        local x = horizontalDiff.Magnitude
+        local y = diff.Y
+        local v2 = speed * speed
+        local v4 = v2 * v2
+        local insideRoot = v4 - g * (g * (x * x) + 2 * y * v2)
+        local theta
+        if insideRoot < 0 or x <= 0.1 then
+            theta = math.rad(42)
+        else
+            local tanTheta = (v2 - math.sqrt(insideRoot)) / (g * x)
+            theta = math.atan(tanTheta)
+        end
+        local cosTheta = math.cos(theta)
+        local sinTheta = math.sin(theta)
+        local dir2D = horizontalDiff.Magnitude > 0 and horizontalDiff.Unit or Vector3.new(0, 0, 1)
+        local aimDir = Vector3.new(dir2D.X * cosTheta, sinTheta, dir2D.Z * cosTheta).Unit
+        local flightTime = x / (speed * math.max(cosTheta, 0.1))
+        return aimDir, flightTime, g
+    end
+
+    local delta = math.clamp(horizontalDist - 285, 1, 5)
+    local diff = targetPos - startPos
+    local horizontalDiff = Vector3.new(diff.X, 0, diff.Z)
+    local x = horizontalDiff.Magnitude
+    local boostedAngleDeg = 43.4 + (delta * 0.32)
+    local theta = math.rad(boostedAngleDeg)
+    local cosTheta = math.cos(theta)
+    local sinTheta = math.sin(theta)
+    local dir2D = horizontalDiff.Magnitude > 0 and horizontalDiff.Unit or Vector3.new(0, 0, 1)
+    local aimDir = Vector3.new(dir2D.X * cosTheta, sinTheta, dir2D.Z * cosTheta).Unit
+    local flightTime = x / (speed * math.max(cosTheta, 0.1))
+    return aimDir, flightTime, g
+end
+
+local function Veil3_getV2PredictedPosition(targetPart, t)
+    local targetHRP = targetPart:IsA("Model") and targetPart:FindFirstChild("HumanoidRootPart") or targetPart
+    local targetPos = targetHRP.Position
+    local targetVel = Vector3.zero
+    local targetHum = targetPart.Parent and targetPart.Parent:FindFirstChildOfClass("Humanoid")
+    if targetHum and targetHum.MoveDirection.Magnitude > 0 then
+        targetVel = targetHum.MoveDirection * targetHum.WalkSpeed
+    elseif targetHRP:IsA("BasePart") then
+        targetVel = targetHRP.AssemblyLinearVelocity
+    end
+    targetVel = Vector3.new(targetVel.X, 0, targetVel.Z)
+    return targetPos + (targetVel * (t * Veil3.Veil_LeadMultiplier))
+end
+
+local function Veil3_isLocalPlayerKiller()
+    local char = LocalPlayer.Character
+    if char and char:GetAttribute("spearmode") ~= nil then return true end
+    if LocalPlayer.Team then
+        local name = LocalPlayer.Team.Name:lower()
+        if name:find("killer") then return true end
+    end
+    return char and (char:GetAttribute("spearmode") == true or char:GetAttribute("spearmode") == false)
+end
+
+local function Veil3_isSurvivorPlayer(p)
+    if p == LocalPlayer then return false end
+    if p.Team then
+        local name = p.Team.Name:lower()
+        if name:find("killer") then return false end
+    end
+    return true
+end
+
+local function Veil3_getTargetPart(char)
+    return char:FindFirstChild(Veil3.TargetPart) or char:FindFirstChild("Torso")
+end
+
+local function Veil3_getClosestSurvivor()
+    local myChar = LocalPlayer.Character
+    local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
+    if not myRoot then return nil end
+    local cam = workspace.CurrentCamera
+    local center = Vector2.new(cam.ViewportSize.X / 2, cam.ViewportSize.Y / 2)
+    local bestDist = Veil3.FOV
+    local bestTarget = nil
+    for _, p in ipairs(Players:GetPlayers()) do
+        if Veil3_isSurvivorPlayer(p) and p.Character then
+            local hum = p.Character:FindFirstChildOfClass("Humanoid")
+            local part = Veil3_getTargetPart(p.Character)
+            if hum and hum.Health > 0 and part then
+                local screenPos, onScreen = cam:WorldToViewportPoint(part.Position)
+                if onScreen then
+                    local dist2D = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
+                    if dist2D < bestDist then
+                        bestDist = dist2D
+                        bestTarget = { Player = p, Part = part, Humanoid = hum }
+                    end
+                end
+            end
+        end
+    end
+    return bestTarget
+end
+
+local function Veil3_fire()
+    if Veil3.AttackCooldown then return end
+    Veil3.AttackCooldown = true
+    task.delay(2, function() Veil3.AttackCooldown = false end)
+
+    local myChar = LocalPlayer.Character
+    local startPart = myChar and (myChar:FindFirstChild("Head") or myChar:FindFirstChild("HumanoidRootPart"))
+    if not startPart then return end
+    local startPos = startPart.Position
+    local targetInfo = Veil3_getClosestSurvivor()
+    local aimDir
+
+    if targetInfo and targetInfo.Part then
+        local targetPart = targetInfo.Part
+        local targetPos = targetPart.Position
+        local speed = Veil3.SpearSpeed
+        local distance = (targetPos - startPos).Magnitude
+        local t = distance / speed
+        local finalTargetPos = targetPos
+        if Veil3.PredictMode == "V1" then
+            local vel = targetPart.AssemblyLinearVelocity
+            if vel and vel.Magnitude > 0.5 then
+                finalTargetPos = targetPos + (Vector3.new(vel.X, 0, vel.Z) * t)
+            else
+                local lookVector = targetPart.CFrame.LookVector
+                finalTargetPos = targetPos + (lookVector * 18.7 * t)
+            end
+        elseif Veil3.PredictMode == "V2" then
+            finalTargetPos = Veil3_getV2PredictedPosition(targetPart, t)
+        end
+        aimDir = Veil3_calculateAimVector(startPos, finalTargetPos)
+    else
+        aimDir = workspace.CurrentCamera.CFrame.LookVector
+    end
+
+    pcall(function()
+        local remotes = ReplicatedStorage:FindFirstChild("Remotes")
+        local killers = remotes and remotes:FindFirstChild("Killers")
+        local veil = killers and killers:FindFirstChild("Veil")
+        local spear = veil and veil:FindFirstChild("Spearthrow")
+        if spear then
+            spear:FireServer(aimDir, Veil3.SpearSpeed, startPos)
+        end
+    end)
+end
+
+local function Veil3_installHook()
+    if Veil3.HookInstalled then return end
+    pcall(function()
+        local old
+        old = hookmetamethod(game, "__namecall", function(self, ...)
+            local method = getnamecallmethod()
+            if not checkcaller() and method == "FireServer" and self.Name == "Spearthrow" and Veil3.Enabled then
+                return nil
+            end
+            return old(self, ...)
+        end)
+        Veil3.HookInstalled = true
+    end)
+end
+
+local function Veil3_installInput()
+    if Veil3.InputBeganConn then return end
+    Veil3.InputBeganConn = UserInputService.InputBegan:Connect(function(input, gp)
+        local isTouch = input.UserInputType == Enum.UserInputType.Touch
+        if gp and not isTouch then return end
+        local char = LocalPlayer.Character
+        local isSpearMode = char and char:GetAttribute("spearmode") == true
+        if not Veil3.Enabled or not isSpearMode then return end
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            Veil3.ChargingSpear = true
+        elseif isTouch then
+            local pGui = LocalPlayer:FindFirstChild("PlayerGui")
+            local slasher = pGui and pGui:FindFirstChild("Slasher-mob")
+            local ctrl = slasher and slasher:FindFirstChild("Controls")
+            local attackBtn = ctrl and ctrl:FindFirstChild("attack")
+            if attackBtn and attackBtn.Visible then
+                local pos = input.Position
+                local absPos = attackBtn.AbsolutePosition
+                local absSize = attackBtn.AbsoluteSize
+                if pos.X >= absPos.X and pos.X <= absPos.X + absSize.X
+                and pos.Y >= absPos.Y and pos.Y <= absPos.Y + absSize.Y then
+                    Veil3.ChargingSpear = true
+                    Veil3.TouchInput = input
+                end
+            end
+        end
+    end)
+    Veil3.InputEndedConn = UserInputService.InputEnded:Connect(function(input)
+        if Veil3.ChargingSpear and (input == Veil3.TouchInput or input.UserInputType == Enum.UserInputType.MouseButton1) then
+            Veil3.ChargingSpear = false
+            if Veil3.TouchInput == input then Veil3.TouchInput = nil end
+            Veil3_fire()
+        end
+    end)
+end
+
+local function Veil3_startRender()
+    if Veil3.RenderConn then return end
+    Veil3.RenderConn = RunService.RenderStepped:Connect(function()
+        local cam = workspace.CurrentCamera
+        local myChar = LocalPlayer.Character
+        local isSpearMode = myChar and myChar:GetAttribute("spearmode") == true
+
+        if not Veil3_isLocalPlayerKiller() or not Veil3.Enabled then
+            if Veil3.FOVCircle then Veil3.FOVCircle.Visible = false end
+            for i = 1, Veil3.Segments do
+                if Veil3.TrajectoryParts[i] then Veil3.TrajectoryParts[i].Transparency = 1 end
+            end
+            if Veil3.HitDot then Veil3.HitDot.Transparency = 1 end
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p.Character then
+                    local hl = p.Character:FindFirstChild("FAZZHUB_V3_Highlight")
+                    if hl then hl:Destroy() end
+                end
+            end
+            return
+        end
+
+        if Veil3.FOVCircle then
+            if Veil3.ShowFOV and isSpearMode then
+                Veil3.FOVCircle.Visible = true
+                Veil3.FOVCircle.Radius = Veil3.FOV
+                Veil3.FOVCircle.Position = Vector2.new(cam.ViewportSize.X / 2, cam.ViewportSize.Y / 2)
+            else
+                Veil3.FOVCircle.Visible = false
+            end
+        end
+
+        for i = 1, Veil3.Segments do
+            if Veil3.TrajectoryParts[i] then Veil3.TrajectoryParts[i].Transparency = 1 end
+        end
+        if Veil3.HitDot then Veil3.HitDot.Transparency = 1 end
+
+        local target = Veil3_getClosestSurvivor()
+
+        for _, p in ipairs(Players:GetPlayers()) do
+            if Veil3_isSurvivorPlayer(p) and p.Character then
+                local char = p.Character
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                local isLockedTarget = (target and target.Player == p)
+                local hl = char:FindFirstChild("FAZZHUB_V3_Highlight")
+                if isLockedTarget and hum and hum.Health > 0 then
+                    if not hl then
+                        hl = Instance.new("Highlight")
+                        hl.Name = "FAZZHUB_V3_Highlight"
+                        hl.Parent = char
+                    end
+                    hl.FillColor = Color3.fromRGB(0, 255, 100)
+                    hl.FillTransparency = 0.65
+                    hl.OutlineColor = Color3.fromRGB(0, 255, 150)
+                    hl.OutlineTransparency = 0.4
+                else
+                    if hl then hl:Destroy() end
+                end
+            end
+        end
+
+        if not (isSpearMode and Veil3.ChargingSpear) then return end
+
+        local indicatorColor = target and Color3.fromRGB(0, 255, 100) or Color3.fromRGB(170, 0, 255)
+        for i = 1, Veil3.Segments do
+            if Veil3.TrajectoryParts[i] then Veil3.TrajectoryParts[i].Color = indicatorColor end
+        end
+        if Veil3.HitDot then Veil3.HitDot.Color = indicatorColor end
+
+        if not target then return end
+
+        local originPart = myChar:FindFirstChild("Head") or myChar:FindFirstChild("HumanoidRootPart")
+        if not originPart then return end
+
+        local originPos = originPart.Position
+        local targetPart = target.Part
+        local targetPos = targetPart.Position
+        local speed = Veil3.SpearSpeed
+        local distance = (targetPos - originPos).Magnitude
+        local t = distance / speed
+        local finalTargetPos = targetPos
+
+        if Veil3.PredictMode == "V1" then
+            local vel = targetPart.AssemblyLinearVelocity
+            if vel and vel.Magnitude > 0.5 then
+                finalTargetPos = targetPos + (Vector3.new(vel.X, 0, vel.Z) * t)
+            else
+                local lookVector = targetPart.CFrame.LookVector
+                finalTargetPos = targetPos + (lookVector * 18.7 * t)
+            end
+        elseif Veil3.PredictMode == "V2" then
+            finalTargetPos = Veil3_getV2PredictedPosition(targetPart, t)
+        end
+
+        local aimDir, flightTime, simGravity = Veil3_calculateAimVector(originPos, finalTargetPos)
+        local aimVelocity = aimDir * speed
+
+        if Veil3.ShowTrajectory then
+            local simTime = flightTime or (distance / speed)
+            local timeStep = simTime / Veil3.Segments
+            local currentPos = originPos
+            for i = 1, Veil3.Segments do
+                local stepTime = i * timeStep
+                local nextPos = originPos + (aimVelocity * stepTime) - Vector3.new(0, 0.5 * simGravity * (stepTime^2), 0)
+                local part = Veil3.TrajectoryParts[i]
+                if part then
+                    local dist = (nextPos - currentPos).Magnitude
+                    part.Size = Vector3.new(0.15, 0.15, dist)
+                    part.CFrame = CFrame.new((currentPos + nextPos) / 2, nextPos)
+                    part.Transparency = 0.2 + (i / Veil3.Segments) * 0.5
+                end
+                currentPos = nextPos
+            end
+            if Veil3.HitDot then
+                Veil3.HitDot.Position = currentPos
+                Veil3.HitDot.Transparency = 0.15
+            end
+        end
+    end)
+end
+
+local function Veil3_stopRender()
+    if Veil3.RenderConn then
+        pcall(function() Veil3.RenderConn:Disconnect() end)
+        Veil3.RenderConn = nil
+    end
+    if Veil3.FOVCircle then pcall(function() Veil3.FOVCircle.Visible = false end) end
+    for i = 1, Veil3.Segments do
+        if Veil3.TrajectoryParts[i] then Veil3.TrajectoryParts[i].Transparency = 1 end
+    end
+    if Veil3.HitDot then Veil3.HitDot.Transparency = 1 end
+end
+
+function W.Veil3_SetEnabled(v)
+    v = v and true or false
+    Veil3.Enabled = v
+    VD.Veil3_Enabled = v
+    if v then
+        Veil3_installHook()
+        Veil3_installInput()
+        Veil3_startRender()
+    else
+        Veil3_stopRender()
+        if Veil3.InputBeganConn then
+            pcall(function() Veil3.InputBeganConn:Disconnect() end)
+            Veil3.InputBeganConn = nil
+        end
+        if Veil3.InputEndedConn then
+            pcall(function() Veil3.InputEndedConn:Disconnect() end)
+            Veil3.InputEndedConn = nil
+        end
+        Veil3.ChargingSpear = false
+        Veil3.TouchInput = nil
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p.Character then
+                local hl = p.Character:FindFirstChild("FAZZHUB_V3_Highlight")
+                if hl then hl:Destroy() end
+            end
+        end
+    end
+end
+
+function W.Veil3_SetPredictMode(mode)
+    if mode == "OFF" or mode == "V1" or mode == "V2" then
+        Veil3.PredictMode = mode
+    end
+end
+
+local veil3Section = MakeSection(KillerTab, "Silent Spear Veil V3")
+
+veil3Section:AddToggle({
+    Title = "Enable Silent Spear Veil V3",
+    Default = false,
+    Keybind = true,
+    Callback = function(v)
+        if v then DisableAllVeilsExcept("V3") end
+        W.Veil3_SetEnabled(v)
+        if v then VD_Notify("Silent Spear Veil V3", "Enabled", 2)
+        else VD_Notify("Silent Spear Veil V3", "Disabled", 2) end
+    end
+})
+
+veil3Section:AddToggle({
+    Title = "Show FOV Circle",
+    Default = true,
+    Callback = function(v) Veil3.ShowFOV = v end
+})
+
+veil3Section:AddToggle({
+    Title = "Show Trajectory",
+    Default = true,
+    Callback = function(v) Veil3.ShowTrajectory = v end
+})
+
+veil3Section:AddDropdown({
+    Title = "Predict Mode",
+    Options = { "OFF", "V1", "V2" },
+    Default = "OFF",
+    Callback = function(v)
+        local val = type(v) == "table" and v[1] or v
+        W.Veil3_SetPredictMode(val)
+        VD_Notify("Silent Spear Veil V3", "Predict: " .. tostring(val), 2)
+    end
+})
+
+veil3Section:AddSlider({
+    Title = "FOV Size",
+    Min = 100, Max = 1000,
+    Default = 450,
+    Increment = 10,
+    Callback = function(v) Veil3.FOV = v end
+})
+
+veil3Section:AddSlider({
+    Title = "Spear Speed",
+    Min = 50, Max = 300,
+    Default = 165,
+    Increment = 5,
+    Callback = function(v) Veil3.SpearSpeed = v end
+})
+
+veil3Section:AddSlider({
+    Title = "Spear Gravity",
+    Min = 10, Max = 300,
+    Default = math.floor(workspace.Gravity * 0.50),
+    Increment = 1,
+    Callback = function(v) Veil3.Gravity = v end
+})
+
+veil3Section:AddSlider({
+    Title = "Lead Multiplier",
+    Min = 0.5, Max = 5,
+    Default = 1.4,
+    Increment = 0.1,
+    Callback = function(v) Veil3.Veil_LeadMultiplier = v end
+})--========================================================--
+-- FAZZHUB v0.3.9
+-- PART 19E-1/19 : BYPASS + MISC TAB (BAGIAN 1)
+--========================================================--
+
+        --====================================================--
+        -- BYPASS NO COOLDOWN
+        --====================================================--
         local bypassSection = MakeSection(KillerTab, "Bypass No Cooldown")
         bypassSection:AddToggle({ Title = "Hidden - Leap Bypass", Default = false,
             Callback = function(v) W.BYPASS_SetHiddenLeap(v); if v then VD_Notify("Bypass", "Hidden Leap: ON", 2) end end })
@@ -10715,13 +11722,10 @@ local function __FazzHub_Init_Main__()
                 local hum = char and char:FindFirstChildOfClass("Humanoid")
                 if hum and hum.WalkSpeed == 0 then hum.WalkSpeed = 16 end
             end
-        end })--========================================================--
--- FAZZHUB v0.3.9
--- PART 19E-1/19 : MISC TAB (BAGIAN 1)
---========================================================--
+        end })
 
         --====================================================--
-        -- SETTINGS
+        -- MISC TAB
         --====================================================--
         local settingsSection = MakeSection(MiscTab, "Settings")
         settingsSection:AddToggle({ Title = "Enable Notifications", Default = true, Callback = function(v)
@@ -10729,9 +11733,6 @@ local function __FazzHub_Init_Main__()
             if v then ForceNotify("Settings", "Notifications Enabled") end
         end })
 
-        --====================================================--
-        -- STUN INDICATOR
-        --====================================================--
         local stunSection = MakeSection(MiscTab, "Stun Indicator")
         stunSection:AddToggle({ Title = "Enable Stun Indicator", Default = false, Callback = function(v)
             W.SInd_SetEnabled(v); if v then VD_Notify("Stun Indicator", "Enabled", 2) end end })
@@ -10757,9 +11758,6 @@ local function __FazzHub_Init_Main__()
         stunSection:AddSlider({ Title = "Detect Range", Min = 50, Max = 2000, Default = 500, Increment = 25, Suffix = " studs", Callback = function(v) SInd.Range = v end })
         stunSection:AddSlider({ Title = "Sound Volume", Min = 0, Max = 5, Default = 1.5, Increment = 0.1, Callback = function(v) SInd.SoundVolume = v end })
 
-        --====================================================--
-        -- INVISIBILITY
-        --====================================================--
         local invisSection = MakeSection(MiscTab, "Invisibilty")
         invisSection:AddParagraph({ Title = "Fitur ini bisa Membuat anda tidak terlihat oleh pemain lain", Content = "Real invisibility" })
         invisSection:AddToggle({ Title = "Enable invisibilty", Default = false, Callback = function(v)
@@ -10772,7 +11770,10 @@ local function __FazzHub_Init_Main__()
         invisSection:AddKeybind({ Title = "Toggle Hotkey", Default = Enum.KeyCode.G, Callback = function(kc)
             W.Invisible_SetHotkey(kc)
             ForceNotify("Invisible", "Hotkey: " .. (kc and kc.Name or "None"), 2)
-        end })
+        end })--========================================================--
+-- FAZZHUB v0.3.9
+-- PART 19E-2/19 : MISC TAB (BAGIAN 2)
+--========================================================--
 
         --====================================================--
         -- CAMERA DBD
@@ -10912,17 +11913,34 @@ local function __FazzHub_Init_Main__()
             if not W.EmoteSystem.Enabled then VD_Notify("Emote", "Enable dulu!", 2); return end
             W.EmoteSystem_Play()
             VD_Notify("Emote", "Replaying: " .. W.EmoteSystem.SelectedEmote, 2)
-        end })--========================================================--
--- FAZZHUB v0.3.9
--- PART 19E-2/19 : MISC TAB (BAGIAN 2) - FINAL MISC
---========================================================--
+        end })
 
         --====================================================--
-        -- FAKE AVATAR
+        -- FAKE AVATAR (15 PRESET)
         --====================================================--
         local FakeAvatarSection = MakeSection(MiscTab, "Fake Avatar")
         local FakeAvatarEnabled = false
         local SelectedFakeAva = LocalPlayer.UserId
+
+        -- [PATCH] Preset Fake Avatar — 15 nama
+        local FakeAvatarPresets = {
+            "Self Avatar",
+            "xn1vyu",
+            "nurblomst2013",
+            "kino_yk",
+            "nvratee",
+            "Sakaryle",
+            "Grouchy1400",
+            "Kill_xsu",
+            "Jahxure",
+            "IIIlIIllIlIIIlII",
+            "LordTherion",
+            "xKami3D",
+            "116vv",
+            "444jamesss",
+            "kiicaine",
+        }
+
         local function LoadAppearanceIntoChar(appearance, character, head)
             local items = appearance:GetChildren()
             local function applyMesh(obj)
@@ -10968,6 +11986,7 @@ local function __FazzHub_Init_Main__()
                 end
             end
         end
+
         local function ApplyFakeAvatar()
             local character = LocalPlayer.Character
             if not character or not SelectedFakeAva then return end
@@ -11013,18 +12032,34 @@ local function __FazzHub_Init_Main__()
                 end)
             end)
         end
-        FakeAvatarSection:AddDropdown({ Title = "Fake Avatar Preset",
-            Options = { "Self Avatar", "Random 1", "Random 2", "Random 3", "Random 4", "Random 5", "Random 6", "Random 7" },
+
+        local presetOptions = {}
+        for _, name in ipairs(FakeAvatarPresets) do
+            table.insert(presetOptions, name)
+        end
+
+        FakeAvatarSection:AddDropdown({
+            Title = "Fake Avatar Preset",
+            Options = presetOptions,
             Default = "Self Avatar",
             Callback = function(option)
-                local ids = {
-                    ["Self Avatar"] = LocalPlayer.UserId, ["Random 1"] = 2888298851, ["Random 2"] = 10074747755,
-                    ["Random 3"] = 5209567453, ["Random 4"] = 8991982843, ["Random 5"] = 5796319029, ["Random 6"] = 9744452117,
-                    ["Random 7"] = 8476755006
-                }
-                SelectedFakeAva = ids[option] or LocalPlayer.UserId
+                local optionStr = type(option) == "table" and option[1] or option
+                if optionStr == "Self Avatar" then
+                    SelectedFakeAva = LocalPlayer.UserId
+                else
+                    local ok, userId = pcall(function()
+                        return game:GetService("Players"):GetUserIdFromNameAsync(optionStr)
+                    end)
+                    if ok and userId then
+                        SelectedFakeAva = userId
+                    else
+                        ForceNotify("Fake Avatar", "Gagal resolve: " .. tostring(optionStr), 2)
+                        return
+                    end
+                end
                 if FakeAvatarEnabled then ApplyFakeAvatar() end
-            end })
+            end
+        })
         FakeAvatarSection:AddToggle({ Title = "Enable Fake Avatar", Default = false, Keybind = true, Callback = function(state)
             FakeAvatarEnabled = state
             if state then ApplyFakeAvatar() end
@@ -11319,10 +12354,9 @@ local function __FazzHub_Init_Main__()
             else
                 if SpecGui then SpecGui:Destroy(); SpecGui = nil; SpecLabel = nil end
             end
-        end })--========================================================--
--- FAZZHUB v0.3.9
--- PART 19F/19 : BOMBAX + CONFIG + CLOSING (FINAL)
---========================================================--
+        end })--====================================================--
+        -- PART 19F/19 : BOMBAX + CONFIG + CLOSING (FINAL)
+        --====================================================--
 
         --====================================================--
         -- BOMBAX TAB
@@ -11741,12 +12775,79 @@ local function __FazzHub_Init_Main__()
     end)
     RunService.RenderStepped:Connect(function() pcall(Veil_UpdateAimbot) end)
 
+    --====================================================--
+    -- [PATCH] TRANSPARENCY FLOATING BUTTON (Opsi B — kode utuh)
+    --====================================================--
+    task.spawn(function()
+        task.wait(3)
+        local BG_IMG_OFF_TRANS = 0.4
+        local BG_IMG_ON_TRANS  = 0.2
+        local OVERLAY_TRANS    = 0.2
+        local BTN_BG_TRANS     = 0.1
+
+        local function adjustFloatBtn(gui)
+            if not gui or not gui.Parent then return end
+            local btn = gui:FindFirstChild("Container", true)
+            if not btn then return end
+            btn = btn:FindFirstChild("Btn")
+            if not btn then return end
+
+            local bgImg = btn:FindFirstChild("BgImage")
+            local overlay = btn:FindFirstChild("Overlay")
+            local label = btn:FindFirstChild("Label")
+
+            if bgImg then
+                if bgImg.ImageTransparency < BG_IMG_OFF_TRANS + 0.15 then
+                    bgImg.ImageTransparency = BG_IMG_OFF_TRANS
+                end
+            end
+            if overlay then
+                overlay.BackgroundTransparency = OVERLAY_TRANS
+            end
+            if btn.BackgroundTransparency < BTN_BG_TRANS then
+                btn.BackgroundTransparency = BTN_BG_TRANS
+            end
+            if label then
+                label.TextStrokeTransparency = 0.3
+                if label.TextColor3 == Color3.fromRGB(170, 170, 185) then
+                    label.TextColor3 = Color3.fromRGB(200, 200, 215)
+                end
+            end
+        end
+
+        local function scanFloatBtns()
+            local parent = LocalPlayer:FindFirstChild("PlayerGui")
+            if gethui then
+                local ok, hui = pcall(gethui)
+                if ok and hui then parent = hui end
+            end
+            if not parent then return end
+            for _, gui in ipairs(parent:GetChildren()) do
+                if gui:IsA("ScreenGui") and string.find(gui.Name, "FazzHubBtn_") then
+                    pcall(adjustFloatBtn, gui)
+                end
+            end
+        end
+
+        scanFloatBtns()
+        task.spawn(function()
+            while true do
+                task.wait(2)
+                pcall(scanFloatBtns)
+            end
+        end)
+    end)
+
     print("[FAZZHUB v0.3.9] Loaded!")
     print("  - All features loaded with Bombax Music Player")
-    print("  - ESP Status: Name + Distance only")
+    print("  - ESP Status: Name + Distance + Knocked Merah")
+    print("  - ESP Hook + ESP Gate + Nama Gene")
     print("  - Auto Skill Check V2 (no floating menu)")
     print("  - Floating Button v2 (140x38 + BG image FAZZHUB)")
     print("  - Stun Indicator: Icon FAZZHUB + Duration Bar")
+    print("  - Silent Spear Veil V3")
+    print("  - Fake Avatar: 15 preset + username manual")
+    print("  - Bypass Gen: kecil + no efek")
     ForceNotify("FAZZHUB v0.3.9 Loaded", "All features ready", 6)
 
 end
