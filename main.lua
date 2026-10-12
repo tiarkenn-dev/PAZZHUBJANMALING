@@ -242,7 +242,7 @@ local function __FazzHub_Init_Main__()
     _G.GLUTO_BG_OFF     = Color3.fromRGB(0, 0, 0)--========================================================--
 -- FAZZHUB v0.3.9
 -- PART 3/19 : BOMBAX SONG LIBRARY + MUSIC + AUTO NEXT
--- PATCH: Notif ganti lagu DIHAPUS
+-- PATCH: AttachSoundGroup untuk audio boost
 --========================================================--
 
     --====================================================--
@@ -253,6 +253,7 @@ local function __FazzHub_Init_Main__()
         Volume = 2, Looped = false, CurrentTrack = nil, History = {},
         CurrentSoundId = nil, TrackLength = 0, TrackPosition = 0,
         _AutoNextConn = nil, AutoNext = true,
+        MaxVolume = 15,
     }
     local Bombax = W.Bombax
 
@@ -306,6 +307,7 @@ local function __FazzHub_Init_Main__()
         snd.Looped = Bombax.Looped
         snd.Parent = SoundService
         Bombax.CurrentSound = snd
+        if W.Bombax_AttachSoundGroup then pcall(function() W.Bombax_AttachSoundGroup(snd) end) end
         return snd
     end
 
@@ -317,6 +319,8 @@ local function __FazzHub_Init_Main__()
         end
         snd.Volume = Bombax.Volume
         snd.Looped = Bombax.Looped
+        -- [PATCH] Attach sound group untuk audio boost
+        if W.Bombax_AttachSoundGroup then pcall(function() W.Bombax_AttachSoundGroup(snd) end) end
         snd:Play()
         Bombax.IsPlaying = true
         Bombax.IsPaused = false
@@ -325,8 +329,8 @@ local function __FazzHub_Init_Main__()
         Bombax.TrackLength = snd.TimeLength or 0
         Bombax.TrackPosition = 0
         table.insert(Bombax.History, { name = trackName, id = soundId, time = tick() })
-        -- [PATCH] Notif ganti lagu DIHAPUS biar gak spam
         if W.Bombax_MiniUpdate then pcall(W.Bombax_MiniUpdate) end
+        if W.Bombax_UpdateOnOff then pcall(W.Bombax_UpdateOnOff) end
     end
 
     local function Bombax_SetupAutoNext()
@@ -365,6 +369,7 @@ local function __FazzHub_Init_Main__()
         Bombax.IsPaused = false
         ForceNotify("Bombax ⏹", "Music stopped", 2)
         if W.Bombax_MiniUpdate then pcall(W.Bombax_MiniUpdate) end
+        if W.Bombax_UpdateOnOff then pcall(W.Bombax_UpdateOnOff) end
     end
 
     function W.Bombax_Pause()
@@ -373,6 +378,7 @@ local function __FazzHub_Init_Main__()
             Bombax.IsPaused = true
             ForceNotify("Bombax ⏸", "Music paused", 2)
             if W.Bombax_MiniUpdate then pcall(W.Bombax_MiniUpdate) end
+            if W.Bombax_UpdateOnOff then pcall(W.Bombax_UpdateOnOff) end
         end
     end
 
@@ -382,11 +388,12 @@ local function __FazzHub_Init_Main__()
             Bombax.IsPaused = false
             ForceNotify("Bombax ▶", "Music resumed", 2)
             if W.Bombax_MiniUpdate then pcall(W.Bombax_MiniUpdate) end
+            if W.Bombax_UpdateOnOff then pcall(W.Bombax_UpdateOnOff) end
         end
     end
 
     function W.Bombax_SetVolume(v)
-        Bombax.Volume = tonumber(v) or 2
+        Bombax.Volume = math.clamp(tonumber(v) or 2, 0, Bombax.MaxVolume or 15)
         if Bombax.CurrentSound then Bombax.CurrentSound.Volume = Bombax.Volume end
     end
 
@@ -415,14 +422,88 @@ local function __FazzHub_Init_Main__()
         end
         end--========================================================--
 -- FAZZHUB v0.3.9
--- PART 4/19 : BOMBAX MINI GUI + PROGRESS BAR
--- PATCH: Background pakai image ID FAZZHUB + transparan
+-- PART 4A/19 : BOMBAX MINI GUI (UPGRADE) — BAGIAN 1
+-- Efek: Shine sweep, border pulse, ripple, ON/OFF button
+-- Audio: Boost + Bass/Treble, max 15x
 --========================================================--
 
     --====================================================--
-    -- BOMBAX MINI GUI (Bar + Progress)
+    -- BOMBAX AUDIO BOOST SETUP
     --====================================================--
     do
+        local Bombax = W.Bombax
+
+        if Bombax.SoundGroup then
+            pcall(function() Bombax.SoundGroup:Destroy() end)
+        end
+        if Bombax.BassBoost then
+            pcall(function() Bombax.BassBoost:Destroy() end)
+        end
+        if Bombax.TrebleBoost then
+            pcall(function() Bombax.TrebleBoost:Destroy() end)
+        end
+
+        local sg = Instance.new("SoundGroup")
+        sg.Name = "FazzHub_BombaxGroup"
+        sg.Volume = 1
+        sg.Parent = SoundService
+        Bombax.SoundGroup = sg
+
+        local eqBass = Instance.new("EqualizerSoundEffect")
+        eqBass.Name = "FazzHub_BombaxBass"
+        eqBass.LowGain = 6
+        eqBass.MidGain = 1
+        eqBass.HighGain = 2
+        eqBass.Priority = 10
+        eqBass.Enabled = true
+        eqBass.Parent = sg
+        Bombax.BassBoost = eqBass
+
+        local eqTreble = Instance.new("EqualizerSoundEffect")
+        eqTreble.Name = "FazzHub_BombaxTreble"
+        eqTreble.LowGain = 1
+        eqTreble.MidGain = 2
+        eqTreble.HighGain = 4
+        eqTreble.Priority = 5
+        eqTreble.Enabled = true
+        eqTreble.Parent = sg
+        Bombax.TrebleBoost = eqTreble
+
+        local compressor = Instance.new("CompressorSoundEffect")
+        compressor.Name = "FazzHub_BombaxComp"
+        compressor.Threshold = -20
+        compressor.Ratio = 4
+        compressor.Attack = 0.01
+        compressor.Release = 0.15
+        compressor.GainMakeup = 6
+        compressor.SideChain = nil
+        compressor.Priority = 0
+        compressor.Enabled = true
+        compressor.Parent = sg
+        Bombax.Compressor = compressor
+
+        W.Bombax_AttachSoundGroup = function(sound)
+            if sound then
+                pcall(function() sound.SoundGroup = sg end)
+            end
+        end
+
+        W.Bombax_SetBassBoost = function(v)
+            if Bombax.BassBoost then Bombax.BassBoost.Enabled = v and true or false end
+        end
+        W.Bombax_SetTrebleBoost = function(v)
+            if Bombax.TrebleBoost then Bombax.TrebleBoost.Enabled = v and true or false end
+        end
+        W.Bombax_SetVolumeMax = function(v)
+            Bombax.MaxVolume = math.clamp(tonumber(v) or 15, 1, 30)
+        end
+    end
+
+    --====================================================--
+    -- BOMBAX MINI GUI (UPGRADE)
+    --====================================================--
+    do
+        local Bombax = W.Bombax
         local MiniState = {
             Gui = nil,
             SavedPos = UDim2.new(0, 20, 0.5, -100),
@@ -430,9 +511,60 @@ local function __FazzHub_Init_Main__()
             Frame = nil, Body = nil,
             TrackLbl = nil, VolLbl = nil, VolFill = nil,
             ProgressFill = nil, ProgressLbl = nil,
+            OnOffBtn = nil, OnOffIcon = nil, OnOffLabel = nil,
+            Shine = nil,
         }
 
         local BG_IMAGE_ID = "rbxassetid://72845574620852"
+        local ACCENT = Color3.fromRGB(255, 255, 255)
+        local ACCENT_GLOW = Color3.fromRGB(180, 200, 255)
+
+        if not Bombax.MaxVolume then
+            Bombax.MaxVolume = 15
+        end
+
+        local function PlayShineSweep(target)
+            if not target then return end
+            local shine = Instance.new("Frame")
+            shine.Name = "FazzHubShineSweep"
+            shine.Size = UDim2.new(0.4, 0, 1.4, 0)
+            shine.Position = UDim2.new(-0.6, 0, -0.2, 0)
+            shine.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            shine.BackgroundTransparency = 0.6
+            shine.BorderSizePixel = 0
+            shine.Rotation = 20
+            shine.ZIndex = 30
+            shine.Parent = target
+            local grad = Instance.new("UIGradient", shine)
+            grad.Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0, 1),
+                NumberSequenceKeypoint.new(0.4, 0.3),
+                NumberSequenceKeypoint.new(0.6, 0.3),
+                NumberSequenceKeypoint.new(1, 1),
+            })
+            TweenService:Create(shine, TweenInfo.new(0.85, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+                Position = UDim2.new(1.2, 0, -0.2, 0),
+            }):Play()
+            task.delay(0.9, function() pcall(function() shine:Destroy() end) end)
+        end
+
+        local function CreateRipple(parent, color)
+            local ripple = Instance.new("Frame")
+            ripple.AnchorPoint = Vector2.new(0.5, 0.5)
+            ripple.Position = UDim2.fromScale(0.5, 0.5)
+            ripple.Size = UDim2.fromOffset(0, 0)
+            ripple.BackgroundColor3 = color or Color3.fromRGB(255, 255, 255)
+            ripple.BackgroundTransparency = 0.4
+            ripple.BorderSizePixel = 0
+            ripple.ZIndex = 20
+            ripple.Parent = parent
+            Instance.new("UICorner", ripple).CornerRadius = UDim.new(1, 0)
+            TweenService:Create(ripple, TweenInfo.new(0.6, Enum.EasingStyle.Quint), {
+                Size = UDim2.fromOffset(200, 200),
+                BackgroundTransparency = 1,
+            }):Play()
+            task.delay(0.65, function() pcall(function() ripple:Destroy() end) end)
+        end
 
         local function BuildMini()
             if MiniState.Gui then pcall(function() MiniState.Gui:Destroy() end) end
@@ -454,7 +586,7 @@ local function __FazzHub_Init_Main__()
 
             local frame = Instance.new("Frame")
             frame.Name = "MiniFrame"
-            frame.Size = UDim2.fromOffset(230, 168)
+            frame.Size = UDim2.fromOffset(230, 200)
             frame.Position = MiniState.SavedPos
             frame.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
             frame.BackgroundTransparency = 1
@@ -462,7 +594,8 @@ local function __FazzHub_Init_Main__()
             frame.Active = true
             frame.ClipsDescendants = true
             frame.Parent = gui
-            Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 10)
+            Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
+            MiniState.Frame = frame
 
             local bgImage = Instance.new("ImageLabel")
             bgImage.Name = "BgImage"
@@ -470,73 +603,147 @@ local function __FazzHub_Init_Main__()
             bgImage.Position = UDim2.fromScale(0, 0)
             bgImage.BackgroundTransparency = 1
             bgImage.Image = BG_IMAGE_ID
-            bgImage.ImageTransparency = 0.35
+            bgImage.ImageTransparency = 0.6
             bgImage.ScaleType = Enum.ScaleType.Crop
             bgImage.ZIndex = 0
             bgImage.Parent = frame
-            Instance.new("UICorner", bgImage).CornerRadius = UDim.new(0, 10)
+            Instance.new("UICorner", bgImage).CornerRadius = UDim.new(0, 12)
 
             local overlay = Instance.new("Frame")
             overlay.Name = "BgOverlay"
             overlay.Size = UDim2.fromScale(1, 1)
             overlay.Position = UDim2.fromScale(0, 0)
             overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-            overlay.BackgroundTransparency = 0.55
+            overlay.BackgroundTransparency = 0.5
             overlay.BorderSizePixel = 0
             overlay.ZIndex = 1
             overlay.Parent = frame
-            Instance.new("UICorner", overlay).CornerRadius = UDim.new(0, 10)
+            Instance.new("UICorner", overlay).CornerRadius = UDim.new(0, 12)
 
             local stroke = Instance.new("UIStroke", frame)
-            stroke.Color = Color3.fromRGB(255, 255, 255)
-            stroke.Thickness = 1.2
-            stroke.Transparency = 0.2
+            stroke.Name = "MainStroke"
+            stroke.Color = ACCENT
+            stroke.Thickness = 1.4
+            stroke.Transparency = 0.25
+            stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
             stroke.ZIndex = 20
-            MiniState.Frame = frame
 
             local header = Instance.new("Frame", frame)
             header.Name = "Header"
-            header.Size = UDim2.new(1, 0, 0, 26)
+            header.Size = UDim2.new(1, 0, 0, 32)
             header.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
-            header.BackgroundTransparency = 0.35
+            header.BackgroundTransparency = 0.3
             header.BorderSizePixel = 0
             header.ZIndex = 3
-            Instance.new("UICorner", header).CornerRadius = UDim.new(0, 10)
+            Instance.new("UICorner", header).CornerRadius = UDim.new(0, 12)
 
             local title = Instance.new("TextLabel", header)
-            title.Size = UDim2.new(1, -60, 1, 0)
-            title.Position = UDim2.new(0, 10, 0, 0)
+            title.Size = UDim2.new(1, -110, 1, 0)
+            title.Position = UDim2.new(0, 12, 0, 0)
             title.BackgroundTransparency = 1
             title.Font = Enum.Font.GothamBold
             title.Text = "🎵 BOMBAX"
             title.TextColor3 = Color3.fromRGB(255, 255, 255)
             title.TextSize = 12
             title.TextXAlignment = Enum.TextXAlignment.Left
-            title.ZIndex = 4
+            title.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+            title.TextStrokeTransparency = 0.4
+            title.ZIndex = 5
+
+            local onOffBtn = Instance.new("TextButton", header)
+            onOffBtn.Name = "OnOffBtn"
+            onOffBtn.Size = UDim2.fromOffset(58, 22)
+            onOffBtn.Position = UDim2.new(1, -108, 0.5, -11)
+            onOffBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
+            onOffBtn.BorderSizePixel = 0
+            onOffBtn.Text = ""
+            onOffBtn.AutoButtonColor = false
+            onOffBtn.ZIndex = 8
+            onOffBtn.Parent = header
+            Instance.new("UICorner", onOffBtn).CornerRadius = UDim.new(1, 0)
+            local onOffStroke = Instance.new("UIStroke", onOffBtn)
+            onOffStroke.Color = Color3.fromRGB(100, 100, 115)
+            onOffStroke.Thickness = 1
+            onOffStroke.Transparency = 0.3
+            MiniState.OnOffBtn = onOffBtn
+
+            local onOffIcon = Instance.new("TextLabel", onOffBtn)
+            onOffIcon.Size = UDim2.fromOffset(16, 16)
+            onOffIcon.Position = UDim2.new(0, 6, 0.5, -8)
+            onOffIcon.BackgroundTransparency = 1
+            onOffIcon.Font = Enum.Font.GothamBold
+            onOffIcon.Text = "⭕"
+            onOffIcon.TextColor3 = Color3.fromRGB(200, 200, 210)
+            onOffIcon.TextSize = 11
+            onOffIcon.ZIndex = 9
+            MiniState.OnOffIcon = onOffIcon
+
+            local onOffLabel = Instance.new("TextLabel", onOffBtn)
+            onOffLabel.Size = UDim2.new(1, -22, 1, 0)
+            onOffLabel.Position = UDim2.new(0, 20, 0, 0)
+            onOffLabel.BackgroundTransparency = 1
+            onOffLabel.Font = Enum.Font.GothamBold
+            onOffLabel.Text = "OFF"
+            onOffLabel.TextColor3 = Color3.fromRGB(200, 200, 210)
+            onOffLabel.TextSize = 9
+            onOffLabel.TextXAlignment = Enum.TextXAlignment.Left
+            onOffLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+            onOffLabel.TextStrokeTransparency = 0.5
+            onOffLabel.ZIndex = 9
+            MiniState.OnOffLabel = onOffLabel
 
             local minBtn = Instance.new("TextButton", header)
             minBtn.Name = "MinBtn"
             minBtn.Size = UDim2.fromOffset(22, 22)
-            minBtn.Position = UDim2.new(1, -26, 0.5, -11)
+            minBtn.Position = UDim2.new(1, -46, 0.5, -11)
             minBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
             minBtn.BorderSizePixel = 0
             minBtn.Text = "−"
             minBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
             minBtn.Font = Enum.Font.GothamBold
             minBtn.TextSize = 14
-            minBtn.ZIndex = 5
+            minBtn.AutoButtonColor = false
+            minBtn.ZIndex = 8
             minBtn.Parent = header
             Instance.new("UICorner", minBtn).CornerRadius = UDim.new(0, 6)
 
+            local closeBtn = Instance.new("TextButton", header)
+            closeBtn.Name = "CloseBtn"
+            closeBtn.Size = UDim2.fromOffset(22, 22)
+            closeBtn.Position = UDim2.new(1, -22, 0.5, -11)
+            closeBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+            closeBtn.BorderSizePixel = 0
+            closeBtn.Text = "×"
+            closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            closeBtn.Font = Enum.Font.GothamBold
+            closeBtn.TextSize = 14
+            closeBtn.AutoButtonColor = false
+            closeBtn.ZIndex = 8
+            closeBtn.Parent = header
+            Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 6)
+            closeBtn.MouseEnter:Connect(function()
+                TweenService:Create(closeBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(200, 50, 60) }):Play()
+            end)
+            closeBtn.MouseLeave:Connect(function()
+                TweenService:Create(closeBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(40, 40, 50) }):Play()
+            end)
+
+            -- [LANJUT PART 4B — Body GUI + Progress + Volume + On/Off Logic]--========================================================--
+-- FAZZHUB v0.3.9
+-- PART 4B/19 : BOMBAX MINI GUI (UPGRADE) — BAGIAN 2
+--========================================================--
+
+            -- Body
             local body = Instance.new("Frame", frame)
             body.Name = "Body"
-            body.Size = UDim2.new(1, -16, 1, -36)
-            body.Position = UDim2.new(0, 8, 0, 30)
+            body.Size = UDim2.new(1, -16, 1, -40)
+            body.Position = UDim2.new(0, 8, 0, 34)
             body.BackgroundTransparency = 1
             body.ZIndex = 3
             body.Parent = frame
             MiniState.Body = body
 
+            -- Track Label
             local trackLbl = Instance.new("TextLabel", body)
             trackLbl.Name = "TrackLbl"
             trackLbl.Size = UDim2.new(1, 0, 0, 18)
@@ -547,9 +754,12 @@ local function __FazzHub_Init_Main__()
             trackLbl.TextSize = 10
             trackLbl.TextXAlignment = Enum.TextXAlignment.Left
             trackLbl.TextTruncate = Enum.TextTruncate.AtEnd
+            trackLbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+            trackLbl.TextStrokeTransparency = 0.5
             trackLbl.ZIndex = 4
             MiniState.TrackLbl = trackLbl
 
+            -- Progress Bar
             local progressBg = Instance.new("Frame", body)
             progressBg.Name = "ProgressBg"
             progressBg.Size = UDim2.new(1, 0, 0, 8)
@@ -579,19 +789,22 @@ local function __FazzHub_Init_Main__()
             progressLbl.TextColor3 = Color3.fromRGB(180, 180, 200)
             progressLbl.TextSize = 9
             progressLbl.TextXAlignment = Enum.TextXAlignment.Right
+            progressLbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+            progressLbl.TextStrokeTransparency = 0.6
             progressLbl.ZIndex = 4
             MiniState.ProgressLbl = progressLbl
 
+            -- Button Row
             local btnRow = Instance.new("Frame", body)
-            btnRow.Size = UDim2.new(1, 0, 0, 30)
+            btnRow.Size = UDim2.new(1, 0, 0, 32)
             btnRow.Position = UDim2.new(0, 0, 0, 50)
             btnRow.BackgroundTransparency = 1
             btnRow.ZIndex = 4
 
-            local function makeBtn(name, text, xPos, callback)
+            local function makeBtn(name, text, xPos, callback, size)
                 local b = Instance.new("TextButton", btnRow)
                 b.Name = name
-                b.Size = UDim2.fromOffset(56, 26)
+                b.Size = UDim2.fromOffset(size or 56, 26)
                 b.Position = UDim2.fromOffset(xPos, 0)
                 b.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
                 b.BackgroundTransparency = 0.2
@@ -600,13 +813,29 @@ local function __FazzHub_Init_Main__()
                 b.TextColor3 = Color3.fromRGB(255, 255, 255)
                 b.Font = Enum.Font.GothamBold
                 b.TextSize = 11
+                b.AutoButtonColor = false
                 b.ZIndex = 5
                 Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
                 local s = Instance.new("UIStroke", b)
                 s.Color = Color3.fromRGB(255, 255, 255)
                 s.Thickness = 1
                 s.Transparency = 0.5
-                b.MouseButton1Click:Connect(callback)
+                b.MouseEnter:Connect(function()
+                    TweenService:Create(b, TweenInfo.new(0.15), {
+                        BackgroundColor3 = Color3.fromRGB(60, 60, 75),
+                        BackgroundTransparency = 0,
+                    }):Play()
+                end)
+                b.MouseLeave:Connect(function()
+                    TweenService:Create(b, TweenInfo.new(0.15), {
+                        BackgroundColor3 = Color3.fromRGB(30, 30, 40),
+                        BackgroundTransparency = 0.2,
+                    }):Play()
+                end)
+                b.MouseButton1Click:Connect(function()
+                    CreateRipple(b, Color3.fromRGB(200, 220, 255))
+                    callback()
+                end)
                 return b
             end
 
@@ -624,8 +853,8 @@ local function __FazzHub_Init_Main__()
 
             local nextBtn = Instance.new("TextButton", btnRow)
             nextBtn.Name = "NextBtn"
-            nextBtn.Size = UDim2.fromOffset(26, 26)
-            nextBtn.Position = UDim2.new(1, -26, 0, 0)
+            nextBtn.Size = UDim2.fromOffset(28, 26)
+            nextBtn.Position = UDim2.new(1, -28, 0, 0)
             nextBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
             nextBtn.BackgroundTransparency = 0.2
             nextBtn.BorderSizePixel = 0
@@ -633,33 +862,45 @@ local function __FazzHub_Init_Main__()
             nextBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
             nextBtn.Font = Enum.Font.GothamBold
             nextBtn.TextSize = 12
+            nextBtn.AutoButtonColor = false
             nextBtn.ZIndex = 5
             Instance.new("UICorner", nextBtn).CornerRadius = UDim.new(0, 6)
             local nbStroke = Instance.new("UIStroke", nextBtn)
             nbStroke.Color = Color3.fromRGB(255, 255, 255)
             nbStroke.Thickness = 1
             nbStroke.Transparency = 0.5
+            nextBtn.MouseEnter:Connect(function()
+                TweenService:Create(nextBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(60, 60, 75) }):Play()
+            end)
+            nextBtn.MouseLeave:Connect(function()
+                TweenService:Create(nextBtn, TweenInfo.new(0.15), { BackgroundColor3 = Color3.fromRGB(30, 30, 40) }):Play()
+            end)
             nextBtn.MouseButton1Click:Connect(function()
+                CreateRipple(nextBtn, Color3.fromRGB(200, 220, 255))
                 W.Bombax_Next()
             end)
 
+            -- Volume Label
             local volLbl = Instance.new("TextLabel", body)
             volLbl.Name = "VolLbl"
             volLbl.Size = UDim2.new(1, 0, 0, 14)
-            volLbl.Position = UDim2.new(0, 0, 0, 84)
+            volLbl.Position = UDim2.new(0, 0, 0, 88)
             volLbl.BackgroundTransparency = 1
             volLbl.Font = Enum.Font.GothamBold
             volLbl.Text = "🔊 Volume: 2.0x"
             volLbl.TextColor3 = Color3.fromRGB(180, 180, 200)
             volLbl.TextSize = 9
             volLbl.TextXAlignment = Enum.TextXAlignment.Left
+            volLbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+            volLbl.TextStrokeTransparency = 0.6
             volLbl.ZIndex = 4
             MiniState.VolLbl = volLbl
 
+            -- Volume Bar
             local volBar = Instance.new("Frame", body)
             volBar.Name = "VolBar"
-            volBar.Size = UDim2.new(1, 0, 0, 6)
-            volBar.Position = UDim2.new(0, 0, 0, 100)
+            volBar.Size = UDim2.new(1, 0, 0, 8)
+            volBar.Position = UDim2.new(0, 0, 0, 105)
             volBar.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
             volBar.BackgroundTransparency = 0.2
             volBar.BorderSizePixel = 0
@@ -668,13 +909,116 @@ local function __FazzHub_Init_Main__()
 
             local volFill = Instance.new("Frame", volBar)
             volFill.Name = "VolFill"
-            volFill.Size = UDim2.new(0.2, 0, 1, 0)
-            volFill.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            volFill.Size = UDim2.new(0.13, 0, 1, 0)
+            volFill.BackgroundColor3 = Color3.fromRGB(180, 220, 255)
             volFill.BorderSizePixel = 0
             volFill.ZIndex = 5
             Instance.new("UICorner", volFill).CornerRadius = UDim.new(1, 0)
             MiniState.VolFill = volFill
 
+            local volKnob = Instance.new("Frame", volBar)
+            volKnob.Name = "VolKnob"
+            volKnob.AnchorPoint = Vector2.new(0.5, 0.5)
+            volKnob.Size = UDim2.fromOffset(12, 12)
+            volKnob.Position = UDim2.new(0.13, 0, 0.5, 0)
+            volKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            volKnob.BorderSizePixel = 0
+            volKnob.ZIndex = 6
+            volKnob.Parent = volBar
+            Instance.new("UICorner", volKnob).CornerRadius = UDim.new(1, 0)
+            local vkStroke = Instance.new("UIStroke", volKnob)
+            vkStroke.Color = Color3.fromRGB(150, 180, 220)
+            vkStroke.Thickness = 1.5
+
+            local volHitbox = Instance.new("TextButton", volBar)
+            volHitbox.Size = UDim2.new(1, 0, 3, 0)
+            volHitbox.Position = UDim2.new(0, 0, -1, 0)
+            volHitbox.BackgroundTransparency = 1
+            volHitbox.Text = ""
+            volHitbox.ZIndex = 10
+            volHitbox.Parent = volBar
+
+            local volDragging = false
+            local maxVol = Bombax.MaxVolume or 15
+            local function updateVolumeFromX(x)
+                local absX = volBar.AbsolutePosition.X
+                local absW = volBar.AbsoluteSize.X
+                local ratio = math.clamp((x - absX) / absW, 0, 1)
+                local newVol = ratio * maxVol
+                Bombax.Volume = newVol
+                if Bombax.CurrentSound then Bombax.CurrentSound.Volume = newVol end
+                volFill.Size = UDim2.new(ratio, 0, 1, 0)
+                volKnob.Position = UDim2.new(ratio, 0, 0.5, 0)
+                if MiniState.VolLbl then
+                    MiniState.VolLbl.Text = string.format("🔊 Volume: %.1fx", newVol)
+                end
+            end
+            volHitbox.InputBegan:Connect(function(inp)
+                if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+                    volDragging = true
+                    updateVolumeFromX(inp.Position.X)
+                end
+            end)
+            UserInputService.InputChanged:Connect(function(inp)
+                if not volDragging then return end
+                if inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch then
+                    updateVolumeFromX(inp.Position.X)
+                end
+            end)
+            UserInputService.InputEnded:Connect(function(inp)
+                if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
+                    volDragging = false
+                end
+            end)
+
+            -- ON/OFF Logic
+            local function UpdateOnOffVisual()
+                local isPlaying = Bombax.IsPlaying and not Bombax.IsPaused
+                if isPlaying then
+                    onOffIcon.Text = "⚡"
+                    onOffIcon.TextColor3 = Color3.fromRGB(120, 255, 160)
+                    onOffLabel.Text = "ON"
+                    onOffLabel.TextColor3 = Color3.fromRGB(120, 255, 160)
+                    onOffStroke.Color = Color3.fromRGB(80, 200, 120)
+                    onOffStroke.Transparency = 0
+                    TweenService:Create(onOffBtn, TweenInfo.new(0.25), {
+                        BackgroundColor3 = Color3.fromRGB(30, 60, 40),
+                    }):Play()
+                else
+                    onOffIcon.Text = "⭕"
+                    onOffIcon.TextColor3 = Color3.fromRGB(200, 200, 210)
+                    onOffLabel.Text = "OFF"
+                    onOffLabel.TextColor3 = Color3.fromRGB(200, 200, 210)
+                    onOffStroke.Color = Color3.fromRGB(100, 100, 115)
+                    onOffStroke.Transparency = 0.3
+                    TweenService:Create(onOffBtn, TweenInfo.new(0.25), {
+                        BackgroundColor3 = Color3.fromRGB(40, 40, 48),
+                    }):Play()
+                end
+            end
+            W.Bombax_UpdateOnOff = UpdateOnOffVisual
+
+            onOffBtn.MouseButton1Click:Connect(function()
+                CreateRipple(onOffBtn, Color3.fromRGB(200, 255, 220))
+                local isPlaying = Bombax.IsPlaying and not Bombax.IsPaused
+                if isPlaying then
+                    W.Bombax_Stop()
+                else
+                    if Bombax.CurrentTrack and MUSIC_LIBRARY[Bombax.CurrentTrack] then
+                        W.Bombax_Play(MUSIC_LIBRARY[Bombax.CurrentTrack], Bombax.CurrentTrack)
+                    elseif Bombax.CurrentSound and Bombax.CurrentSound.SoundId ~= "" then
+                        W.Bombax_Play(Bombax.CurrentSound.SoundId, Bombax.CurrentTrack or "Unknown")
+                    else
+                        local defaultName = "One"
+                        if MUSIC_LIBRARY[defaultName] then
+                            W.Bombax_Play(MUSIC_LIBRARY[defaultName], defaultName)
+                        end
+                    end
+                end
+                UpdateOnOffVisual()
+            end)
+
+            -- Drag
             local dragging, dragStart, startPos = false, nil, nil
             header.InputBegan:Connect(function(inp)
                 if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
@@ -695,31 +1039,56 @@ local function __FazzHub_Init_Main__()
                 end
             end)
 
+            -- Expand/Collapse with Shine
             local expanded = true
             minBtn.MouseButton1Click:Connect(function()
                 expanded = not expanded
+                CreateRipple(minBtn, Color3.fromRGB(255, 255, 255))
                 if expanded then
-                    TweenService:Create(frame, TweenInfo.new(0.25), { Size = UDim2.fromOffset(230, 168) }):Play()
-                    minBtn.Text = "−"
-                    body.Visible = true
-                else
-                    TweenService:Create(frame, TweenInfo.new(0.25), { Size = UDim2.fromOffset(230, 26) }):Play()
-                    minBtn.Text = "+"
+                    frame.Size = UDim2.fromOffset(230, 40)
                     body.Visible = false
+                    minBtn.Text = "+"
+                    TweenService:Create(frame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+                        Size = UDim2.fromOffset(230, 200),
+                    }):Play()
+                    task.wait(0.15)
+                    body.Visible = true
+                    PlayShineSweep(frame)
+                else
+                    minBtn.Text = "−"
+                    body.Visible = false
+                    TweenService:Create(frame, TweenInfo.new(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.InOut), {
+                        Size = UDim2.fromOffset(230, 40),
+                    }):Play()
                 end
             end)
 
+            -- Close Button
+            closeBtn.MouseButton1Click:Connect(function()
+                CreateRipple(closeBtn, Color3.fromRGB(255, 120, 120))
+                TweenService:Create(frame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+                    Size = UDim2.fromOffset(0, 0),
+                    Position = UDim2.new(0.5, 0, 0.5, 0),
+                }):Play()
+                task.wait(0.35)
+                if MiniState.Gui then pcall(function() MiniState.Gui:Destroy() end); MiniState.Gui = nil end
+            end)
+
+            -- Update function
             W.Bombax_MiniUpdate = function()
                 if not MiniState.Gui then return end
                 local trackTxt = Bombax.CurrentTrack or "No track"
                 if MiniState.TrackLbl then MiniState.TrackLbl.Text = "🎵 " .. trackTxt end
                 if MiniState.VolLbl then MiniState.VolLbl.Text = string.format("🔊 Volume: %.1fx", Bombax.Volume) end
                 if MiniState.VolFill then
-                    local ratio = math.clamp(Bombax.Volume / 10, 0, 1)
+                    local maxV = Bombax.MaxVolume or 15
+                    local ratio = math.clamp(Bombax.Volume / maxV, 0, 1)
                     MiniState.VolFill.Size = UDim2.new(ratio, 0, 1, 0)
                 end
+                if UpdateOnOffVisual then UpdateOnOffVisual() end
             end
 
+            -- Progress loop
             task.spawn(function()
                 while MiniState.Gui and MiniState.Gui.Parent do
                     if Bombax.CurrentSound then
@@ -742,6 +1111,26 @@ local function __FazzHub_Init_Main__()
                     end
                     task.wait(0.2)
                 end
+            end)
+
+            -- Border pulse loop
+            task.spawn(function()
+                local t = 0
+                while MiniState.Gui and MiniState.Gui.Parent do
+                    t = t + 0.05
+                    local pulse = (math.sin(t * 2) + 1) * 0.5
+                    if stroke and stroke.Parent then
+                        stroke.Transparency = 0.5 - pulse * 0.25
+                        stroke.Color = ACCENT:Lerp(ACCENT_GLOW, pulse)
+                    end
+                    task.wait(0.05)
+                end
+            end)
+
+            -- Show shine saat buka
+            task.spawn(function()
+                task.wait(0.15)
+                PlayShineSweep(frame)
             end)
 
             W.Bombax_MiniUpdate()
