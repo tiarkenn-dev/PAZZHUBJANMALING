@@ -3009,6 +3009,7 @@ local function __FazzHub_Init_Main__()
                 scaleObj.Scale = 1
                 scaleObj.Parent = bb
 
+                -- NAMA
                 local nameLbl = Instance.new("TextLabel")
                 nameLbl.Name = "NameLbl"
                 nameLbl.BackgroundTransparency = 1
@@ -3024,6 +3025,7 @@ local function __FazzHub_Init_Main__()
                 nameLbl.TextTruncate = Enum.TextTruncate.AtEnd
                 nameLbl.Parent = bb
 
+                -- JARAK
                 local distLbl = Instance.new("TextLabel")
                 distLbl.Name = "DistLbl"
                 distLbl.BackgroundTransparency = 1
@@ -3064,9 +3066,8 @@ local function __FazzHub_Init_Main__()
             end
                                         end--========================================================--
 -- FAZZHUB v0.3.9
--- PART 10C/19 : FULL ESP (BAGIAN 3)
--- PATCH: +ESP Hook, +ESP Gate, +ESP Nama Gene
--- PATCH: UI KEREN — Progress bar kecil + Optimasi
+-- PART 10C/19 : FULL ESP (BAGIAN 3) — LIGHT EDITION
+-- Patch: progress generator jadi ANGKA KECIL, ringan
 --========================================================--
 
         local function GetGameValue(obj, name)
@@ -3082,7 +3083,7 @@ local function __FazzHub_Init_Main__()
         end
 
         --====================================================--
-        -- GEN NAME CACHE (urut X — kiri ke kanan)
+        -- GEN NAME CACHE (urut X — kiri ke kanan) — pakai angka
         --====================================================--
         local GenNameCache = {}
         local GenCacheDirty = true
@@ -3123,20 +3124,20 @@ local function __FazzHub_Init_Main__()
             end
             table.sort(gens, function(a, b) return a.x < b.x end)
             for i, g in ipairs(gens) do
-                GenNameCache[g.gen] = "Gene " .. i
+                GenNameCache[g.gen] = tostring(i)
             end
             GenCacheDirty = false
         end
 
         local function GetGenName(gen)
             if GenCacheDirty and tick() > GenCacheDebounce then RebuildGenCache() end
-            return GenNameCache[gen] or "Gene ?"
+            return GenNameCache[gen] or "?"
         end
 
         --====================================================--
-        -- UPDATE GENERATOR — Progress Bar Kecil
+        -- UPDATE GENERATOR — ANGKA KECIL (RINGAN)
         --====================================================--
-        local GenUpdateInterval = 0.3
+        local GenUpdateInterval = 0.4
         local GenLastUpdate = 0
 
         local function UpdateGenerator(gen, doFullUpdate)
@@ -3154,10 +3155,10 @@ local function __FazzHub_Init_Main__()
                 or GetGameValue(gen, "Progress")
                 or GetGameValue(gen, "ProgressRepair") or 0
             if percent >= 100 then if bb then bb:Destroy() end; return end
+
             local cp = math.clamp(percent, 0, 100)
             local ratio = cp / 100
 
-            -- Warna gradient: merah → kuning → hijau
             local color
             if ratio < 0.5 then
                 color = Color3.fromRGB(255, 60, 60):Lerp(Color3.fromRGB(255, 200, 60), ratio / 0.5)
@@ -3166,154 +3167,38 @@ local function __FazzHub_Init_Main__()
             end
 
             local genName = GetGenName(gen)
+            local pctText = string.format("%d%%", math.floor(cp))
+            local newText = genName .. " " .. pctText
 
             if not bb then
                 bb = Instance.new("BillboardGui")
                 bb.Name = "GenESP"
-                bb.Size = UDim2.fromOffset(110, 30)
+                bb.Size = UDim2.fromOffset(50, 12)
                 bb.AlwaysOnTop = true
                 bb.LightInfluence = 0
                 bb.MaxDistance = FESP.Distance or 500
                 bb.Adornee = gen
 
-                local card = Instance.new("Frame")
-                card.Name = "Card"
-                card.Size = UDim2.fromOffset(100, 26)
-                card.Position = UDim2.new(0.5, -50, 0, 2)
-                card.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
-                card.BackgroundTransparency = 0.1
-                card.BorderSizePixel = 0
-                card.Parent = bb
-                Instance.new("UICorner", card).CornerRadius = UDim.new(0, 5)
-
-                local grad = Instance.new("UIGradient")
-                grad.Rotation = 135
-                grad.Color = ColorSequence.new({
-                    ColorSequenceKeypoint.new(0, Color3.fromRGB(25, 25, 32)),
-                    ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 8, 12)),
-                })
-                grad.Parent = card
-
-                local stroke = Instance.new("UIStroke")
-                stroke.Name = "Stroke"
-                stroke.Color = color
-                stroke.Thickness = 1
-                stroke.Transparency = 0.1
-                stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-                stroke.Parent = card
-
-                local iconHolder = Instance.new("Frame")
-                iconHolder.Name = "IconHolder"
-                iconHolder.Size = UDim2.fromOffset(14, 14)
-                iconHolder.Position = UDim2.new(0, 4, 0, 3)
-                iconHolder.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
-                iconHolder.BorderSizePixel = 0
-                iconHolder.Parent = card
-                Instance.new("UICorner", iconHolder).CornerRadius = UDim.new(1, 0)
-                local iconStroke = Instance.new("UIStroke")
-                iconStroke.Color = color
-                iconStroke.Thickness = 1
-                iconStroke.Transparency = 0.3
-                iconStroke.Parent = iconHolder
-
-                local iconLbl = Instance.new("TextLabel")
-                iconLbl.Name = "Icon"
-                iconLbl.Size = UDim2.fromScale(1, 1)
-                iconLbl.BackgroundTransparency = 1
-                iconLbl.Font = Enum.Font.GothamBlack
-                iconLbl.Text = "⚙"
-                iconLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-                iconLbl.TextScaled = true
-                iconLbl.Parent = iconHolder
-
-                local nameLbl = Instance.new("TextLabel")
-                nameLbl.Name = "NameLbl"
-                nameLbl.Size = UDim2.new(1, -50, 0, 10)
-                nameLbl.Position = UDim2.new(0, 22, 0, 3)
-                nameLbl.BackgroundTransparency = 1
-                nameLbl.Text = genName
-                nameLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-                nameLbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-                nameLbl.TextStrokeTransparency = 0.3
-                nameLbl.Font = Enum.Font.GothamBold
-                nameLbl.TextSize = 9
-                nameLbl.TextXAlignment = Enum.TextXAlignment.Left
-                nameLbl.Parent = card
-
-                local pctLbl = Instance.new("TextLabel")
-                pctLbl.Name = "PctLbl"
-                pctLbl.Size = UDim2.fromOffset(30, 10)
-                pctLbl.Position = UDim2.new(1, -34, 0, 3)
-                pctLbl.BackgroundTransparency = 1
-                pctLbl.Text = string.format("%.0f%%", percent)
-                pctLbl.TextColor3 = color
-                pctLbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-                pctLbl.TextStrokeTransparency = 0.4
-                pctLbl.Font = Enum.Font.GothamBold
-                pctLbl.TextSize = 8
-                pctLbl.TextXAlignment = Enum.TextXAlignment.Right
-                pctLbl.Parent = card
-
-                local barBg = Instance.new("Frame")
-                barBg.Name = "BarBg"
-                barBg.Size = UDim2.new(1, -8, 0, 5)
-                barBg.Position = UDim2.new(0, 4, 1, -9)
-                barBg.BackgroundColor3 = Color3.fromRGB(30, 30, 38)
-                barBg.BorderSizePixel = 0
-                barBg.Parent = card
-                Instance.new("UICorner", barBg).CornerRadius = UDim.new(1, 0)
-
-                local barInnerStroke = Instance.new("UIStroke")
-                barInnerStroke.Color = Color3.fromRGB(60, 60, 70)
-                barInnerStroke.Thickness = 1
-                barInnerStroke.Transparency = 0.5
-                barInnerStroke.Parent = barBg
-
-                local barFill = Instance.new("Frame")
-                barFill.Name = "BarFill"
-                barFill.Size = UDim2.new(ratio, 0, 1, 0)
-                barFill.BackgroundColor3 = color
-                barFill.BorderSizePixel = 0
-                barFill.Parent = barBg
-                Instance.new("UICorner", barFill).CornerRadius = UDim.new(1, 0)
-
-                local fillGlow = Instance.new("UIStroke")
-                fillGlow.Color = color
-                fillGlow.Thickness = 1
-                fillGlow.Transparency = 0.3
-                fillGlow.Parent = barFill
+                local lbl = Instance.new("TextLabel")
+                lbl.Name = "InfoLbl"
+                lbl.Size = UDim2.fromScale(1, 1)
+                lbl.BackgroundTransparency = 1
+                lbl.Font = Enum.Font.GothamBold
+                lbl.TextSize = 8
+                lbl.TextColor3 = color
+                lbl.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+                lbl.TextStrokeTransparency = 0.3
+                lbl.Text = newText
+                lbl.Parent = bb
 
                 bb.Parent = gen
             else
-                local card = bb:FindFirstChild("Card")
-                if card then
-                    local nameLbl = card:FindFirstChild("NameLbl")
-                    local pctLbl = card:FindFirstChild("PctLbl")
-                    local stroke = card:FindFirstChild("Stroke")
-                    local barFill = card:FindFirstChild("BarBg") and card.BarBg:FindFirstChild("BarFill")
-                    local fillGlow = barFill and barFill:FindFirstChildOfClass("UIStroke")
-                    local iconHolder = card:FindFirstChild("IconHolder")
-                    local iconStroke = iconHolder and iconHolder:FindFirstChildOfClass("UIStroke")
-
-                    if nameLbl and nameLbl.Text ~= genName then
-                        nameLbl.Text = genName
+                local lbl = bb:FindFirstChild("InfoLbl")
+                if lbl then
+                    if lbl.Text ~= newText then
+                        lbl.Text = newText
+                        lbl.TextColor3 = color
                     end
-                    if pctLbl then
-                        local pctText = string.format("%.0f%%", percent)
-                        if pctLbl.Text ~= pctText then
-                            pctLbl.Text = pctText
-                            pctLbl.TextColor3 = color
-                        end
-                    end
-                    if stroke then stroke.Color = color end
-                    if barFill then
-                        TweenService:Create(barFill, TweenInfo.new(0.3), {
-                            Size = UDim2.new(ratio, 0, 1, 0),
-                            BackgroundColor3 = color,
-                        }):Play()
-                    end
-                    if fillGlow then fillGlow.Color = color end
-                    if iconStroke then iconStroke.Color = color end
                 end
             end
 
@@ -3626,7 +3511,7 @@ local function __FazzHub_Init_Main__()
         end)
 
         --====================================================--
-        -- MAIN ESP LOOP — OPTIMIZED
+        -- MAIN ESP LOOP — OPTIMIZED (GEN LIGHTER)
         --====================================================--
         local espLastPlayer = 0
         local espLastObject = 0
@@ -3682,7 +3567,7 @@ local function __FazzHub_Init_Main__()
                 UpdateGateESP(root, false)
             end
 
-            -- Gen update (0.3s) + full update (1s)
+            -- Gen update (0.4s) + full update (1s)
             if FESP.Generator and now - GenLastUpdate >= GenUpdateInterval then
                 GenLastUpdate = now
                 local doFull = (now - espLastGenFull) >= GEN_FULL_RATE
@@ -3702,7 +3587,7 @@ local function __FazzHub_Init_Main__()
                 end
             end
         end)
-    end--========================================================--
+                                        end--========================================================--
 -- FAZZHUB v0.3.9
 -- PART 11/19 : INVISIBLE
 --========================================================--
@@ -9060,7 +8945,7 @@ local function __FazzHub_Init_Main__()
             task.wait(1)
             if JerkTool.Enabled then jerkRunning = true; W.JerkOff_Create() end
         end)
-    end--========================================================--
+                                                                                                    end--========================================================--
 -- FAZZHUB v0.3.9
 -- PART 18A/19 : NO FALL DAMAGE + NEXT MAP PREDICT
 --========================================================--
